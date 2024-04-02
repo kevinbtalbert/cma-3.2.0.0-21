@@ -1,0 +1,17 @@
+- name: Assemble database variables
+  set_fact:
+    database_name: "{{ lookup('ansible.builtin.vars', service_name + '_db_name') }}"
+    database_username: "{{ lookup('ansible.builtin.vars', service_name + '_db_root_user') }}"
+    database_password: "{{ lookup('ansible.builtin.vars', service_name + '_db_root_user_password') }}"
+    database_host: "{{ db_host | default(groups['backup_' + service_name][0]) }}"
+    backup_name: "{{ service_backup_dir }}/{{ lookup('ansible.builtin.vars', service_name + '_db_name') }}"
+
+- name: Check if the database type is supported
+  fail:
+    msg: "Failed, {{ database_type }} is not one of the supported database types! Only {{ supported_db_types }} are supported! "
+  when: database_type not in supported_db_types
+
+- name: Rollback DB
+  include_tasks:
+    file: "{{ database_type }}.yml"
+

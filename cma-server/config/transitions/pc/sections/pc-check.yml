@@ -1,0 +1,35 @@
+---
+type: PUBLIC_CLOUD_DATA_MIGRATION
+sourceClusterType: CDH6
+version: 1
+steps:
+
+#      - name: Check if RM can be used for data migration
+#        ansibleTags:
+#          - "check-data-size"
+#        commands:
+#          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+
+---
+type: PUBLIC_CLOUD_DATA_MIGRATION
+sourceClusterType: CDH5
+version: 1
+steps:
+
+#      - name: Check if RM can be used for data migration
+#        ansibleTags:
+#          - "check-data-size"
+#        commands:
+#          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+
+---
+type: PUBLIC_CLOUD_DATA_MIGRATION
+sourceClusterType: CDP_PVC_BASE
+version: 1
+steps:
+
+#      - name: Check if RM can be used for data migration
+#        ansibleTags:
+#          - "check-data-size"
+#        commands:
+#          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'

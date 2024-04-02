@@ -1,0 +1,1 @@
+use_password: "{{ ansible_ssh_pass is defined and ansible_ssh_pass | length > 0 }}"

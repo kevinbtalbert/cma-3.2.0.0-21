@@ -1,0 +1,8 @@
+{
+  "items": [
+    {% for role in roles %}
+    "{{ role }}"
+    {% if not loop.last %},{% endif %}
+    {% endfor %}
+    ]
+}

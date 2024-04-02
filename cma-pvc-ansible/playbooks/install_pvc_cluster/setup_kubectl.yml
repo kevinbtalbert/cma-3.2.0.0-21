@@ -1,0 +1,9 @@
+---
+
+- name: Install Kubectl on CM to interact with cluster
+  hosts: cloudera_manager[0]
+  tags: setup-kubectl-cm
+  gather_facts: false
+  roles:
+    - role: pvc/install_kubectl_ecs
+      when: pvc_type == "ECS"

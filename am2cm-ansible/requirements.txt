@@ -1,0 +1,19 @@
+-r module_utils/requirements.txt
+ansible==5.4.0
+ansible-core==2.12.2
+cffi==1.15.0
+cryptography==36.0.1
+Jinja2==3.0.3
+kazoo==2.8.0
+MarkupSafe==2.1.0
+packaging==21.3
+pycparser==2.21
+pyparsing==3.0.7
+PyYAML==6.0
+resolvelib==0.5.4
+xmltodict==0.13.0
+dicttoxml==1.7.4
+jmespath==0.10.0
+hurry.filesize==0.9
+cdpcli-beta==0.9.104
+lxml==5.1.0

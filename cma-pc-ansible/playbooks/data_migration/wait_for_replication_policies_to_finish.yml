@@ -1,0 +1,6 @@
+- name: Wait for replication policies to finish
+  tags: wait-for-replication-complete
+  gather_facts: false
+  hosts: localhost
+  roles:
+    - { role: replication_manager/wait_for_replication_policies_to_finish, replication_policies: "{{ wait_for_replication_policies }}" }

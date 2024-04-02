@@ -1,0 +1,47 @@
+# Copyright (c) 2023, Cloudera, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+- set_fact:
+    hive_database_and_tables: "{{ hive_database_and_tables | default([]) + [{
+    'hive_database_name': item['hiveDbName'], 
+    'included_tables_regex': item['hiveTableName'],
+    'excluded_tables_regex': ''
+    }] }}"
+  with_items: "{{ policy_definition['hiveDatabaseAndTables'] }}"
+
+- set_fact:
+    replication_policy_name: "{{ policy_definition['name'] }}"
+    replication_policy_description: "{{ policy_definition['description'] }}"
+    source_cluster_crn: "{{ policy_definition['sourceCrn'] }}"
+    source_cluster_identifier: "{{ policy_definition['sourceClusterIdentifier'] }}"
+    target_adls_credential_name: "{{ policy_definition['adlsCredentialName'] }}"
+    target_adls_storage_account_name: "{{ policy_definition['adlsStorageAccountName'] }}"
+    target_adls_client_id: "{{ policy_definition['adlsClientID'] }}"
+    target_adls_client_key: "{{ policy_definition['adlsClientKey'] }}"
+    target_adls_tenant_id: "{{ policy_definition['adlsTenantID'] }}"
+    target_cluster_identifier: "{{ policy_definition['targetClusterIdentifier'] }}"
+    hive_s3_external_table_base_directory: "{{ policy_definition['s3BucketPath'] }}"
+    hive_sentry_permissions: "{{ 'INCLUDE' if hive_replicate_sentry_policies else 'EXCLUDE' }}"
+    frequency_in_sec: "{{ policy_definition['frequencyInSec'] }}"
+    start_time: "{{ policy_definition['startTime'] }}"
+
+- debug:
+    var: hive_database_and_tables
+
+- debug:
+    var: replication_policy_name
+
+- include_role:
+    name: replication_manager/create_replication_policy

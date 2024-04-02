@@ -1,0 +1,17 @@
+---
+currentVersion:
+  - CDH6
+  - CDH5
+  - CDP_PVC_BASE
+
+inventoryTemplate:
+  file: inventory-template.ini
+  templateVar: predefined_host_groups
+hostGroups:
+  cloudera_manager: SOURCE::SERVER::HOST
+  cluster_only: SOURCE::CLUSTER::HOST
+  hbase_master: SOURCE::HBASE::MASTER
+  control_plane: TARGET::SERVER::HOST
+  target_cluster: TARGET::CLUSTER::HOST
+  target_yarn_resourcemanager: TARGET::YARN::RESOURCEMANAGER
+  pc_cloudera_manager: TARGET::CM::HOST

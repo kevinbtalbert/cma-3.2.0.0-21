@@ -1,0 +1,8 @@
+---
+dependencies:
+  - role: kinit
+    vars:
+      keytab: "{{ hdfs_service_keytab }}"
+      principal: "{{ hdfs_service_principal }}"
+      become_user: "{{ hdfs_user_name }}"
+      skip_kinit: false

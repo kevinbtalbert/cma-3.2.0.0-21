@@ -1,0 +1,11 @@
+---
+name: CDP PvC Base to CDP PVC
+transitionType: PRIVATE_CLOUD_MIGRATION
+sourceClusterType: CDP_PVC_BASE
+targetClusterType: CDP_PVC
+inventory: inventory-definition.yml
+vars: vars-definition.yml
+settings: settings-definition.yml
+sections:
+  check: sections/pvc-check.yml
+  transition: sections/pvc-transition.yml

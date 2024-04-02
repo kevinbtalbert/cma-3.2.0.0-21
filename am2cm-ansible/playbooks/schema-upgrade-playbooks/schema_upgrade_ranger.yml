@@ -1,0 +1,125 @@
+- name: Get Ranger admin hosts
+  tags: ranger-db-schema-upgrade
+  gather_facts: False
+  hosts: all
+  roles:
+    - {role: get_hostnames_where_role_group_is_located, role_group_filter: "RANGER_ADMIN"}
+
+- name: Distribute JDBC driver
+  tags: ranger-db-schema-upgrade
+  gather_facts: false
+  hosts: RANGER_ADMIN  # so all service hosts are eligible for running the DB upgrade on
+  roles:
+    - distribute_jdbc_drivers
+
+- name: Setup ranger db
+  tags: ranger-db-schema-upgrade
+  gather_facts: False
+  hosts: RANGER_ADMIN[0]
+  vars:
+    config_related_dict:
+      audit_store: "{{ ranger_audit_source_type }}"
+      ranger_admin_max_heap_size: "{{ ranger_admin_max_heap_size }}"
+  tasks:
+    - name: Query multiple Ranger configurations
+      include_role:
+        name: query_configuration_from_service
+      vars:
+        service_name: ranger
+        configuration_name: "{{ item }}"
+        configuration_type: "SERVICE"
+      loop:
+        - 'ranger_database_type'
+        - 'ranger_database_host'
+        - 'ranger_database_port'
+        - 'ranger_database_name'
+        - 'ranger_database_user'
+        - 'ranger_database_password'
+
+    - name: Set JDBC driver path according to database type
+      set_fact:
+        jdbc_driver_path: "{{ jdbc_remote_driver_directory }}/\
+        {{ lookup('vars', 'jdbc_driver_' + ranger_database_type + '_basename') }}.jar"
+
+    # workaround: regex_replace for postgresql is needed
+    # DB_FLAVOR in the install.properties is represented as 'POSTGRES' i.e. #DB_FLAVOR=MYSQL|ORACLE|POSTGRES|MSSQL|SQLA
+    - name: Create db_related_dict
+      set_fact:
+        db_related_dict:
+          db_root_user: "{{ ranger_db_root_user }}"
+          db_root_password: "{{ ranger_db_root_user_password }}"
+          db_user: " {{ ranger_database_user }}"
+          db_password: "{{ ranger_database_password }}"
+          db_host: "{{ ranger_database_host }}"
+          db_port: "{{ ranger_database_port }}"
+          db_name: "{{ ranger_database_name }}"
+          DB_FLAVOR: "{{ ranger_database_type | upper | regex_replace('POSTGRESQL','POSTGRES') }}"
+          SQL_CONNECTOR_JAR: "{{ jdbc_driver_path }}"
+
+    - name: Update the install.properties file with the appropriate Ranger properties
+      lineinfile:
+        path: "{{ ranger_home }}/install.properties"
+        line: "{{ item.key }}={{ item.value }}"
+        regexp: "^{{ item.key }}="
+      become: yes
+      loop: "{{ config_related_dict | combine(db_related_dict) | dict2items }}"
+
+    - name: Get java home for db_script
+      include_role:
+        name: get_java_home_of_current_host
+
+    - name: Create a db_script_runner_env environment dictionary
+      set_fact:
+        db_script_runner_env:
+          RANGER_ADMIN_HOME: "{{ ranger_home }}"
+          JAVA_HOME: "{{ java_home }}"
+
+    - name: Print all the values that are used for the DB connection (and were setup here)
+      debug:
+        msg: "{{ item.key }}={{ item.value }}"
+      loop: "{{ db_related_dict | combine(db_script_runner_env) | dict2items }}"
+
+    - name: Run the dba_script.py if db_user needs to be created
+      shell: |
+        {{ ansible_python_interpreter }} "{{ ranger_home }}"/dba_script.py -q
+      when: ranger_create_db_user
+      become: yes
+      register: dba_script_result
+      environment: "{{ db_script_runner_env }}"
+      changed_when:
+        - "'user ' + ranger_database_user + ' already exists for host' not in dba_script_result.stderr"
+        - "'Database ' + ranger_database_name + ' already exists' not in dba_script_result.stderr"
+
+    - name: Determine to Run DB upgrade via CM command or not
+      set_fact:
+        run_db_upgrade_via_cm_command: "{{ am2cm_target_version is version('7.1.7.1000', operator='>=') and \
+         am2cm_target_version is version('7.1.9', operator='<=') }}"
+    - debug:
+        var: run_db_upgrade_via_cm_command
+
+    - name: DB upgrade without CM command
+      block:
+        - name: Run the db_setup.py to apply the patches
+          shell: |
+            {{ ansible_python_interpreter }} "{{ ranger_home }}"/db_setup.py
+          register: db_setup_result
+          become: yes
+          environment: "{{ db_script_runner_env }}"
+          changed_when: '"DB_PATCHES have already been applied" not in db_setup_result.stderr'
+
+        - name: Run the db_setup.py to apply the javapatches
+          shell: |
+            python2.7 "{{ ranger_home }}"/db_setup.py -javapatch
+          register: db_setup_javapatches_result
+          become: yes
+          environment: "{{ db_script_runner_env }}"
+          changed_when: '"JAVA_PATCHES have already been applied" not in db_setup_javapatches_result.stderr'
+      when: not run_db_upgrade_via_cm_command
+
+    - name: DB upgrade with CM command
+      include_role:
+        name: run_service_command
+      vars:
+        service_name: ranger
+        command: UpgradeDatabase
+      when: run_db_upgrade_via_cm_command

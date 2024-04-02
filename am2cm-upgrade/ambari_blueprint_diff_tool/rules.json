@@ -1,0 +1,8 @@
+{
+  "ignore_configs": ["this-config-will-be-ignored"],
+  "ignore_config_properties": {
+    "all_configs": ["hive.metastore.uris"],
+    "config_name": ["property_name_to_be_ignored", "other_to_be_ignored"],
+    "other_config_name": ["property_name_to_be_ignored"]
+  }
+}

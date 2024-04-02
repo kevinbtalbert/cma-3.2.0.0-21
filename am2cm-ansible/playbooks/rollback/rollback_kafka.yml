@@ -1,0 +1,26 @@
+---
+- name: Rollback Kafka
+  hosts: ambari_server
+  gather_facts: False
+  tags: kafka-rollback
+  vars:
+    service_name: kafka
+  roles:
+    - prepare_to_rollback_service
+  tasks:
+    # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3_rollback_hdp3_kafka_7.1.7.html
+    - name: Remove config values
+      command: >-
+        python /var/lib/ambari-server/resources/scripts/configs.py
+        -u {{ ambari_username }} -p {{ ambari_password }}
+        -s {{ ambari_protocol }} -l {{ inventory_hostname }} -t {{ ambari_port }} -n {{ ambari_cluster_name }}
+        -c 'kafka-broker'
+        -a delete
+        -k '{{ item }}'
+      loop:
+        - "inter.broker.protocol.version"
+        - "log.message.format.version"
+
+    - name: Start Kafka in Ambari
+      include_role:
+        name: start_hdp_service

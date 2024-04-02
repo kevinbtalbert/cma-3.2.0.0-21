@@ -1,0 +1,141 @@
+---
+# 1. Create a config backup of /etc/hadoop/conf on all HDFS hosts...
+- hosts: hdfs_all_hosts
+  tags: hdfs-backup, hdfs-config-backup
+  gather_facts: False
+  vars:
+    service_name: hdfs
+    keytab: "{{ hdfs_service_keytab }}"
+    principal: "{{ hdfs_service_principal }}"
+    become_user: "{{ hdfs_user_name }}"
+    skip_kinit: False
+  tasks:
+    - include_role:
+        name: prepare_to_backup_service
+      vars:
+        skip_service_stop: true
+
+    - name: Backup HDFS configs folder
+      archive:
+        path: "{{ hdfs_conf_dir }}"
+        dest: "{{ service_backup_dir }}/{{ hdfs_config_backup_gz_file }}"
+        format: gz
+
+# 2. Removing old internal backup directory if it is still exists on NameNodes...
+- hosts: hdfs_namenodes
+  tags: hdfs-backup, hdfs-delete-old-internal-backups
+  gather_facts: False
+  become: yes
+  become_user: "{{ hdfs_user_name }}"
+  tasks:
+    - name: Remove old internal backup directory
+      file:
+        path: "{{ hdfs_namenode_dir }}/previous"
+        state: absent
+
+- hosts: hdfs_active_namenode
+  tags: hdfs-backup, fsck-backup
+  gather_facts: False
+  become: yes
+  become_user: "{{ hdfs_user_name }}"
+  vars:
+    hdfs_fs_path: "hdfs://{{ inventory_hostname }}:{{ hdfs_namenode_port }}"
+  tasks:
+    - debug:
+        var: hdfs_fs_path
+
+    - set_fact:
+        old_fsck_out_file: "{{ service_backup_dir }}/{{ hdfs_fsck_out_file }}"
+        old_fsck_out_gz_file: "{{ service_backup_dir }}/{{ hdfs_fsck_out_gz_file }}"
+        old_dfsadmin_report_file: "{{ service_backup_dir }}/{{ hdfs_dfsadmin_report_file }}"
+        old_lslr_out_file: "{{ service_backup_dir }}/{{ hdfs_lslr_out_file }}"
+        old_lslr_out_gz_file: "{{ service_backup_dir }}/{{ hdfs_lslr_out_gz_file }}"
+
+    # 3. Saving fsck output
+    - name: Saving fsck output
+      shell: "hdfs fsck / -files -blocks -locations > {{ old_fsck_out_file }}"
+
+    - name: Compress fsck output
+      archive:
+        path: "{{ old_fsck_out_file }}"
+        dest: "{{ old_fsck_out_gz_file }}"
+        format: gz
+
+    - name: Delete fsck output
+      file:
+        path: "{{ old_fsck_out_file }}"
+        state: absent
+
+    # Save datanode report
+    - name: Saving dfsadmin report
+      shell: "hdfs dfsadmin -report > {{ old_dfsadmin_report_file }}"
+
+    # Save ls -R
+    - name: Save ls -R output
+      shell: "hdfs dfs -ls -R / > {{ old_lslr_out_file }}"
+
+    - name: Compress ls -R output
+      archive:
+        path: "{{ old_lslr_out_file }}"
+        dest: "{{ old_lslr_out_gz_file }}"
+        format: gz
+
+    - name: Delete ls -R output
+      file:
+        path: "{{ old_lslr_out_file }}"
+        state: absent
+
+    # Save namespace
+    - name: Enter Safe Mode for HDFS
+      shell: "hdfs dfsadmin -fs {{ hdfs_fs_path }} -safemode enter"
+      changed_when: false
+
+    - name: Save HDFS Namespace
+      shell: "hdfs dfsadmin -fs {{ hdfs_fs_path }} -saveNamespace"
+      changed_when: false
+
+# Backup NN
+- hosts: hdfs_namenodes
+  tags: hdfs-backup, nn-backup
+  gather_facts: False
+  become: yes
+  become_user: "{{ hdfs_user_name }}"
+  tasks:
+    - name: Backup NameNode
+      archive:
+        path: "{{ hdfs_namenode_dir }}/current"
+        dest: "{{ service_backup_dir }}/{{ hdfs_nn_backup_tar_gz_file }}"
+        format: gz
+
+# Backup JN
+- hosts: hdfs_journalnodes
+  tags: hdfs-backup, jn-backup
+  gather_facts: False
+  become: yes
+  become_user: "{{ hdfs_user_name }}"
+  tasks:
+    - name: Backup JournalNodes
+      archive:
+        path: "{{ hdfs_journalnode_dir }}/{{ item }}"
+        dest: "{{ service_backup_dir }}/{{ hdfs_jn_backup_tar_gz_file }}"
+        format: gz
+      with_items: "{{ hdfs_nameservice_id.split(',') | map('trim') }}"
+      when: hdfs_is_ha
+
+# Leave safe mode
+- hosts: hdfs_active_namenode
+  tags: hdfs-backup, leave-safe-mode
+  gather_facts: False
+  vars:
+    service_name: hdfs
+  tasks:
+
+    - name: Leave safe mode
+      shell: 'hdfs dfsadmin -safemode leave'
+      become: yes
+      become_user: "{{ hdfs_user_name }}"
+      changed_when: false
+
+    - name: "Stop HDFS service in Ambari"
+      include_role:
+        name: stop_hdp_service

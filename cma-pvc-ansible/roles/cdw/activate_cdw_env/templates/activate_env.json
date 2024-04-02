@@ -1,0 +1,9 @@
+{
+  "clusterName": "{{ environment_name }}",
+  {% if pvc_type == 'OC' %}"storageClassName": "{{ local_block_storage_class }}",{% endif %}
+  "enableLowResourceMode": {{ low_resource_mode | default('true') }},
+  "delegationUserName": "{{ delegation_username }}",
+  "delegationUserPassword": "{{ delegation_password }}",
+  "skipValidation":{{ skip_validation | default('true') }},
+  "envBootstrap":{"awsInfo":{},"azureInfo":{}}
+}

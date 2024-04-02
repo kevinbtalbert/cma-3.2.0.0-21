@@ -1,0 +1,64 @@
+- block:
+    - name: Expected state of reduction
+      debug:
+        msg: "{{ toggle_redaction_to }}"
+
+    - name: Set CM server variable
+      set_fact:
+        cm_server: "{{ groups['server'][0] if 'server' in groups else groups['cloudera_manager'][0] }}"
+
+    - name: Query current redaction state
+      shell: "grep -q \"export CMF_JAVA_OPTS=.*-Dcom.cloudera.api.redaction=false\" {{ cloudera_scm_file_path }}"
+      register: redaction_grep
+      delegate_to: "{{ cm_server }}"
+      failed_when: redaction_grep.rc > 1
+      changed_when: False
+
+    - name: Is redaction currently on?
+      debug:
+        msg: "{{ (redaction_grep.rc | bool) }}"
+
+    - name: Modify {{ cloudera_scm_file_path }} if needs be
+      block:
+        - name: Turn redaction on
+          replace:
+            path: "{{ cloudera_scm_file_path }}"
+            regexp: " -Dcom.cloudera.api.redaction=false"
+            replace: ""
+          register: toggle_output_redaction_on
+          when: redaction_grep.rc == 0 and toggle_redaction_to == true
+        - name: Turn redaction off
+          replace:
+            path: "{{ cloudera_scm_file_path }}"
+            regexp: '(export CMF_JAVA_OPTS=".*)"'
+            replace: '\1 -Dcom.cloudera.api.redaction=false"'
+          register: toggle_output_redaction_off
+          when: redaction_grep.rc == 1 and toggle_redaction_to == false
+      delegate_to: "{{ cm_server }}"
+      become: yes
+
+    - block:
+        - name: Restart Cloudera Manager Server
+          service:
+            name: cloudera-scm-server
+            state: restarted
+          delegate_to: "{{ cm_server }}"
+          become: yes
+
+        - name: Wait for Cloudera Manager Server to be available before continuing # wait for 30 * 10 seconds = 5 minutes
+          uri:
+            url: "{{ cloudera_manager_protocol }}://{{ cm_server }}:{{ cloudera_manager_port }}"
+            method: GET
+            validate_certs: false
+          register: _result
+          until: _result.status == 200
+          delay: 10
+          retries: 30
+          delegate_to: localhost
+
+        - name: Wait for all agents to be ready
+          wait_for_cm_agent_readiness:
+            cm_configuration: "{{ cm_configuration_dictionary }}"
+          delegate_to: localhost
+      when: toggle_output_redaction_on.changed or toggle_output_redaction_off.changed
+  run_once: True

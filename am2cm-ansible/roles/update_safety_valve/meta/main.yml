@@ -1,0 +1,4 @@
+dependencies:
+  - role: toggle_redaction
+    vars:
+      toggle_redaction_to: false

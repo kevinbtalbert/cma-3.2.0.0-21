@@ -1,0 +1,66 @@
+---
+- name: Set Ranger keyadmin password
+  import_playbook: set_keyadmin_password.yml
+  when: am2cm_source_version == "HDP2"
+
+- name: Ranger KMS post migration
+  hosts: localhost
+  tags: ranger-kms-post-migration
+  gather_facts: False
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  roles:
+    - { role: query_configuration_from_service, service_name: ranger_kms, configuration_name: kerberos_princ_name,
+        configuration_type: SERVICE}
+    - { role: query_configuration_from_service, service_name: ranger, configuration_name: load_balancer_url,
+        configuration_type: SERVICE }
+    - { role: query_configuration_from_service, service_name: ranger, configuration_name: keyadmin_user_password,
+          configuration_type: SERVICE }
+  vars:
+    kms_name_query: "services[?name=='{{ ambari_cluster_name }}_kms']"
+    policy_val_query: "{{ kms_name_query }}.configs.\"policy.download.auth.users\""
+    service_id_query: "{{ kms_name_query }}.id"
+  tasks:
+    - block:
+      - name: Get all ranger services, including ranger kms
+        uri:
+          url: "{{ load_balancer_url }}/service/plugins/services/"
+        register: response
+      - name: Update 'policy.download.auth.users' with KMS princ name if needed
+        block:
+          - name: Get epoch for update time in milliseconds
+            shell:
+              date +%s%3N
+            register: updateEpochMilliseconds
+          - name: Write KMS principal name into 'policy.download.auth.users' if it's not there yet
+            uri:
+              url: "{{ load_balancer_url }}/service/plugins/services/\
+              {{ response.json | json_query(service_id_query) | first }}"
+              method: PUT
+              body_format: json
+              body: "{{ response.json | community.general.json_query(kms_name_query)
+                | combine(updated_config, recursive=True)
+                | combine({'updateTime': updateEpochMilliseconds.stdout | int}) }}"
+            vars:
+              updated_config:
+                configs: # concatenate correct KMS principal name to policy authorization list
+                  policy.download.auth.users: "{{ policy_original_value }},{{ kerberos_princ_name }}"
+        vars:
+          policy_original_value: "{{ response.json | community.general.json_query(policy_val_query) | first }}"
+        when:
+          - policy_original_value is not regex("^"+kerberos_princ_name+"$")
+          - policy_original_value is not regex("^"+kerberos_princ_name+",")
+          - policy_original_value is not regex(","+kerberos_princ_name+"$")
+          - policy_original_value is not regex(","+kerberos_princ_name+",")
+      module_defaults:
+        uri:
+          user: keyadmin
+          password: "{{ keyadmin_user_password }}"
+          validate_certs: no
+          force_basic_auth: yes
+    - name: Restart service
+      include_role:
+        name: restart_service
+      vars:
+        service_name: ranger_kms

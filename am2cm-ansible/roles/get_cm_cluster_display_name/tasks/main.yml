@@ -1,0 +1,12 @@
+- name: Get CM cluster display_name if not defined
+  block:
+    - name: Get CM cluster display_name
+      get_cluster_display_name:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+      run_once: True
+      register: command_out
+
+    - name: Assign display_name value to cm_cluster_display_name
+      set_fact:
+        cm_cluster_display_name: "{{ command_out.message }}"
+  when: cm_cluster_display_name is not defined

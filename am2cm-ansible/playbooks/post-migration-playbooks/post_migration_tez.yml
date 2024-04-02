@@ -1,0 +1,14 @@
+- name: TEZ post AM2CM migration
+  tags: tez-post-migration
+  hosts: localhost
+  gather_facts: False
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  roles: # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp/topics/amb-tez.html
+    - { role: run_service_command, service_name: "tez", command: "TezUploadTar" }
+  tasks:
+    - name: Deploy Client Configurations for TEZ # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp/topics/amb-tez.html
+      deploy_service_client_configuration:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        service_name: "tez"

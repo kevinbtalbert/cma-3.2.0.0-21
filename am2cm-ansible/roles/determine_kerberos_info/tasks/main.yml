@@ -1,0 +1,15 @@
+- name: Determine Kerberos Info
+  block:
+    - name: Obtain Kerberos Information to check if enabled or not
+      uri:
+        url: "{{ cloudera_manager_protocol }}://{{ groups['server'][0] }}:{{ cloudera_manager_port }}/api/{{ cloudera_manager_api_version }}/cm/kerberosInfo"
+        return_content: yes
+        user: "{{ cloudera_manager_admin_username }}"
+        password: "{{ cloudera_manager_admin_password }}"
+        validate_certs: no
+      register: response
+    - name: Register response in kerberos_value variable
+      set_fact:
+        kerberos_value: "{{ response['content'] | from_json | json_query('kerberized') | bool }}"
+  run_once: True
+  delegate_to: localhost

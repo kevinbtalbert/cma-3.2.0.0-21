@@ -1,0 +1,13 @@
+---
+# recommended way of usage:
+# ansible-playbook -i inventories/<inventory>.ini query_configuration_from_service.yml --extra-vars "service_name=<service name>
+#  configuration_name=<configuration name>"
+- hosts: all
+  vars:
+    service_name: "hdfs" # recommended to be set by using --extra-vars
+    configuration_name: "dfs_balancer_get_blocks_size" # recommended to be set by using --extra-vars
+    configuration_type: "ROLE" # recommended to be set by using --extra-vars
+    role_name_filter: "hdfs-BALANCER" # recommended to be set by using --extra-vars
+  gather_facts: False
+  roles:
+    - role: query_configuration_from_service

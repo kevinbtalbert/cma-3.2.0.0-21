@@ -1,0 +1,113 @@
+---
+commandType: HIVE_WF_SCAN
+sourceType: CDH6
+version: 1
+uiFieldTypes:
+  textlist:
+    type: textlist
+    size: 430
+userSettings:
+  - serviceName: HIVE
+    settings:
+      "hive3parser_inputs":
+        uiField:
+          label: "Hive Query Parser Input"
+          type: textlist
+uiFieldGroups:
+  1:
+    - hive3parser_inputs
+
+---
+commandType: OOZIE_WF_SCAN
+sourceType: CDH6
+version: 1
+uiFieldTypes:
+  number-positive:
+    type: number-positive
+    size: 430
+userSettings:
+  - serviceName: OOZIE
+    settings:
+      "oozie_export_latest_days":
+        uiField:
+          label: "Number of latest days to scan"
+          type: number-positive
+uiFieldGroups:
+  1:
+    - oozie_export_latest_days
+
+---
+commandType: HIVE_WF_SCAN
+sourceType: CDH5
+version: 1
+uiFieldTypes:
+  textlist:
+    type: textlist
+    size: 430
+userSettings:
+  - serviceName: HIVE
+    settings:
+      "hive3parser_inputs":
+        uiField:
+          label: "Hive Query Parser Input"
+          type: textlist
+uiFieldGroups:
+  1:
+    - hive3parser_inputs
+
+---
+commandType: OOZIE_WF_SCAN
+sourceType: CDH5
+version: 1
+uiFieldTypes:
+  number-positive:
+    type: number-positive
+    size: 430
+userSettings:
+  - serviceName: OOZIE
+    settings:
+      "oozie_export_latest_days":
+        uiField:
+          label: "Number of latest days to scan"
+          type: number-positive
+uiFieldGroups:
+  1:
+    - oozie_export_latest_days
+
+---
+commandType: HIVE_WF_SCAN
+sourceType: CDP_PVC_BASE
+version: 1
+uiFieldTypes:
+  textlist:
+    type: textlist
+    size: 430
+userSettings:
+  - serviceName: HIVE
+    settings:
+      "hive3parser_inputs":
+        uiField:
+          label: "Hive Query Parser Input"
+          type: textlist
+uiFieldGroups:
+  1:
+    - hive3parser_inputs
+
+---
+commandType: OOZIE_WF_SCAN
+sourceType: CDP_PVC_BASE
+version: 1
+uiFieldTypes:
+  number-positive:
+    type: number-positive
+    size: 430
+userSettings:
+  - serviceName: OOZIE
+    settings:
+      "oozie_export_latest_days":
+        uiField:
+          label: "Number of latest days to scan"
+          type: number-positive
+uiFieldGroups:
+  1:
+    - oozie_export_latest_days

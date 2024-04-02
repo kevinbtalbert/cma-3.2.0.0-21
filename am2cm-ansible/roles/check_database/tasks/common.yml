@@ -1,0 +1,18 @@
+- name: Get DB version
+  command: "{{ customer_database_type }} --version"
+  changed_when: false
+  register: database_version
+
+- name: Display DB version
+  debug:
+    msg: "{{ database_version['stdout'] }}"
+
+- set_fact:
+    result: true
+  when: (item.family.lower() in database_version['stdout'].lower()) and (item.version in database_version['stdout'])
+  with_items: "{{ support_matrix['json']['databases'] }}"
+
+- assert:
+    that: result | default(false) is true
+    fail_msg: "Unsupported database version"
+    success_msg: "Supported database version"

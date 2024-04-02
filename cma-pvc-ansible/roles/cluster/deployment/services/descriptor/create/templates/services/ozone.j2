@@ -1,0 +1,17 @@
+services: [OZONE]
+configs:
+  OZONE:
+    SERVICEWIDE:
+      hdfs_service: "None"
+      ranger_service: "None"
+
+      ozone.service.id: "{{ ozone_service_id }}"
+      ozone.scm.primordial.node.id: "{{ ozone_manager_scm_hosts.split(',')[0] }}"
+
+roles:
+  OZONE:
+    S3_GATEWAY: {{ ozone_s3_gateway_recon_hosts }}
+    OZONE_RECON: {{ ozone_s3_gateway_recon_hosts }}
+    OZONE_MANAGER: {{ ozone_manager_scm_hosts }}
+    STORAGE_CONTAINER_MANAGER: {{ ozone_manager_scm_hosts }}
+    OZONE_DATANODE: {{ ozone_datanode_hosts }}

@@ -1,0 +1,26 @@
+- name: HDFS Schema Upgrade
+  tags: hdfs-schema-rolling-upgrade, never
+  gather_facts: False
+  hosts: hdfs_active_namenode
+  become: yes
+  become_user: "{{ hdfs_user_name }}"
+  tasks:
+    - name: Run kinit if necessary
+      include_role:
+        name: kinit
+      vars:
+        keytab: "{{ hdfs_service_keytab }}"
+        principal: "{{ hdfs_service_principal }}"
+        skip_kinit: False
+
+    - name: Run hdfs upgrade prepare
+      shell: 'hdfs dfsadmin -fs hdfs://{{ inventory_hostname }}:8020 -rollingUpgrade prepare'
+      changed_when: false
+
+    - name: Run hdfs upgrade query (poll in every 20 seconds for 5 minutes)
+      shell: 'hdfs dfsadmin -fs hdfs://{{ inventory_hostname }}:8020 -rollingUpgrade query'
+      register: result
+      until: result.stdout.find("Proceed with rolling upgrade:") != -1
+      retries: 15
+      delay: 20
+      changed_when: false

@@ -1,0 +1,70 @@
+# Copyright 2023 Cloudera, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+- name: Install Solr Service
+  vars:
+    services_to_install: ["solr"]
+  import_playbook: install_services.yml
+  tags:
+    - solr-install
+
+- name: Install Ranger Service
+  vars:
+    services_to_install: ["ranger"]
+  import_playbook: install_services.yml
+  tags:
+    - ranger-install
+
+- name: Install Hbase Service
+  vars:
+    services_to_install: ["hbase"]
+  import_playbook: install_services.yml
+  tags:
+    - hbase-install
+
+- name: Install Kafka Service
+  vars:
+    services_to_install: ["kafka"]
+  import_playbook: install_services.yml
+  tags:
+    - kafka-install
+
+- name: Install Atlas Service
+  vars:
+    services_to_install: ["atlas"]
+  import_playbook: install_services.yml
+  tags:
+    - atlas-install
+
+- name: Install Hive Service
+  vars:
+    services_to_install: ["hive"]
+  import_playbook: install_services.yml
+  tags:
+    - hive-install
+
+- name: Install Ozone Service
+  vars:
+    services_to_install: ["ozone"]
+  import_playbook: install_services.yml
+  tags:
+    - ozone-install
+
+- name: Install Yarn Service
+  vars:
+    services_to_install: ["yarn"]
+  import_playbook: install_services.yml
+  tags:
+    - yarn-install

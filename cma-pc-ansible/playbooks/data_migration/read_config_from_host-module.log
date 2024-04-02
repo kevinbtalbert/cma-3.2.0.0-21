@@ -1,0 +1,15 @@
+2024-03-26 03:39:32,265 - INFO - [read_config_from_host.py:32 - run_module]: inputs: {"cm_configuration": {"cloudera_manager_hostname": "cdp.52.4.109.73.nip.io", "cloudera_manager_protocol": "http", "cloudera_manager_port": 7180, "cloudera_manager_admin_username": "admin", "cloudera_manager_admin_password": "Supersecret1", "cluster_name": "OneNodeCluster"}, "host_name": "cdp.52.4.109.73.nip.io", "configuration_name": "java_home"}
+2024-03-26 03:39:32,378 - INFO - [cdp_cluster.py:79 - _determine_api_version]: API version: v45
+2024-03-26 03:39:32,380 - INFO - [cdp_cluster.py:54 - _set_configuration]: Input API version: 45
+2024-03-26 03:39:32,381 - INFO - [cdp_cluster.py:55 - _set_configuration]: Max supported API version by cm_client: 45
+2024-03-26 03:39:32,381 - INFO - [cdp_cluster.py:58 - _set_configuration]: Selected API version: v45
+2024-03-26 21:15:28,166 - INFO - [read_config_from_host.py:32 - run_module]: inputs: {"cm_configuration": {"cloudera_manager_hostname": "cdp.52.4.109.73.nip.io", "cloudera_manager_protocol": "http", "cloudera_manager_port": 7180, "cloudera_manager_admin_username": "admin", "cloudera_manager_admin_password": "Supersecret1", "cluster_name": "OneNodeCluster"}, "host_name": "cdp.52.4.109.73.nip.io", "configuration_name": "java_home"}
+2024-03-26 21:15:28,274 - INFO - [cdp_cluster.py:79 - _determine_api_version]: API version: v45
+2024-03-26 21:15:28,276 - INFO - [cdp_cluster.py:54 - _set_configuration]: Input API version: 45
+2024-03-26 21:15:28,277 - INFO - [cdp_cluster.py:55 - _set_configuration]: Max supported API version by cm_client: 45
+2024-03-26 21:15:28,277 - INFO - [cdp_cluster.py:58 - _set_configuration]: Selected API version: v45
+2024-03-29 19:50:30,587 - INFO - [read_config_from_host.py:32 - run_module]: inputs: {"cm_configuration": {"cloudera_manager_hostname": "cdp.52.4.109.73.nip.io", "cloudera_manager_protocol": "http", "cloudera_manager_port": 7180, "cloudera_manager_admin_username": "admin", "cloudera_manager_admin_password": "Supersecret1", "cluster_name": "OneNodeCluster"}, "host_name": "cdp.52.4.109.73.nip.io", "configuration_name": "java_home"}
+2024-03-29 19:50:30,681 - INFO - [cdp_cluster.py:79 - _determine_api_version]: API version: v45
+2024-03-29 19:50:30,683 - INFO - [cdp_cluster.py:54 - _set_configuration]: Input API version: 45
+2024-03-29 19:50:30,684 - INFO - [cdp_cluster.py:55 - _set_configuration]: Max supported API version by cm_client: 45
+2024-03-29 19:50:30,684 - INFO - [cdp_cluster.py:58 - _set_configuration]: Selected API version: v45

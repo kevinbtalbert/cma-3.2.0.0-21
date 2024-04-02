@@ -1,0 +1,2 @@
+- import_playbook: finalize_hdfs.yml
+- import_playbook: hdp_bits_cleanup.yml

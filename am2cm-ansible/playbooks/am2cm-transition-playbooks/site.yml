@@ -1,0 +1,5 @@
+- import_playbook: config_transition.yml
+- import_playbook: distribute_parcels.yml
+- import_playbook: enable_kerberos.yml
+- import_playbook: enable_tls.yml
+- import_playbook: apply_csd.yml

@@ -1,0 +1,4 @@
+- name: "Backup Oracle"
+  command: "exp userid={{ database_username }}/{{ database_password }} owner={{ database_username }} log={{ backup_name }}.log file={{ backup_name }}.sql statistics=none"
+  changed_when: False
+

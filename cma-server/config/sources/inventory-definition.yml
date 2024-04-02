@@ -1,0 +1,21 @@
+---
+currentVersion:
+  - CDH6
+  - CDH5
+  - CDP_PVC_BASE
+inventoryTemplate:
+  file: inventory-template.ini
+  templateVar: predefined_source_host_groups
+hostGroups:
+  cloudera_manager: SOURCE::SERVER::HOST
+  hbase_master: SOURCE::HBASE::MASTER
+  oozie_server: SOURCE::OOZIE::OOZIE_SERVER
+
+---
+currentVersion:
+  - HDP2
+  - HDP3
+inventoryTemplate:
+  file: inventory-template.ini
+  templateVar: predefined_source_host_groups
+hostGroups:

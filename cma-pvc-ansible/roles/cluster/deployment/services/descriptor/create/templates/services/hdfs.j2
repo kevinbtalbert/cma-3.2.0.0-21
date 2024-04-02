@@ -1,0 +1,27 @@
+services: [HDFS]
+configs:
+  HDFS:
+    SERVICEWIDE:
+      core_connector: "{{ core_connector_name }}"
+      zookeeper_service: "{{ zookeeper_service_name }}"
+
+      dfs_encrypt_data_transfer_algorithm: "AES/CTR/NoPadding"
+      hdfs_canary_health_enabled: false
+
+    NAMENODE:
+      dfs_name_dir_list: "{{ hdfs_name_dir }}"
+
+    SECONDARYNAMENODE:
+      fs_checkpoint_dir_list: "{{ hdfs_checkpoint_dir }}"
+
+    DATANODE:
+      dfs_data_dir_list: "{{ hdfs_data_dir }}"
+
+    GATEWAY:
+      dfs_client_use_trash: true
+
+roles:
+  HDFS:
+     NAMENODE: {{ hdfs_name_node_hosts }}
+     SECONDARYNAMENODE: {{ hdfs_secondary_name_node_hosts }}
+     DATANODE: {{ hdfs_data_node_hosts }}

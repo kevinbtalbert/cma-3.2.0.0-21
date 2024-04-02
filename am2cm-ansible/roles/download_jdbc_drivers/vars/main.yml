@@ -1,0 +1,2 @@
+jdbc_driver_url: "{{ lookup('vars', 'jdbc_driver_' + database_type + '_url') }}"
+jdbc_driver_basename: "{{ lookup('vars', 'jdbc_driver_' + database_type + '_basename') }}"

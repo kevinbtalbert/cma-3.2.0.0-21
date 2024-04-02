@@ -1,0 +1,6 @@
+dependencies:
+  - role: calculate_timeout
+    vars:
+      command_type: "restart_service"
+  - role: stop_all_hdp_services
+    when: skip_stopping_hdp_services is undefined

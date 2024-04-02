@@ -1,0 +1,116 @@
+---
+- name: Accumulo post migration steps - Change accumulo root user name from base64 encoded to plain
+  tags:
+  - accumulo-post-migration
+  - accumulo-update-root-user-name
+  hosts: localhost
+  gather_facts: False
+  tasks:
+    - name: Getting accumulo instance id
+      znode:
+        hosts: "{{ groups['backup_zookeeper'][0] }}"
+        name: "/accumulo/instances/{{ accumulo_instance_name }}"
+        op: get
+      register: accumulo_instance_id
+
+    - name: Print accumulo instance id value
+      debug: msg={{ accumulo_instance_id['value'] }}
+
+    - name: Change accumulo root user name
+      znode:
+        hosts: "{{ groups['backup_zookeeper'][0] }}"
+        name: "/accumulo/{{ accumulo_instance_id['value'] }}/users"
+        value: "accumulo@{{ kerberos_realm_name }}"
+        state: present
+
+
+- name: Accumulo post migration steps - Generate Accumulo Kerberos credentials used in source cluster
+  tags: accumulo-post-migration
+  hosts: localhost
+  gather_facts: False
+  roles:
+    - { role: generate_kerberos_credential, principal_name: "accumulo@{{ kerberos_realm_name }}" }
+
+
+- name: Accumulo post migration steps - Deploy Accumulo Config
+  tags:
+  - accumulo-post-migration
+  - deploy-accumulo-config
+  hosts: localhost
+  gather_facts: false
+  roles:
+    - { role: run_service_command, service_name: "accumulo_on_cdp", command: "deployClientConfig" }
+
+
+- name: Accumulo post migration steps - Restart Accumulo
+  tags:
+  - accumulo-post-migration
+  - restart-accumulo
+  hosts: localhost
+  gather_facts: false
+  roles:
+    - { role: restart_service, service_name: "accumulo_on_cdp" }
+  ignore_errors: true
+
+
+- name: Accumulo post migration steps - Give all table permissions to 'trace' table for accumulo users
+  tags:
+  - accumulo-post-migration
+  - accumulo-trace-permission
+  hosts: server
+  gather_facts: False
+  tasks:
+    - name: Set Accumulo root principal
+      set_fact:
+        accumulo_root_principal: "accumulo@{{ kerberos_realm_name }}"
+
+    - name: Determine api version
+      include_role:
+        name: determine_api_version
+
+    - name: Get All Kerberos Principals
+      uri:
+        url: "{{ cloudera_manager_protocol }}://{{ groups['server'][0] }}:{{ cloudera_manager_port }}/api/{{ cloudera_manager_api_version }}/cm/kerberosPrincipals"
+        headers:
+          Content-Type: "application/json"
+        body_format: "json"
+        status_code: 200, 201
+        method: GET
+        user: "{{ cloudera_manager_admin_username }}"
+        password: "{{ cloudera_manager_admin_password }}"
+        validate_certs: no
+      register: response
+
+    - name: Filter Accumulo Kerberos Principals
+      set_fact:
+        accumulo_principals: "{{ accumulo_principals | default([]) + [item] }}"
+      when: item.startswith('accumulo/')
+      loop: "{{ response['json']['items'] }}"
+
+    - name: Print Accumulo Kerberos Principals
+      debug:
+        msg: "Accumulo Kerberos Principals: {{ accumulo_principals }}"
+
+    - name: Download Accumulo Keytab for Root User
+      vars:
+        principal_name: "{{ accumulo_root_principal }}"
+      include_role:
+        name: get_cm_service_keytab
+
+    - name: Add accumulo users
+      shell: |
+        kinit -kt {{ cm_service_keytab_filename }} {{ accumulo_root_principal }}
+        accumulo shell -e "createuser {{ item }}"
+      loop: "{{ accumulo_principals }}"
+      ignore_errors: true
+
+    - name: Add permissions to 'trace' table
+      shell: |
+        kinit -kt {{ cm_service_keytab_filename }} {{ accumulo_root_principal }}
+        accumulo shell -e "grant Table.READ -t trace -u {{ item }}"
+        accumulo shell -e "grant Table.WRITE -t trace -u {{ item }}"
+        accumulo shell -e "grant Table.BULK_IMPORT -t trace -u {{ item }}"
+        accumulo shell -e "grant Table.ALTER_TABLE -t trace -u {{ item }}"
+        accumulo shell -e "grant Table.GRANT -t trace -u {{ item }}"
+        accumulo shell -e "grant Table.DROP_TABLE -t trace -u {{ item }}"
+      loop: "{{ accumulo_principals }}"

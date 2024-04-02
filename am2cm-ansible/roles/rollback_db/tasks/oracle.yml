@@ -1,0 +1,31 @@
+- name: "Rollback Oracle - step 1"
+  ansible.builtin.file:
+    path: del_tbl_cmd.sql
+    state: absent
+
+- name: "Rollback Oracle - step 2"
+  command: "sqlplus -s {{ database_username }}/{{ database_password }} << EOF 
+        			spool on
+        			spool del_tbl_cmd.sql
+        			SELECT 'DROP TABLE \"' || TABLE_NAME || '\" CASCADE CONSTRAINTS;' FROM user_tables
+        			union ALL
+        			select 'drop '||object_type||' '|| object_name || ';' from user_objects 
+        			where object_type in ('VIEW','PACKAGE','SEQUENCE', 'PROCEDURE', 'FUNCTION')
+        			union ALL
+        			SELECT 'drop '
+        			||object_type
+        			||' '
+        			|| object_name
+        			|| ' force;'
+        			FROM user_objects
+        			WHERE object_type IN ('TYPE');
+        			spool off
+        			@del_tbl_cmd.sql
+        			exit;   
+                             EOF"
+  changed_when: False
+
+- name: "Rollback Oracle - step 3"
+  command: "imp {{ database_username }}/{{ database_password }} file={{ backup_name }}.sql log={{ backup_name }}.log fromuser={{ database_username }}"
+  changed_when: False
+

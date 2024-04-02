@@ -1,0 +1,458 @@
+---
+type: PRIVATE_CLOUD_MIGRATION
+sourceClusterType: CDP_PVC_BASE
+targetClusterType: CDP_PVC
+version: 1
+uiFieldTypes:
+  text:
+    type: text
+    size: 200
+  password:
+    type: password
+    size: 200
+  combo:
+    type: combo
+    size: 200
+  checkbox:
+    type: checkbox
+    size: 200
+  url-text:
+    type: text
+    size: 430
+  edit-text:
+    type: edit-text
+    size: 200
+  file-content:
+    type: text
+    size: 430
+  repo-url-text:
+    type: edit-text
+    size: 350
+  target-full-version-text:
+    type: edit-text
+    size: 300
+  service-toggle:
+    type: service-toggle
+    size: 200
+  disabled-text:
+    type: text
+    size: 200
+    editable: false
+userSettings:
+  - settings:
+      "cluster.name":
+        value: ${targetClusterVars['id']}
+        uiField:
+          label: "Cluster name"
+          type: disabled-text
+      "cluster.displayname":
+        value: ${targetClusterVars['id']}
+        uiField:
+          label: "Cluster display name"
+          type: text
+      "source.cluster.name":
+        value: ${sourceClusterVars['id']}
+        uiField:
+          label: "Source cluster name"
+          type: text
+      "cluster.originating_source":
+        value: "AM2CM version 2.6"
+        uiField:
+          label: "Originating Source"
+          type: disabled-text
+      "cluster.version":
+        value: ${targetVersionVars['default']['version']}
+        uiField:
+          label: "Target version"
+          type: combo
+      "cluster.fullversion":
+        value: ${targetVersionVars['default']['fullVersion']}
+        uiField:
+          label: "Target full version"
+          type: target-full-version-text
+      "cluster.repo_url":
+        value: ${targetVersionVars['default']['clusterRepoUrl']}
+        uiField:
+          label: "Cluster Repo URL"
+          type: repo-url-text
+      "cluster.upgrade_to_cdh":
+        uiField:
+          label: "Upgrade to CDH version"
+          type: combo
+      "cluster.manager.version":
+        value: ${targetVersionVars['default']['clusterManagerVersion']}
+        uiField:
+          label: "Cluster Manager Version"
+          type: text
+      "cluster.manager.repo_base_url":
+        value: ${targetVersionVars['default']['clusterManagerRepoBaseUrl']}
+        uiField:
+          label: "Cluster Manager Repo Base URL"
+          type: repo-url-text
+      paywall_username:
+        uiField:
+          label: "Paywall user"
+          type: text
+      paywall_password:
+        uiField:
+          label: "Paywall password"
+          type: password
+
+  - serviceName: LDAP
+    when: ${ not sourceServiceVars['ldap'].exist }
+    settings:
+      configure_ldap:
+        value: false
+        uiField:
+          label: "Configure LDAP"
+          type: service-toggle
+      ldap_provider_name:
+        value: "cm-ldap"
+        uiField:
+          label: "Paywall password"
+          type: edit-text
+      ldap_url:
+        uiField:
+          label: "LDAP URL"
+          type: url-text
+      ldap_bind_password:
+        uiField:
+          label: "LDAP Bind Password"
+          type: password
+      ldap_user_bind_dn:
+        uiField:
+          label: "LDAP Bind DN"
+          type: url-text
+      ldap_user_search_base:
+        uiField:
+          label: "LDAP User Search Base"
+          type: url-text
+      ldap_user_search_filter:
+        uiField:
+          label: "LDAP User Search Filter"
+          type: url-text
+      ldap_group_search_base:
+        uiField:
+          label: "LDAP Group Search Base"
+          type: url-text
+      ldap_group_search_filter:
+        uiField:
+          label: "LDAP Group Search Filter"
+          type: url-text
+      ldap_email_mapping_attribute:
+        value: userPrincipalName
+        uiField:
+          label: "Email Mapping Attribute"
+          type: text
+      ldap_skip_group_sync:
+        value: false
+        uiField:
+          label: "Skip Group Sync On Login"
+          type: checkbox
+      ldap_crt:
+        uiField:
+          label: "CA Certificate for Secure LDAP"
+          type: file-content
+
+  - serviceName: ATLAS
+    when: ${ not sourceServiceVars['atlas'].exist }
+    settings:
+      install_atlas:
+        value: false
+        uiField:
+          label: "Install Atlas"
+          type: service-toggle
+      atlas_server_hosts:
+        uiField:
+          label: "Atlas Server Hosts"
+          type: text
+      atlas_admin_password:
+        uiField:
+          label: "Atlas Server Password"
+          type: password
+      atlas_authentication_method_file:
+        uiField:
+          label: "Atlas Authentication Method File"
+          type: text
+      atlas_solr_replication_factor:
+        uiField:
+          label: "Atlas Solr Replication Factor"
+          type: text
+
+  - serviceName: HBASE
+    when: ${ not sourceServiceVars['hbase'].exist }
+    settings:
+      install_hbase:
+        value: false
+        uiField:
+          label: "Install HBase"
+          type: service-toggle
+      hbase_master_hosts:
+        uiField:
+          label: "Hbase Master Hosts"
+          type: text
+      hbase_regionserver_hosts:
+        uiField:
+          label: "Hbase Regionserver Hosts"
+          type: text
+
+
+  - serviceName: HDFS
+    when: ${ not sourceServiceVars['hdfs'].exist }
+    settings:
+      install_hdfs:
+        value: false
+        uiField:
+          label: "Install HBase"
+          type: service-toggle
+      hdfs_name_node_hosts:
+        uiField:
+          label: "Hdfs Name Node Hosts"
+          type: text
+      hdfs_secondary_name_node_hosts:
+        uiField:
+          label: "Hdfs Secondary Name Node Hosts"
+          type: text
+      hdfs_data_node_hosts:
+        uiField:
+          label: "Hdfs Data Node Hosts"
+          type: text
+      hdfs_name_dir:
+        uiField:
+          label: "Hdfs Name Dir"
+          type: text
+      hdfs_checkpoint_dir:
+        uiField:
+          label: "Hdfs Checkpoint Dir"
+          type: text
+      hdfs_data_dir:
+        uiField:
+          label: "Hdfs Data Dir"
+          type: text
+
+  - serviceName: HIVE
+    when: ${ not sourceServiceVars['hive'].exist }
+    settings:
+      install_hive:
+        value: false
+        uiField:
+          label: "Install Hive"
+          type: service-toggle
+      hive_metastore_hosts:
+        uiField:
+          label: "Hive Metastore Hosts"
+          type: text
+      hive_metastore_database_port:
+        value: 3306
+        uiField:
+          label: "Hive Metastore Database Port"
+          type: text
+      hive_metastore_database_type:
+        uiField:
+          label: "Hive Metastore Database Type"
+          type: text
+      hive_metastore_database_name:
+        uiField:
+          label: "Hive Metastore Database Name"
+          type: text
+      hive_metastore_database_user:
+        uiField:
+          label: "Hive Metastore Database User"
+          type: text
+      hive_metastore_database_password:
+        uiField:
+          label: "Hive Metastore Database Password"
+          type: password
+
+  - serviceName: KAFKA
+    when: ${ not sourceServiceVars['kafka'].exist }
+    settings:
+      install_kafka:
+        value: false
+        uiField:
+          label: "Install Kafka"
+          type: service-toggle
+      kafka_broker_hosts:
+        uiField:
+          label: "Kafka Broker Hosts"
+          type: text
+      kafka_connect_hosts:
+        uiField:
+          label: "Kafka Connect Hosts"
+          type: text
+
+
+  - serviceName: OZONE
+    when: ${ not sourceServiceVars['ozone'].exist }
+    settings:
+      install_ozone:
+        value: false
+        uiField:
+          label: "Install Ozone"
+          type: service-toggle
+      ozone_s3_gateway_recon_hosts:
+        uiField:
+          label: "Ozone S3 Gateway Recon Hosts"
+          type: text
+      ozone_manager_scm_hosts:
+        uiField:
+          label: "Ozone Manager SCM Hosts"
+          type: text
+      ozone_datanode_hosts:
+        uiField:
+          label: "Ozone Datanode Hosts"
+          type: text
+      ozone_service_id:
+        uiField:
+          label: "Ozone Service Id"
+          type: text
+
+
+  - serviceName: RANGER
+    when: ${ not sourceServiceVars['ranger'].exist }
+    settings:
+      install_ranger:
+        value: false
+        uiField:
+          label: "Install Ranger"
+          type: service-toggle
+      ranger_hosts:
+        uiField:
+          label: "Ranger Hosts"
+          type: text
+      ranger_database_port:
+        value: 3306
+        uiField:
+          label: "Ranger Database Port"
+          type: text
+      ranger_database_type:
+        uiField:
+          label: "Ranger Database Type"
+          type: text
+      ranger_database_name:
+        uiField:
+          label: "Ranger Database Name"
+          type: text
+      ranger_database_user:
+        uiField:
+          label: "Ranger Database User"
+          type: text
+      ranger_database_password:
+        uiField:
+          label: "Ranger Database Password"
+          type: password
+      ranger_default_password:
+        uiField:
+          label: "Ranger Default Password"
+          type: password
+
+  - serviceName: SOLR
+    when: ${ not sourceServiceVars['solr'].exist }
+    settings:
+      install_solr:
+        value: false
+        uiField:
+          label: "Install Solr"
+          type: service-toggle
+      solr_server_hosts:
+        uiField:
+          label: "Solr Server Hosts"
+          type: text
+
+uiFieldGroups:
+  1:
+    - cluster.name
+    - cluster.displayname
+    - source.cluster.name
+    - cluster.originating_source
+  2:
+    - cluster.version
+    - cluster.fullversion
+    - cluster.repo_url
+    - cluster.upgrade_to_cdh
+  3:
+    - cluster.manager.version
+    - cluster.manager.repo_base_url
+    - paywall_username
+    - paywall_password
+  4:
+    - ldap_provider_name
+    - ldap_url
+  5:
+    - ldap_bind_password
+    - ldap_user_bind_dn
+  6:
+    - ldap_user_search_base
+    - ldap_user_search_filter
+  7:
+    - ldap_group_search_base
+    - ldap_group_search_filter
+  8:
+    - ldap_email_mapping_attribute
+    - ldap_skip_group_sync
+  9:
+    - ldap_crt
+  10:
+    - install_atlas
+  11:
+    - atlas_server_hosts
+  12:
+    - atlas_admin_password
+    - atlas_authentication_method_file
+    - atlas_solr_replication_factor
+  13:
+    - install_hbase
+  14:
+    - hbase_master_hosts
+    - hbase_regionserver_hosts
+  15:
+    - install_hdfs
+  16:
+    - hdfs_name_node_hosts
+    - hdfs_secondary_name_node_hosts
+    - hdfs_data_node_hosts
+  17:
+    - hdfs_name_dir
+    - hdfs_checkpoint_dir
+    - hdfs_data_dir
+  18:
+    - install_hive
+  19:
+    - hive_metastore_hosts
+  20:
+    - hive_metastore_database_port
+    - hive_metastore_database_type
+    - hive_metastore_database_name
+    - hive_metastore_database_user
+    - hive_metastore_database_password
+  21:
+    - install_kafka
+  22:
+    - kafka_broker_hosts
+    - kafka_connect_hosts
+  23:
+    - install_ozone
+  24:
+    - ozone_s3_gateway_recon_hosts
+    - ozone_manager_scm_hosts
+    - ozone_datanode_hosts
+  25:
+    - ozone_service_id
+  26:
+    - install_ranger
+  27:
+    - ranger_hosts
+  28:
+    - ranger_database_port
+    - ranger_database_type
+    - ranger_database_name
+    - ranger_database_user
+    - ranger_database_password
+    - ranger_default_password
+  29:
+    - install_solr
+  30:
+    - solr_server_hosts
+
+
+

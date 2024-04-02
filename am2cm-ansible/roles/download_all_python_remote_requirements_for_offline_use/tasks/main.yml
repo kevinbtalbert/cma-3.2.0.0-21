@@ -1,0 +1,29 @@
+- name: Collect remote requirements files & download all packages for offline use on the control node
+  block:
+    - name: Check if there are any remote requirements.txt files
+      find:
+        paths: "{{ cma_root_dir }}/am2cm-ansible/remote_requirements"
+        recurse: yes
+        patterns: "*.txt"
+      register: remote_requirements
+    - name: Download remote requirements
+      block:
+        - name: "Create {{ cma_root_dir }}/{{ downloaded_python_packages_directory }} directory, if not exists"
+          file:
+            state: directory
+            path: "{{ cma_root_dir }}/{{ downloaded_python_packages_directory }}"
+        - name: Download Python packages from remote_requirements directory
+          include_role:
+            name: download_python_packages_from_requirement_file_for_offline_use
+          vars:
+            requirements_file: "{{ item.path }}"
+            target_directory: "{{ cma_root_dir }}/{{ downloaded_python_packages_directory }}"
+          loop: "{{ remote_requirements.files }}"
+        - name: Create an archive file from these remote_requirements
+          archive:
+            format: gz
+            path: "{{ cma_root_dir }}/{{ downloaded_python_packages_directory }}"
+            dest: "{{ cma_root_dir }}/{{ downloaded_python_packages_directory }}.tgz"
+      when: remote_requirements.matched | int > 0
+  delegate_to: localhost
+  run_once: true

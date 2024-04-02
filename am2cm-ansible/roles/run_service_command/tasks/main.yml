@@ -1,0 +1,17 @@
+- name: Run service command
+  block:
+    - name: Service name and the command that will be ran
+      debug:
+          msg: "Service: {{ service_name }}, Command: {{ command }}"
+    - name: Run service command API request
+      run_service_command:
+        service_name: "{{ service_name }}"
+        command: "{{ command }}"
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        timeout_seconds: "{{ timeout }}"
+      register: run_service_command_result
+    - name: Print response
+      debug:
+        var: run_service_command_result
+  run_once: True
+  delegate_to: localhost

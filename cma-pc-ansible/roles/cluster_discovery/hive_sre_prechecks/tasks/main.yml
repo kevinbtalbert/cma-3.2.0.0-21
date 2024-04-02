@@ -1,0 +1,156 @@
+# Copyright (c) 2023, Cloudera, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+
+- name: Download hive-sre-dist.tar.gz
+  get_url:
+    url: "https://github.com/cloudera-labs/hive-sre/releases/download/{{ hive_sre_version }}/hive-sre-dist.tar.gz"
+    dest: /opt/hive-sre-dist.tar.gz
+
+- name: Extract hive-sre-dist.tar.gz
+  unarchive:
+    src: /opt/hive-sre-dist.tar.gz
+    dest: /opt
+    remote_src: yes
+
+- name: Run setup.sh
+  command: /opt/hive-sre-install/setup.sh
+
+- name: Create .hive-sre directory
+  file:
+    path: /root/.hive-sre
+    state: directory
+
+- name: Create aux_libs directory
+  file:
+    path: /root/.hive-sre/aux_libs
+    state: directory
+
+- name: Fail if CM API Redaction is enabled
+  fail:
+    msg: "Please disable the redaction of sensitive information for the API in Cloudera Manager!"
+  when: hive_metastore_password == 'REDACTED'
+
+- name: Generate default.yaml from template
+  template:
+    src: default.yaml.j2
+    dest: /root/.hive-sre/cfg/default.yaml
+
+- name: Copy mysql-connector-java.jar
+  command:
+    cmd: "cp {{ hive_driver_path }} /root/.hive-sre/aux_libs"
+
+- block:
+    - name: Hdfs kinit
+      include_role:
+        name: cluster_discovery/cm_kinit
+      vars:
+        keytab_name: hdfs.keytab
+
+    - name: Create hdfs user directory when cluster is kerberized
+      shell: "hadoop fs -ls /user/{{ hdfs_user }} || hadoop fs -mkdir /user/{{ hdfs_user }}"
+  when: is_kerberized_cluster
+
+
+- name: Create hdfs user directory when cluster is not kerberized
+  shell: "sudo -u {{ hdfs_user }} hadoop fs -ls /user/{{ ansible_user }} || sudo -u {{ hdfs_user }} hadoop fs -mkdir /user/{{ ansible_user }}"
+  when: not is_kerberized_cluster
+
+- name: Run hive-sre u3 command
+  command: "hive-sre u3 -cdh -o {{ hive_sre_u3_output_dir_remote }}"
+  environment:
+    JAVA_HOME: "{{ java_home }}"
+
+- name: Run hive-sre command
+  command: "hive-sre sre -cdh -o {{ hive_sre_output_dir_remote }}"
+  environment:
+    JAVA_HOME: "{{ java_home }}"
+
+- name: Find all directories under hive_sre_u3_output_dir_remote
+  find:
+    paths: "{{ hive_sre_u3_output_dir_remote }}"
+    file_type: directory
+    recurse: no
+  register: found_dirs
+
+- name: Get directory with the latest modified time in hive_sre_u3_output_dir_remote
+  set_fact:
+    hive_sre_u3_output_subdir_remote: "{{ found_dirs.files | sort(attribute='mtime', reverse=True) | first }}"
+
+- name: Print the directory hive_sre_u3_output_dir_remote with the latest modified time
+  debug:
+    var: hive_sre_u3_output_subdir_remote.path
+
+- name: Find all directories under hive_sre_output_dir_remote
+  find:
+    paths: "{{ hive_sre_output_dir_remote }}"
+    file_type: directory
+    recurse: no
+  register: found_dirs
+
+- name: Get directory with the latest modified time in hive_sre_output_dir_remote
+  set_fact:
+    hive_sre_output_subdir_remote: "{{ found_dirs.files | sort(attribute='mtime', reverse=True) | first }}"
+
+- name: Print the directory hive_sre_u3_output_dir_remote with the latest modified time
+  debug:
+    var: hive_sre_u3_output_subdir_remote.path
+
+- name: Convert hive-sre u3 output
+  md_to_csv_converter:
+    input_dir: "{{  hive_sre_u3_output_subdir_remote.path }}"
+    output_dir: "{{ hive_sre_converted_results_dir_remote }}"
+
+- name: Convert hive-sre output
+  md_to_csv_converter:
+    input_dir: "{{ hive_sre_output_subdir_remote.path }}"
+    output_dir: "{{ hive_sre_converted_results_dir_remote }}"
+
+- name: Compress files in remote SRE directory
+  ansible.builtin.archive:
+    path: "{{ hive_sre_converted_results_dir_remote }}/*"
+    dest: "{{ hive_sre_archive_path_local }}"
+    format: gz
+  register: archived_files
+
+- name: Check if archiving was successful
+  assert:
+    that:
+      - archived_files.archived | length > 0
+    fail_msg: "No files were archived. Check the directory path or file permissions."
+
+- name: Transfer compressed archive to local machine
+  fetch:
+    src: "{{ hive_sre_archive_path_local }}"
+    dest: "{{ hive_sre_output_dir_local }}/"
+    flat: yes
+
+- name: Decompress the archive on the local machine
+  unarchive:
+    src: "{{ hive_sre_output_dir_local }}/hive_sre_archive.tgz"
+    dest: "{{ hive_sre_output_dir_local }}/"
+    remote_src: no
+  delegate_to: localhost
+
+- name: Remove compressed file on the remote machine
+  file:
+    path: "{{ hive_sre_archive_path_local }}"
+    state: absent
+
+- name: Remove compressed archive on the local machine
+  file:
+    path: "{{ hive_sre_output_dir_local }}/hive_sre_archive.tgz"
+    state: absent
+  delegate_to: localhost

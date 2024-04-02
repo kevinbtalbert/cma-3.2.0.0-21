@@ -1,0 +1,54 @@
+- name: YARN post AM2CM migration
+  tags: yarn-post-migration
+  hosts: localhost
+  gather_facts: False
+  roles:
+    - {role: determine_kerberos_info, no_log: true}
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  tasks:
+    - name: YARN Start Job History chapter # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp/topics/amb-job-yarn.html
+      yarn_start_job_history:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+      tags: yarn-start-job-history
+    - name: YARN Install MapReduce Framework JARs chapter # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp/topics/amb-yarn-restart.html
+      yarn_install_mapreduce_framework_jars:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+      tags: yarn-install-mapreduce-framework-jars
+    - name: YARN NodeManager chapter # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp/topics/amb-yarn-nodemanager.html
+      yarn_nodemanager:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+      tags: yarn-nodemanager
+    - name: YARN Reset Znode ACLs chapter # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp/topics/amb-yarn-znode_acls.html
+      when: kerberos_value
+      yarn_reset_znode_acls:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+      tags: yarn-reset-znode-acls
+- name: Yarn post AM2CM migration, gather yarn hosts
+  tags: yarn-post-migration, yarn-start-job-history, yarn-install-mapreduce-framework-jars, yarn-nodemanager, yarn-reset-znode-acls
+  hosts: all
+  gather_facts: False
+  roles:
+    - { role: get_hostnames_where_role_group_is_located, role_group_filter: "yarn" }
+- name: Finalize yarn post migration
+  tags: yarn-post-migration, yarn-start-job-history, yarn-install-mapreduce-framework-jars, yarn-nodemanager, yarn-reset-znode-acls
+  hosts: yarn
+  gather_facts: False
+  tasks:
+    - name: Make sure that 'yarn' user is part of the 'hadoop' & 'yarn' groups
+      user:
+        name: yarn
+        groups: hadoop,yarn
+        append: yes
+      become: yes
+    - name: Restart the Yarn service
+      import_role:
+        name: restart_service
+      vars:
+        service_name: yarn
+      environment:
+        - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+        - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+      delegate_to: localhost
+      run_once: True

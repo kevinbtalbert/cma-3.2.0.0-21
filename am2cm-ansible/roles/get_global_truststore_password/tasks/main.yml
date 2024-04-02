@@ -1,0 +1,12 @@
+- name: Get global_truststore_password if not defined
+  block:
+    - name: Get truststore password via API
+      get_cm_truststore_password:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+      run_once: True
+      register: command_out
+
+    - name: Assign password value to global_truststore_password
+      set_fact:
+        global_truststore_password: "{{ command_out.message }}"
+  when: global_truststore_password is not defined

@@ -1,0 +1,58 @@
+- name: "Set dir for atlas migration tool"
+  set_fact:
+    atlas_migration_tool_dir: "{{ backup_root_dir }}/atlas_migration_tool"
+    atlas_user: "{{ atlas_user_name }}"
+
+- name: "Print atlas migration and migration tool dirs"
+  debug:
+    msg: "Atlas migration tool dir: {{ atlas_migration_tool_dir }}, migration dir: {{ atlas_migration_dir }}"
+
+- name: "Clean up atlas migration tool dir"
+  file:
+    path: "{{ atlas_migration_tool_dir }}"
+    state: absent
+  become: yes
+
+- name: "Create a working dir for atlas migration tool"
+  file:
+    path: "{{ atlas_migration_tool_dir }}"
+    mode: 0755
+    state: directory
+  become: yes
+  become_user: "{{ atlas_user }}"
+
+- name: "Clean up atlas migration dir"
+  file:
+    path: "{{ atlas_migration_dir }}/"
+    state: absent
+  become: yes
+
+- name: "Create a dir for atlas migration"
+  file:
+    path: "{{ atlas_migration_dir }}"
+    mode: 0755
+
+    state: directory
+  become: yes
+  become_user: "{{ atlas_user }}"
+
+- name: "Stop atlas service in Ambari"
+  include_role:
+    name: stop_hdp_service
+
+- name: "Untar atlas migration tool"
+  ansible.builtin.unarchive:
+    src: "{{ atlas_migration_tool_download_dir }}/{{ atlas_migration_tool_file_name }}"
+    dest: "{{ atlas_migration_tool_dir }}"
+    mode: "0755"
+    group: "{{ atlas_user }}"
+    owner: "{{ atlas_user }}"
+
+- name: "Run atlas migration tool"
+  command:
+    cmd: "python atlas_migration_export.py  -d {{ atlas_migration_dir }}"
+    chdir: "{{ atlas_migration_tool_dir }}/{{ atlas_migration_tool_name }}/"
+  become: yes
+  become_user: "{{ atlas_user }}"
+  register: migration_command
+  changed_when: migration_command.changed

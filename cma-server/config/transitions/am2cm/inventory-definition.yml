@@ -1,0 +1,40 @@
+---
+
+currentVersion:
+  - HDP3
+inventoryTemplate:
+  file: inventory-template.ini
+  templateVar: predefined_host_groups
+hostGroups:
+  backup_zookeeper: SOURCE::ZOOKEEPER::ZOOKEEPER_SERVER
+  backup_atlas: SOURCE::ATLAS::ATLAS_SERVER
+  backup_hive: SOURCE::HIVE::HIVE_SERVER
+  backup_kafka: SOURCE::KAFKA::KAFKA_BROKER
+  backup_infra_solr_server: SOURCE::AMBARI_INFRA_SOLR::INFRA_SOLR
+  yarn_timeline: SOURCE::YARN::APP_TIMELINE_SERVER
+  hdfs_namenodes: SOURCE::HDFS::NAMENODE
+  hdfs_journalnodes: SOURCE::HDFS::JOURNALNODE
+  hdfs_datanodes: SOURCE::HDFS::DATANODE
+  hbase_master: SOURCE::HBASE::HBASE_MASTER
+  backup_hbase: SOURCE::HBASE::HBASE_MASTER
+
+---
+
+currentVersion:
+  - HDP2
+inventoryTemplate:
+  file: inventory-template.ini
+  templateVar: predefined_host_groups
+hostGroups:
+  backup_zookeeper: SOURCE::ZOOKEEPER::ZOOKEEPER_SERVER
+  backup_atlas: SOURCE::ATLAS::ATLAS_SERVER
+  backup_hive: SOURCE::HIVE::HIVE_SERVER
+  backup_kafka: SOURCE::KAFKA::KAFKA_BROKER
+  backup_infra_solr_server: SOURCE::AMBARI_INFRA::INFRA_SOLR
+  yarn_timeline: SOURCE::YARN::APP_TIMELINE_SERVER
+  hdfs_namenodes: SOURCE::HDFS::NAMENODE
+  hdfs_journalnodes: SOURCE::HDFS::JOURNALNODE
+  hdfs_datanodes: SOURCE::HDFS::DATANODE
+  hbase_master: SOURCE::HBASE::HBASE_MASTER
+  backup_hbase: SOURCE::HBASE::HBASE_MASTER
+

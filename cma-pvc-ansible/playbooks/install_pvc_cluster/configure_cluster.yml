@@ -1,0 +1,33 @@
+# Copyright (c) 2023, Cloudera, Inc. All Rights Reserved.
+#
+# Cloudera, Inc. licenses this file to you under the Apache License,
+# Version 2.0 (the "License"). You may not use this file except in
+# compliance with the License. You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# This software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+# CONDITIONS OF ANY KIND, either express or implied. See the License for
+# the specific language governing permissions and limitations under the
+# License.
+
+---
+
+- name: Configure ECS Nodes
+  hosts: pvc_cluster
+  tags: pvc-cluster-initial-config
+  gather_facts: false
+  roles:
+    - role: pvc/prereqs_ecs_nodes
+      when: pvc_type == "ECS"
+
+- name: Change core-dns to use the installed dns server
+  hosts: pvc_cluster_master_nodes
+  tags: pvc-cluster-initial-config
+  gather_facts: false
+  roles:
+    - role: pvc/dns/setup_pvc_ecs_core_dns
+      when:
+        - pvc_type == "ECS"
+        - setup_dns_ecs
+

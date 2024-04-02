@@ -1,0 +1,6 @@
+---
+cdpclienv: ~/cdpclienv
+cdpcli_executable: cdp
+python3_executable: python3
+install_cdpcli: false
+cdp_profile: "default"

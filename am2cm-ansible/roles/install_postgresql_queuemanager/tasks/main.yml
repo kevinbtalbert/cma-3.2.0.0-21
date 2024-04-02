@@ -1,0 +1,202 @@
+- name: Install PostgreSQL
+  block:
+    - name: Set Facts for Debian
+      set_fact:
+        postgresql_version: "14"
+        postgresql_bin_path: "/usr/lib/postgresql/{{postgresql_version}}/bin"
+        postgresql_data_dir: "/usr/lib/postgresql/{{postgresql_version}}/main"
+        RedHat: False
+        Debian: True
+        Suse: False
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Set Facts for RedHat
+      set_fact:
+        postgresql_version: "9.x"
+        postgresql_bin_path: ""
+        postgresql_data_dir: "/var/lib/pgsql/data"
+        RedHat: True
+        Debian: False
+        Suse: False
+      when: ansible_facts['os_family'] == 'RedHat'
+
+    - name: Set Facts for Suse
+      set_fact:
+        postgresql_version: "14"
+        postgresql_bin_path: "/usr/pgsql-{{postgresql_version}}/bin"
+        postgresql_data_dir: "/var/lib/pgsql/{{postgresql_version}}/data"
+
+        RedHat: False
+        Debian: False
+        Suse: True
+      when: ansible_facts['os_family'] == 'Suse'
+
+    - name: Print Variables
+      debug:
+        msg:
+          - "PostgreSQL Version: {{ postgresql_version }}"
+          - "PostgreSQL Bin Path: {{ postgresql_bin_path }}"
+          - "PostgreSQL Data Dir: {{ postgresql_data_dir }}"
+
+    - name: Print Variables
+      debug:
+        msg:
+          - "queuemanager_database_name: {{ qm_db_name }}"
+          - "queuemanager_database_user: {{ qm_db_user }}"
+          - "queuemanager_database_port: {{ qm_db_port }}"
+
+    - name: Install PostgreSQL - RedHat
+      ansible.builtin.yum:
+        name:
+          - postgresql-server
+          - postgresql
+          - postgresql-jdbc
+        state: present
+      when: RedHat
+
+    - name: Install PostgreSQL - Debian
+      ansible.builtin.apt:
+        name:
+          - postgresql-contrib
+          - postgresql
+          - libpq-dev
+          - libpostgresql-jdbc-java
+        state: present
+      when: Debian
+
+    - name: Install PostgreSQL - Suse
+      zypper:
+        name:
+          - postgresql14-server
+          - postgresql14-contrib
+          - postgresql14-devel
+          - postgresql14-libs
+          - postgresql-jdbc
+        state: present
+      when: Suse
+
+    - name: Confirm if PostgreSQL is initiated
+      ansible.builtin.stat:
+        path: "{{ postgresql_data_dir }}/pg_hba.conf"
+      register: pg_hba
+
+    - name: Initialize PostgreSQL - RedHat
+      ansible.builtin.command:
+        "postgresql-setup initdb"
+      when: RedHat and not pg_hba.stat.exists
+
+    - name: Initialize PostgreSQL - Debian
+      ansible.builtin.command:
+        "{{ postgresql_bin_path }}/initdb -D {{ postgresql_data_dir }}"
+      become: true
+      become_user: postgres
+      when: Debian and not pg_hba.stat.exists
+
+    - name: Initialize PostgreSQL - Suse
+      ansible.builtin.command:
+        "{{ postgresql_bin_path }}/postgresql-{{ postgresql_version }}-setup initdb"
+      become: true
+      become_user: postgres
+      when: Suse and not pg_hba.stat.exists
+
+    - name: Configure PostgreSQL port to listen on the server
+      become: yes
+      become_user: postgres
+      replace:
+        path: "{{ postgresql_data_dir }}/postgresql.conf"
+        regexp: '^(port =|#port =).*'
+        replace: "port = '{{ qm_db_port }}'"
+
+    - name: Get IP Address for Queue Manager host
+      shell: host {{ item }} | awk '/has address/ { print $4 }'
+      register: results_ip
+      changed_when: results_ip.rc != 0
+      loop:
+        "{{ groups['QUEUEMANAGER_STORE'] }}"
+
+    - name: Confirm that IP is a Valid IPV4
+      ansible.builtin.set_fact:
+        is_ipv4: "{{ item.stdout is ansible.utils.ipv4 }}"
+        qm_ip_address: "{{ item.stdout }}"
+      with_items: "{{ results_ip.results | list }}"
+
+    - name: Print Variables
+      debug:
+        msg:
+          "IP Address of the Queue Manager Host is {{ qm_ip_address }} and it is a {{ is_ipv4 }} IPV4"
+
+    - name: Configure PostgreSQL to listen on IPV4 for the server
+      become: yes
+      become_user: postgres
+      replace:
+        path: "{{ postgresql_data_dir }}/postgresql.conf"
+        regexp: '^(listen_addresses|#listen_addresses).*'
+        replace: "listen_addresses = '{{ qm_ip_address }}'"
+
+    - name: Start/Enable PostgreSQL
+      ansible.builtin.service:
+        name: postgresql
+        state: restarted
+        enabled: True
+      when: RedHat or Debian
+
+    - name: Start/Enable PostgreSQL
+      vars:
+        suse_pg_service_name: "postgresql-{{ postgresql_version }}"
+      ansible.builtin.service:
+        name: "{{ suse_pg_service_name }}"
+        state: restarted
+        enabled: True
+      when: Suse
+
+    - name: Add pg_hba.conf entry for the new User/Database
+      postgresql_pg_hba:
+        dest: "{{ postgresql_data_dir }}/pg_hba.conf"
+        contype: "host"
+        users: "{{ qm_db_user }}"
+        source: "{{ qm_ip_address }}/32"
+        databases: "{{ qm_db_name }}"
+        method: md5
+
+    - name: Reload PostgreSQL for Suse
+      vars:
+        suse_pg_service_name: "postgresql-{{ postgresql_version }}"
+      ansible.builtin.service:
+        name: "{{ suse_pg_service_name }}"
+        state: reloaded
+      when: Suse
+
+    - name: Reload PostgreSQL for RedHat/Debian
+      ansible.builtin.service:
+        name: postgresql
+        state: reloaded
+      when: RedHat or Debian
+
+- name: Create Database for Queue Manager
+  block:
+    - name: Create the database for QM
+      become: true
+      become_user: postgres
+      postgresql_db:
+        name: "{{ qm_db_name }}"
+        template: "template0"
+        state: present
+
+    - name: Create QueueManager User
+      become: true
+      become_user: postgres
+      postgresql_user:
+        name: "{{ qm_db_user }}"
+        db: "{{ qm_db_name }}"
+        password: "{{ qm_db_password }}"
+        role_attr_flags: SUPERUSER,CREATEDB,CREATEROLE,INHERIT,LOGIN
+        state: present
+
+    - name: Change Owner of Queue Manager Database
+      become: true
+      become_user: postgres
+      postgresql_owner:
+        db: "{{ qm_db_name }}"
+        new_owner: "{{ qm_db_user }}"
+        obj_name: "{{ qm_db_name }}"
+        obj_type: database

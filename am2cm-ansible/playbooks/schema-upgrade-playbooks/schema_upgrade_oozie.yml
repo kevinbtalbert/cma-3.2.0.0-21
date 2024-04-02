@@ -1,0 +1,20 @@
+---
+- name: Oozie Server listing
+  tags: oozie-schema-upgrade
+  gather_facts: False
+  hosts: all
+  roles:
+    - {role: get_hostnames_where_role_group_is_located, role_group_filter: OOZIE_SERVER}
+
+- name: Oozie Database Schema upgrade
+  tags: oozie-schema-upgrade
+  gather_facts: False
+  hosts: OOZIE_SERVER[0]
+  roles:
+    - { role: distribute_jdbc_drivers, jdbc_remote_driver_directory: "{{ oozie_jdbc_dir }}" }
+  tasks:
+    - name: Run Oozie db upgrade
+      shell: '{{ oozie_home }}/bin/ooziedb.sh upgrade -run'
+      register: result
+      changed_when: '"Oozie DB has been upgraded" in result.stdout'
+      failed_when: 'result.rc != 0 or "Oozie DB has been upgraded" not in result.stdout and "Oozie DB already upgraded" not in result.stdout'

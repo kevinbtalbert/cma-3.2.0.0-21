@@ -1,0 +1,33 @@
+- name: Assemble variables
+  set_fact:
+    service_name: "{{ service_name }}"
+    copy_snapshot_to_local: "{{ copy_to_local | default(False) }}"
+    snapshot_path: "{{ lookup('ansible.builtin.vars', service_name + '_snapshot_path') }}"
+    snapshot_name: "{{ service_name }}-backup"
+
+- name: Enable snapshots
+  command: "hdfs dfsadmin -allowSnapshot {{ snapshot_path }}"
+  become: yes
+  become_user: "{{ hdfs_user_name }}"
+  changed_when: False
+
+- name: Remove old snapshot
+  command: "hdfs dfs -deleteSnapshot {{ snapshot_path }} {{ snapshot_name }}"
+  become: yes
+  become_user: "{{ hdfs_user_name }}"
+  register: remove_snapshot_output
+  failed_when: False  # to disable stop of playbook if script can't remove non-existing snapshot
+  changed_when: '"the snapshot does not exist" not in remove_snapshot_output.stderr'
+
+- name: Create snapshot
+  command: "hdfs dfs -createSnapshot {{ snapshot_path }} {{ snapshot_name }}"
+  become: yes
+  become_user: "{{ hdfs_user_name }}"
+  changed_when: False
+
+- name: Extract snapshot
+  command: "hdfs dfs -copyToLocal -f {{ snapshot_path }}/.snapshot/{{ snapshot_name }} {{ service_backup_dir }}"
+  become: yes
+  become_user: "{{ hdfs_user_name }}"
+  when: copy_snapshot_to_local
+  changed_when: False

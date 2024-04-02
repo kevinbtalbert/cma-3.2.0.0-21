@@ -1,0 +1,7 @@
+---
+- name: Create Cloudera Management Service
+  hosts: localhost
+  gather_facts: False
+  tags: create-cloudera-management-service
+  roles:
+    - role: create_cloudera_management_service

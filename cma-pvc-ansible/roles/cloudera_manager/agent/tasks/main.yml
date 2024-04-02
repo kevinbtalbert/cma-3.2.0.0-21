@@ -1,0 +1,44 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+
+- name: Populate service facts
+  service_facts:
+
+- name: Stop Cloudera Manager Agent
+  service:
+    name: "{{ cm_agent_service_name }}"
+    state: stopped
+  when: ansible_facts.services | select('search', cm_agent_service_name) | list | length > 0
+
+- name: Install Cloudera Manager Agent package
+  package:
+    name: cloudera-manager-agent
+    state: "{{ state }}"
+  register: install_cm_agent_package
+  notify:
+    - restart cloudera-manager-agent
+
+- name: Install Cloudera Manager Daemons package
+  package:
+    name: cloudera-manager-daemons
+    state: "{{ state }}"
+  register: install_cm_daemon_package
+  notify:
+    - restart cloudera-manager-agent
+
+- name: Restart Cloudera Manager Agent if the packages have already been installed
+  service:
+    name: "{{ cm_agent_service_name }}"
+    state: restarted
+  when: not (install_cm_agent_package.changed or install_cm_daemon_package.changed)

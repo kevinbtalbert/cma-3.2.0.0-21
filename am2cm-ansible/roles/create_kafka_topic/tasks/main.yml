@@ -1,0 +1,27 @@
+- name: Print argument values
+  debug:
+    msg:
+      topic_to_create: "{{ topic_to_create }}"
+      kafka_home: "{{ kafka_home }}"
+      kafka_brokers: "{{ kafka_brokers }}"
+      extra_params: "{{ extra_params }}"
+      command_config: "{{ command_config }}"
+
+- name: Check topic is already created
+  command: >
+    {{ kafka_home }}/bin/kafka-topics.sh --bootstrap-server {{ kafka_brokers }} --topic {{ topic_to_create }} 
+    --command-config {{ command_config }} --list --exclude-internal
+  register: topic_exists_out
+  changed_when: false
+
+- name:
+  debug:
+    msg: "Check output is: {{ topic_exists_out.stdout }}"
+
+- name: Create kafka topic
+  command: >
+    {{ kafka_home }}/bin/kafka-topics.sh --bootstrap-server {{ kafka_brokers }} --create --topic {{ topic_to_create }} 
+    --command-config {{ command_config }} --partitions 1 --replication-factor 1 {{ extra_params }}
+  register: topic_creation_out
+  changed_when: topic_creation_out.changed
+  when: topic_exists_out.stdout != topic_to_create

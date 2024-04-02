@@ -1,0 +1,337 @@
+---
+type: PRIVATE_CLOUD_MIGRATION
+sourceClusterType: CDP_PVC_BASE
+version: 1
+steps:
+  - name: Preparing the PvC Base cluster
+    type: group
+    doc: "https://docs.cloudera.com/cdp-private-cloud-data-services/1.5.0/installation-ecs/topics/cdppvc-installation-ecs-prepare-cdp-private-cloud-base.html"
+    steps:
+      - name: CM Upgrade
+        type: task
+        execution: auto
+        ansibleTags:
+          - "cm-upgrade"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/release-guide/topics/cdpdc-java-requirements.html"
+        when: ${ RuntimeUtils:isSourceRuntimeVersionLessThanUpgradeTo(sourceServerVars['version'], transitionUserSettingVars['cluster.manager.version'], targetServerVars['type']) }
+
+      
+      - name: Runtime Upgrade
+        type: task
+        execution: manual
+        manualDescription: >
+          This is a manual step.
+          Please follow the <a href="https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/index.html" target="_blank">documentation</a> to upgrade the runtime to ${ transitionUserSettingVars['cluster.upgrade_to_cdh'] } and press the complete button when you are done.
+        ansibleTags:
+          - "cdp-runtime-upgrade"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade"
+        when: ${ RuntimeUtils:isSourceRuntimeVersionLessThanUpgradeTo(sourceClusterVars['sourceRuntimeVersion'], transitionUserSettingVars['cluster.upgrade_to_cdh'], targetServerVars['type']) }
+
+      - name: Install HDFS
+        service: hdfs
+        type: task
+        execution: ${ transitionUserSettingVars['install_hdfs'] == true ? 'auto':'manual' }
+        manualDescription: >
+          This is a manual step, HDFS is a required service and without it there is no guarantee that everything will work properly.
+          Please follow the <a href="https://docs.cloudera.com/cdp-private-cloud-data-services/1.5.0/installation-ecs/topics/cdppvc-installation-base-software-requirements.html" target="_blank">documentation</a> and press the complete button when you are done.
+        ansibleTags:
+          - "hdfs-install"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        when: ${ not sourceServiceVars['hdfs'].exist }
+
+      - name: Install Solr
+        service: solr
+        type: task
+        execution: ${ transitionUserSettingVars['install_solr'] == true ? 'auto':'manual' }
+        manualDescription: >
+          This is a manual step, Solr is a required service and without it there is no guarantee that everything will work properly.
+          Please follow the <a href="https://docs.cloudera.com/cdp-private-cloud-data-services/1.5.0/installation-ecs/topics/cdppvc-installation-base-software-requirements.html" target="_blank">documentation</a> and press the complete button when you are done.
+        ansibleTags:
+          - "solr-install"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        when: ${ not sourceServiceVars['solr'].exist }
+
+      - name: Install Ranger
+        service: ranger
+        type: task
+        execution: ${ transitionUserSettingVars['install_ranger'] == true ? 'auto':'manual' }
+        manualDescription: >
+          This is a manual step, Ranger is a required service and without it there is no guarantee that everything will work properly.
+          Please follow the <a href="https://docs.cloudera.com/cdp-private-cloud-data-services/1.5.0/installation-ecs/topics/cdppvc-installation-base-software-requirements.html" target="_blank">documentation</a> and press the complete button when you are done.
+        ansibleTags:
+          - "ranger-install"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        when: ${ not sourceServiceVars['ranger'].exist }
+
+      - name: Install HBase
+        service: hbase
+        type: task
+        execution: ${ transitionUserSettingVars['install_hbase'] == true ? 'auto':'manual' }
+        manualDescription: >
+          This is a manual step, HBase is a required service and without it there is no guarantee that everything will work properly.
+          Please follow the <a href="https://docs.cloudera.com/cdp-private-cloud-data-services/1.5.0/installation-ecs/topics/cdppvc-installation-base-software-requirements.html" target="_blank">documentation</a> and press the complete button when you are done.
+        ansibleTags:
+          - "hbase-install"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        when: ${ not sourceServiceVars['hbase'].exist }
+
+      - name: Install Kafka
+        service: kafka
+        type: task
+        execution: ${ transitionUserSettingVars['install_kafka'] == true ? 'auto':'manual' }
+        manualDescription: >
+          This is a manual step, Kafka is a required service and without it there is no guarantee that everything will work properly.
+          Please follow the <a href="https://docs.cloudera.com/cdp-private-cloud-data-services/1.5.0/installation-ecs/topics/cdppvc-installation-base-software-requirements.html" target="_blank">documentation</a> and press the complete button when you are done.
+        ansibleTags:
+          - "kafka-install"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        when: ${ not sourceServiceVars['kafka'].exist }
+
+      - name: Install Atlas
+        service: atlas
+        type: task
+        execution: ${ transitionUserSettingVars['install_atlas'] == true ? 'auto':'manual' }
+        manualDescription: >
+          This is a manual step, Atlas is a required service and without it there is no guarantee that everything will work properly.
+          Please follow the <a href="https://docs.cloudera.com/cdp-private-cloud-data-services/1.5.0/installation-ecs/topics/cdppvc-installation-base-software-requirements.html" target="_blank">documentation</a> and press the complete button when you are done.
+        ansibleTags:
+          - "atlas-install"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        when: ${ not sourceServiceVars['atlas'].exist }
+
+      - name: Install Hive Metastore
+        service: hive
+        type: task
+        execution: ${ transitionUserSettingVars['install_hive'] == true ? 'auto':'manual' }
+        manualDescription: >
+          This is a manual step, Hive Metastore is a required service and without it there is no guarantee that everything will work properly.
+          Please follow the <a href="https://docs.cloudera.com/cdp-private-cloud-data-services/1.5.0/installation-ecs/topics/cdppvc-installation-base-software-requirements.html" target="_blank">documentation</a> and press the complete button when you are done.
+        ansibleTags:
+          - "hive-install"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        when: ${ not sourceServiceVars['hive'].exist }
+
+      - name: Install Ozone
+        service: ozone
+        type: task
+        execution: ${ transitionUserSettingVars['install_ozone'] == true ? 'auto':'manual' }
+        manualDescription: >
+          This is a manual step, Ozone is a required service and without it there is no guarantee that everything will work properly.
+          Please follow the <a href="https://docs.cloudera.com/cdp-private-cloud-data-services/1.5.0/installation-ecs/topics/cdppvc-installation-base-software-requirements.html" target="_blank">documentation</a> and press the complete button when you are done.
+        ansibleTags:
+          - "ozone-install"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        when: ${ not sourceServiceVars['ozone'].exist }
+
+      - name: Install YARN
+        service: yarn
+        type: task
+        execution: manual
+        manualDescription: >
+          This is a manual step, YARN is a required service and without it there is no guarantee that everything will work properly.
+          Please follow the <a href="https://docs.cloudera.com/cdp-private-cloud-data-services/1.5.0/installation-ecs/topics/cdppvc-installation-base-software-requirements.html" target="_blank">documentation</a> and press the complete button when you are done.
+        ansibleTags:
+          - "yarn-install"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        when: ${ not sourceServiceVars['yarn'].exist }
+
+      - name: Managing buckets
+        type: task
+        execution: auto
+        ansibleTags:
+          - "manage-buckets"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-base/7.1.8/ozone-storing-data/topics/ozone-commands-for-managing-buckets.html"
+        when: ${ not sourceServiceVars['hive'].exist }
+
+      - name: Create Data Context
+        service: sdx
+        type: task
+        execution: auto
+        ansibleTags:
+          - "create-sdx"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        when: ${ not sourceServiceVars['sdx'].exist }
+
+      - name: Decommission nodes
+        type: task
+        execution: auto
+        ansibleTags:
+          - "decommission-base-nodes"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-base/7.1.8/ozone-storing-data/topics/ozone-commands-for-managing-buckets.html"
+
+  - name: Install PVC cluster
+    type: group
+    doc: "https://docs.cloudera.com/cdp-private-cloud-data-services/1.5.0/installation-ecs/topics/cdppvc-ecs-install.html"
+    steps:
+      - name: Add PVC nodes to the base cluster
+        type: task
+        execution: auto
+        ansibleTags:
+          - "add-pvc-nodes"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+      - name: DNS configuration
+        type: task
+        execution: auto
+        ansibleTags:
+          - "dns-configuration"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-data-services/1.5.0/installation-ecs/topics/cdppvc-installation-ds-checklist.html"
+      - name: Clock time from NTP source
+        type: task
+        execution: auto
+        ansibleTags:
+          - "ntp-configuration"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-base/7.1.8/installation/topics/cdpdc-enable-NTP-service.html"
+      - name: Create Containerized cluster
+        type: task
+        execution: auto
+        ansibleTags:
+          - "create-experience-cluster"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-data-services/1.5.0/installation-ecs/topics/cdppvc-installation-ecs-steps.html"
+      - name: Download and activate ECS parcel
+        type: task
+        execution: auto
+        ansibleTags:
+          - "setup-ecs-parcel"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-data-services/1.5.0/installation-ecs/topics/cdppvc-installation-ecs-steps.html"
+      - name: Install Control Plane
+        type: task
+        execution: auto
+        ansibleTags:
+          - "install-control-plane"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-data-services/1.5.0/installation-ecs/topics/cdppvc-installation-ecs-steps.html"
+  - name: Configure PvC cluster
+    type: group
+    steps:
+      - name: Initial configuration
+        type: task
+        execution: auto
+        ansibleTags:
+          - "pvc-cluster-initial-config"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+      - name: Configuring LDAP authentication
+        service: ldap
+        type: task
+        execution: ${ transitionUserSettingVars['configure_ldap'] == true ? 'auto':'manual' }
+        manualDescription: >
+          This is a manual step.
+          Please follow the <a href="https://docs.cloudera.com/management-console/latest/private-cloud-administration/topics/mc-private-cloud-security-ldap.html" target="_blank">documentation</a> and press the complete button when you are done.
+        ansibleTags:
+          - "pvc-ldap-configuration"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/management-console/latest/private-cloud-administration/topics/mc-private-cloud-security-ldap.html"
+        when: ${ not sourceServiceVars['ldap'].exist }
+      - name: Create Environment
+        type: task
+        execution: auto
+        ansibleTags:
+          - "create-environment"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+      - name: Setup kubectl on CM node
+        type: task
+        execution: auto
+        ansibleTags:
+          - "setup-kubectl-cm"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+      - name: Setup cdpcli on CM node
+        type: task
+        execution: auto
+        ansibleTags:
+          - "setup-cdpcli-cm"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+  - name: Enabling Cloudera Data Engineering
+    type: group
+    doc: "https://docs.cloudera.com/data-engineering/1.5.0/index.html"
+    steps:
+      - name: Adding a Cloudera Data Engineering service
+        service: cde
+        type: task
+        execution: auto
+        ansibleTags:
+          - "create-cde-service"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/data-engineering/1.5.0/enable-data-engineering/topics/cde-private-cloud-add-cde-service.html"
+        when: ${ true }
+
+#      - name: Creating Virtual Clusters
+#        type: task
+#        execution: auto
+#        ansibleTags:
+#          - "create-cde-vc"
+#        commands:
+#          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+#        doc: "https://docs.cloudera.com/data-engineering/1.5.0/manage-clusters/topics/cde-private-cloud-create-cluster.html"
+#
+#      - name: Initializing virtual clusters
+#        type: task
+#        execution: auto
+#        ansibleTags:
+#          - "sign-cde-vc-certs"
+#          - "upload-cde-vc-certs"
+#        commands:
+#          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+#        doc: "https://docs.cloudera.com/data-engineering/1.5.0/manage-clusters/topics/cde-private-cloud-initialize-cluster.html"
+
+  - name: Enabling Cloudera Machine Learning
+    type: group
+    doc: "https://docs.cloudera.com/machine-learning/1.5.0/index.html"
+    steps:
+      - name: Create ML Workspace
+        service: cml
+        type: task
+        execution: auto
+        ansibleTags:
+          - "create-cml-workspace"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/machine-learning/1.5.0/workspaces-privatecloud/topics/ml-pvc-provision-ml-workspace.html"
+        when: ${ true }
+
+  - name: Enabling Cloudera Data Warehouse
+    type: group
+    doc: "https://docs.cloudera.com/data-warehouse/1.5.0/index.html"
+    steps:
+      - name: Activating environment
+        service: cdw
+        type: task
+        execution: auto
+        ansibleTags:
+          - "activate-cdw-environment"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/data-warehouse/1.5.0/openshift-environments/topics/dw-private-cloud-activate-ecs-environments.html"
+        when: ${ true }

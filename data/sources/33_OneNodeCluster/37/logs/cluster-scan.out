@@ -1,0 +1,21 @@
+inventory: /cma-3.2.0.0-21/data/sources/33_OneNodeCluster/37/inventory.ini
+extra-vars: /cma-3.2.0.0-21/data/sources/33_OneNodeCluster/37/vars.json
+tags: download-discovery-bundle
+additional-extra-vars: -e discovery_bundle_module=hdfs_report -e cluster_scan_dir=cluster-scan
+
+PLAY [Download Cluster Discovery Bundle] ***************************************
+
+TASK [cluster_discovery/download_discovery_bundle : Print discovery module] ****
+ok: [cdp.52.4.109.73.nip.io] => 
+  discovery_bundle_module: hdfs_report
+
+TASK [cluster_discovery/download_discovery_bundle : Create cma_remote_tmp_dir] ***
+fatal: [cdp.52.4.109.73.nip.io]: FAILED! => changed=false 
+  ansible_facts:
+    discovered_interpreter_python: /usr/bin/python
+  msg: 'There was an issue creating /usr/cma as requested: [Errno 13] Permission denied: ''/usr/cma'''
+  path: /usr/cma/tmp
+
+PLAY RECAP *********************************************************************
+cdp.52.4.109.73.nip.io     : ok=1    changed=0    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0   
+

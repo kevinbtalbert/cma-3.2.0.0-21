@@ -1,0 +1,111 @@
+---
+- name: Hive post migration
+  hosts: localhost
+  tags: hive-post-migration
+  gather_facts: False
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  roles:
+    - {role: get_hostnames_where_role_group_is_located, role_group_filter: HIVEMETASTORE}
+  tasks:
+    - name: Check if other services exist
+      is_service_exists:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        service_name: "{{ item }}"
+      register: is_service_exists_result
+      loop:
+        - ranger
+        - spark
+    - name: Run service commands
+      include_role:
+        name: run_service_command
+      vars:
+        service_name: hive
+        command: RangerPluginCreateAuditDir
+      when: is_service_exists_result['results'] | selectattr('item','==','ranger') | map(attribute='message') | first
+    - name: Update hive.execution.engine
+      include_role:
+        name: update_safety_valve
+      vars:
+        service_name: hive
+        name: "hive_service_config_safety_valve"
+        value:
+          hive.execution.engine: "spark"
+        state: present
+      when: is_service_exists_result['results'] | selectattr('item','==','spark') | map(attribute='message') | first
+    - name: Run 'Create HIVE sys database' service action
+      include_role:
+        name: run_service_command
+      vars:
+        service_name: hive
+        command: HiveCreateSysDbServiceCommand
+      when: am2cm_target_version is version('7.1.8', operator='>=') and am2cm_source_version == "HDP3"
+    - name: Restart hive service
+      include_role:
+        name: restart_service
+      vars:
+        service_name: "hive"
+
+- name: Migrate hive tables
+  hosts: HIVEMETASTORE[0]
+  tags: hive-post-migration
+  gather_facts: False
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  roles:
+    - get_java_home_of_current_host
+  tasks:
+    - name: Migrate hive tables
+      block:
+        - name: Resolve principal name
+          set_fact:
+            hdfs_princ: "{{ hdfs_user_name }}/{{ inventory_hostname }}@{{ kerberos_realm_name }}"
+
+        - name: Download HDFS service keytab
+          vars:
+            principal_name: "{{ hdfs_princ }}"
+          include_role:
+            name: get_cm_service_keytab
+
+        - name: Run kinit if necessary
+          include_role:
+            name: kinit
+          vars:
+            keytab: "{{ cm_service_keytab_filename }}"
+            principal: "{{ hdfs_princ }}"
+            skip_kinit: false
+            service_name: hdfs
+            become_user: "{{ hdfs_user_name }}"
+
+        - name: Assemble facts for moving the hive tables
+          set_fact:
+            hive_move_tables_command: >-
+              {{ hive_home }}/bin/hive 
+              --config {{ hive_home }}/conf 
+              --service strictmanagedmigration 
+              --hiveconf hive.strict.managed.tables=true 
+              -m automatic 
+              --modifyManagedTables 
+              --oldWarehouseRoot {{ hostvars['localhost']['hdp_hive_warehouse_directory'] }}
+
+        - name: Print hive tables moving command
+          debug:
+            var: hive_move_tables_command
+
+        - name: Run moving of hive tables
+          shell: >
+            {{ hive_move_tables_command }}
+          register: hive_move_tables_command_output
+          environment:
+            JAVA_HOME: "{{ java_home }}"
+          become: yes
+          become_user: "{{ hdfs_user_name }}"
+          failed_when: hive_move_tables_command_output.rc > 0
+
+        - name: Print hive moving tables command output
+          debug:
+            var: hive_move_tables_command_output
+      when: am2cm_source_version == "HDP2"
+

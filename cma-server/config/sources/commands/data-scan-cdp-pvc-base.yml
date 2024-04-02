@@ -1,0 +1,44 @@
+---
+commandType: HDFS_DATA_SCAN
+sourceType: CDP_PVC_BASE
+commandDir: cma-pc-ansible
+vars:
+  cluster_scan_dir: ${sourceVars['cluster_scan_dir']}
+commands:
+  - command: ./cluster-scanner-runner.sh --hdfs-data-scan -i ${path-to-source-inventory-ini} --extra-vars "${path-to-source-extra-vars-json}" -o "${cluster_scan_dir}"
+    serverActions:
+      - com.cloudera.migration.am2cm.server.ambari.scan.data.hdfs.SourceHdfsDataScanResultImporter
+---
+commandType: HIVE_TABLE_SCAN
+sourceType: CDP_PVC_BASE
+commandDir: cma-pc-ansible
+vars:
+  cluster_scan_dir: ${sourceVars['cluster_scan_dir']}
+commands:
+  - command: ./cluster-scanner-runner.sh --hive-table-scan -i ${path-to-source-inventory-ini} --extra-vars "${path-to-source-extra-vars-json}" -o "${cluster_scan_dir}"
+    serverActions:
+      - com.cloudera.migration.am2cm.server.ambari.scan.data.hive.SourceHiveTableScanResultImporter
+
+---
+commandType: HIVE_SRE_SCAN
+sourceType: CDP_PVC_BASE
+commandDir: cma-pc-ansible
+vars:
+  cluster_scan_dir: ${sourceVars['cluster_scan_dir']}
+commands:
+  - command: ./cluster-scanner-runner.sh --hive-table-check -i ${path-to-source-inventory-ini} --extra-vars "${path-to-source-extra-vars-json}" -o "${cluster_scan_dir}"
+    serverActions:
+      - com.cloudera.migration.am2cm.server.ambari.scan.data.hive.SourceHiveSreScanResultImporter
+
+
+---
+commandType: HBASE_TABLE_SCAN
+sourceType: CDP_PVC_BASE
+commandDir: cma-pc-ansible
+vars:
+  cluster_scan_dir: ${sourceVars['cluster_scan_dir']}
+commands:
+  - command: ./cluster-scanner-runner.sh --hbase-table-scan -i ${path-to-source-inventory-ini} --extra-vars "${path-to-source-extra-vars-json}" -o "${cluster_scan_dir}"
+    serverActions:
+      - com.cloudera.migration.am2cm.server.ambari.scan.data.hbase.HBaseTableScanResultImporter
+

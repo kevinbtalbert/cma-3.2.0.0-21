@@ -1,0 +1,53 @@
+---
+- name: Rollback Ranger HA keytab
+  hosts: all
+  gather_facts: False
+  tags: ranger-rollback
+  vars:
+    service_name: ranger
+    skip_service_stop: true
+    principal_prefix: "HTTP/"
+    principal_suffix: "{{ kerberos_realm_name }}"
+    default_ranger_ha_principals: "{{ [principal_prefix] | product(groups['all']) | map('join') | product([principal_suffix]) | map('join') | list }}"
+    ranger_ha_spnego_keytab_backup_path: "{{ service_backup_dir }}/{{ ranger_ha_spnego_keytab_backup_file }}"
+  roles:
+    - prepare_to_rollback_service
+  tasks:
+    - block:
+        - name: Check if Ranger HA keytab exists
+          stat:
+            path: "{{ ranger_ha_spnego_keytab_backup_path }}"
+          register: ranger_ha_spnego_keytab_backup_path_status
+
+        - block:
+            - name: Get Principals from existing Ranger HA keytab
+              shell: "klist -kt {{ ranger_ha_spnego_keytab_backup_path }} | awk '{print $4}' | uniq | sed -r '/^\\s*$/d'"
+              register: ranger_ha_principals
+
+            - debug:
+                var: ranger_ha_principals
+
+            - name: Generate Ranger HA keytab
+              include_role:
+                name: generate_kerberos_keytab
+              vars:
+                principal_names: "{{ ranger_ha_principals.stdout_lines | default(default_ranger_ha_principals) }}"
+                keytab_path: "{{ ranger_ha_spnego_keytab_path }}"
+          when: ranger_ha_spnego_keytab_backup_path_status.stat.exists
+      when: ranger_is_ha
+
+# https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3_rollback_hdp3_restore_ranger_admin_db_7.1.7.html
+- name: Rollback Ranger DB
+  hosts: backup_ranger_db
+  gather_facts: False
+  tags: ranger-rollback
+  vars:
+    service_name: ranger
+    skip_service_stop: true
+  roles:
+    - prepare_to_rollback_service
+    - { role: rollback_db, db_host: "{{ inventory_hostname }}" }
+  tasks:
+    - name: Start Ranger in Ambari
+      include_role:
+        name: start_hdp_service

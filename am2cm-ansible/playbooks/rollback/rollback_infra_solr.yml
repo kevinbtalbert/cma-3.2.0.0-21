@@ -1,0 +1,30 @@
+---
+
+- name: Rollback infra_solr data
+  hosts: backup_infra_solr_server[0]
+  gather_facts: False
+  tags: infra-solr-rollback
+  vars:
+    service_name: solr
+  roles:
+    - prepare_to_rollback_service
+    - setup_am2cm_solr_client
+  tasks:
+    - name: Start Infra-Solr in Ambari
+      include_role:
+        name: start_hdp_service
+      vars:
+        service_name: "{{ infra_solr_service_name }}"
+
+    - name: Restore Infra-Solr documents
+      include_role:
+        name: import_solr_collection
+      loop: "{{ infra_solr_collections.split(',') | map('trim') }}"
+      loop_control:
+        loop_var: solr_collection
+
+    - name: Fetch am2cm-solr-client.log to local
+      fetch:
+        src: "{{ am2cm_solr_client_log_file }}"
+        dest: "{{ am2cm_local_dir }}/rollback_infra_solr.log"
+        flat: yes

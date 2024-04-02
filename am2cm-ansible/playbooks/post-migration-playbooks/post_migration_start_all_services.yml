@@ -1,0 +1,18 @@
+---
+- name: Start all services at the end of post migration steps
+  hosts: localhost
+  tags: start-all-services
+  gather_facts: False
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  roles:
+    - start_all_services
+  tasks:
+    # without this Atlas is not able to connect Ranger after hdp2->cdp transition
+    - name: Restart Atlas
+      include_role:
+        name: restart_service
+      vars:
+        service_name: atlas
+      when: am2cm_source_version == "HDP2"

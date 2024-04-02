@@ -1,0 +1,114 @@
+---
+- name: Enable Auto-TLS, let Cloudera Manager generate internal CA and corresponding certificates
+  # https://docs.cloudera.com/cdp-private-cloud-base/7.1.7/security-encrypting-data-in-transit/topics/cm-security-use-case-1.html
+  hosts: all
+  gather_facts: False
+  tags: enable-auto-tls-1
+  tasks:
+    - name: Check the first cloudera manager agent whether it has ssl enabled or not
+      lineinfile:
+        path: /etc/cloudera-scm-agent/config.ini
+        line: "use_tls=1"
+        state: present
+      check_mode: yes
+      delegate_to: "{{ groups['clients'][0] }}"
+      run_once: true
+      register: is_tls_registered
+    - block:
+      - name: Enable TLS
+        enable_tls:
+          cm_configuration: "{{ cm_configuration_dictionary }}"
+          ssh_configuration: "{{ ssh_configuration_dictionary }}"
+          timeout_seconds: 900
+        register: enable_tls_result
+        delegate_to: localhost
+        run_once: True
+        environment:
+          - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+          - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+      - name: Set result as global variable for every host
+        set_fact:
+          enable_tls_result: "{{ enable_tls_result }}"
+      when: (is_tls_registered is changed)
+
+- name: Restart Cloudera Manager server
+  hosts: server
+  gather_facts: False
+  tags: enable-auto-tls-1
+  tasks:
+    - name: Restart Cloudera Manager Server
+      service:
+        name: cloudera-scm-server
+        state: restarted
+      become: yes
+      when: enable_tls_result is defined and enable_tls_result.changed
+
+- name: Restart Cloudera Manager agents
+  hosts: clients
+  gather_facts: False
+  tags: enable-auto-tls-1
+  tasks:
+    - name: Restart Cloudera Manager Agents
+      service:
+        name: cloudera-scm-agent
+        state: restarted
+      become: yes
+      when: enable_tls_result is defined and enable_tls_result.changed
+
+- name: Persist the new 'cloudera_manager_protocol' and 'cloudera_manager_port' in the all.yml and refresh inventory
+  hosts: all
+  gather_facts: False
+  tags: enable-auto-tls-1
+  tasks:
+    - block:
+      - block:
+        - name: Update cloudera_manager_protocol to https in all.yml
+          lineinfile:
+            path: "{{ inventory_dir }}/group_vars/all.yml"
+            regexp: '^cloudera_manager_protocol'
+            line: 'cloudera_manager_protocol: "https"'
+            state: present
+          run_once: True
+          delegate_to: localhost
+          environment:
+            - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+            - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+        - name: Update cloudera_manager_port to 7183 in all.yml
+          lineinfile:
+            path: "{{ inventory_dir }}/group_vars/all.yml"
+            regexp: '^cloudera_manager_port'
+            line: 'cloudera_manager_port: 7183'
+            state: present
+        delegate_to: localhost
+        environment:
+          - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+          - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+        run_once: True
+      - set_fact:
+          cm_configuration_dictionary: "{{ cm_configuration_dictionary |
+          combine({'cloudera_manager_protocol': 'https', 'cloudera_manager_port': '7183'}) }}"
+
+      - name: Wait for (TLS enabled) Cloudera Manager Server to be available before continuing # wait for 30 * 10 seconds = 5 minutes
+        uri:
+          url: "https://{{ groups['server'][0] }}:7183"
+          method: GET
+          validate_certs: false
+        register: _result
+        until: _result.status == 200
+        delay: 10
+        retries: 30
+        delegate_to: localhost
+        run_once: True
+
+      - name: Wait for all agents to be ready
+        wait_for_cm_agent_readiness:
+          cm_configuration: "{{ cm_configuration_dictionary }}"
+        delegate_to: localhost
+        run_once: True
+
+      - name: Restart cloudera-management service
+        include_role:
+          name: restart_service
+        vars:
+          service_name: mgmt
+      when: enable_tls_result is defined and enable_tls_result.changed

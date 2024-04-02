@@ -1,0 +1,7 @@
+---
+- name: Download Python source code for offline use
+  hosts: localhost
+  gather_facts: false
+  tags: download_python_for_offline_use
+  roles:
+    - download_python_for_offline_use

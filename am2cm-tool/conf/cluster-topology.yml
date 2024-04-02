@@ -1,0 +1,104 @@
+clusterName: datalake
+services:
+  - HDFS
+  - ATLAS
+  - RANGER
+  - HBASE
+  - HIVE
+  - KAFKA
+  - KNOX
+  - SOLR
+  - ZOOKEEPER
+hostTemplates:
+  - refName: master,
+    cardinality: 1
+    roleConfigGroupsRefNames:
+      - atlas-ATLAS_SERVER-BASE
+      - hbase-GATEWAY-BASE
+      - hbase-HBASETHRIFTSERVER-BASE
+      - hbase-REGIONSERVER-BASE
+      - hbase-MASTER-BASE
+      - hdfs-DATANODE-BASE
+      - hdfs-BALANCER-BASE
+      - hdfs-GATEWAY-BASE
+      - hdfs-NAMENODE-BASE
+      - hdfs-NFSGATEWAY-BASE
+      - hdfs-SECONDARYNAMENODE-BASE
+      - hive-HIVEMETASTORE-BASE
+      - kafka-GATEWAY-BASE
+      - kafka-KAFKA_BROKER-BASE
+      - knox-KNOX_GATEWAY-BASE
+      - ranger-RANGER_ADMIN-BASE
+      - ranger-RANGER_TAGSYNC-BASE
+      - ranger-RANGER_USERSYNC-BASE
+      - solr-SOLR_SERVER-BASE
+      - zookeeper-SERVER-BASE
+  - refName: idbroker,
+    cardinality: 1
+    roleConfigGroupsRefNames:
+      - knox-IDBROKER-BASE
+---
+clusterName: workload
+services:
+  - ZOOKEEPER
+  - HDFS
+  - YARN
+  - HIVE
+  - TEZ
+  - HIVE_ON_TEZ
+  - LIVY
+  - SPARK
+  - SPARK_ON_YARN
+  - ZEPPELIN
+  - HUE
+hostTemplates:
+  - refName: gateway
+    cardinality: 1
+    roleConfigGroupsRefNames:
+      - hdfs-BALANCER-BASE
+      - hive-GATEWAY-BASE
+      - hms-GATEWAY-BASE
+      - hue-HUE_LOAD_BALANCER-BASE
+      - livy-LIVY_SERVER-BASE
+      - spark_on_yarn-SPARK_YARN_HISTORY_SERVER-BASE
+      - tez-GATEWAY-BASE
+      - yarn-JOBHISTORY-BASE
+      - zeppelin-ZEPPELIN_SERVER-BASE
+  - refName: master
+    cardinality: 2
+    roleConfigGroupsRefNames:
+      - hdfs-FAILOVERCONTROLLER-BASE
+      - hdfs-NAMENODE-BASE
+      - hive-GATEWAY-BASE
+      - hive-HIVESERVER2-BASE
+      - hms-GATEWAY-BASE
+      - hms-HIVEMETASTORE-BASE
+      - hue-HUE_SERVER-BASE
+      - livy-GATEWAY-BASE
+      - spark_on_yarn-GATEWAY-BASE
+      - tez-GATEWAY-BASE
+      - yarn-RESOURCEMANAGER-BASE
+  - refName: worker
+    cardinality: 3
+    roleConfigGroupsRefNames:
+      - hdfs-DATANODE-BASE
+      - hive-GATEWAY-BASE
+      - hms-GATEWAY-BASE
+      - livy-GATEWAY-BASE
+      - spark_on_yarn-GATEWAY-BASE
+      - tez-GATEWAY-BASE
+      - yarn-NODEMANAGER-WORKER
+  - refName: compute
+    cardinality: 0
+    roleConfigGroupsRefNames:
+      - hive-GATEWAY-BASE
+      - hms-GATEWAY-BASE
+      - livy-GATEWAY-BASE
+      - spark_on_yarn-GATEWAY-BASE
+      - tez-GATEWAY-BASE
+      - yarn-NODEMANAGER-COMPUTE
+  - refName: quorum
+    cardinality: 3
+    roleConfigGroupsRefNames:
+      - hdfs-JOURNALNODE-BASE
+      - zookeeper-SERVER-BASE

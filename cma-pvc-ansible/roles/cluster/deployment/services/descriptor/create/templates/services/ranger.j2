@@ -1,0 +1,24 @@
+services: [RANGER]
+configs:
+  RANGER:
+    SERVICEWIDE:
+      hdfs_service: "{{ hdfs_service_name }}"
+      solr_service: "{{ solr_service_name }}"
+
+      ranger_database_host: "{{ ranger_hosts[0] }}"
+      ranger_database_port: {{ ranger_database_port }}
+      ranger_database_type: "{{ ranger_database_type }}"
+      ranger_database_name: "{{ ranger_database_name }}"
+      ranger_database_user: "{{ ranger_database_user }}"
+      ranger_database_password: "{{ ranger_database_password }}"
+
+      keyadmin_user_password: "{{ ranger_default_password }}"
+      rangeradmin_user_password: "{{ ranger_default_password }}"
+      rangertagsync_user_password: "{{ ranger_default_password }}"
+      rangerusersync_user_password: "{{ ranger_default_password }}"
+
+roles:
+  RANGER:
+    RANGER_ADMIN: {{ ranger_hosts }}
+    RANGER_TAGSYNC: {{ ranger_hosts }}
+    RANGER_USERSYNC: {{ ranger_hosts }}

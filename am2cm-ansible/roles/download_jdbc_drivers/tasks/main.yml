@@ -1,0 +1,29 @@
+- name: Download JDBC drivers, postgres or oracle jdbc type
+  get_url:
+    validate_certs: false
+    url: "{{ jdbc_driver_url }}"
+    dest: "{{ jdbc_dir }}"
+    mode: "0644"
+  when: database_type=="postgresql" or database_type=="oracle"
+
+- name: Download JDBC drivers, mysql jdbc type
+  block:
+    - name: Download the connector archive with curl
+      command: "curl -L {{ jdbc_driver_url }} -o {{ jdbc_dir }}/connector.tar.gz"
+      changed_when: false
+    - name: Unarchive the connector jar
+      unarchive:
+        remote_src: yes
+        src: "{{ jdbc_dir }}/connector.tar.gz"
+        dest: "{{ jdbc_dir }}"
+        include:
+          - "{{ jdbc_driver_basename }}/{{ jdbc_driver_basename }}.jar"
+        extra_opts:
+          - "--strip-components=1"
+        mode: "0644"
+        creates: "{{ jdbc_dir }}/{{ jdbc_driver_basename }}.jar"
+    - name: Delete the connector archive
+      file:
+        path: "{{ jdbc_dir }}/connector.tar.gz"
+        state: absent
+  when: database_type=="mysql"

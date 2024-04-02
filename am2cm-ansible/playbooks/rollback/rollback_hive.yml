@@ -1,0 +1,60 @@
+---
+- name: Get hive db host form jdbc url
+  tags: hive-rollback
+  hosts: localhost
+  gather_facts: False
+  roles:
+    - { role: get_db_host_from_jdbc_url, jdbc_url: "{{ hive_jdbc_url }}", db_name: "{{ hive_db_name }}" }
+  tasks:
+    - name: Create backup_hive_db host group
+      add_host:
+        name: "{{ db_host }}"
+        groups: backup_hive_db
+
+- name: Rollback Hive DB
+  hosts: backup_hive_db
+  gather_facts: False
+  tags: hive-rollback
+  vars:
+    service_name: hive
+  roles:
+    - prepare_to_rollback_service
+    - {role: rollback_db, db_host: "{{ inventory_hostname }}"}
+
+- name: Rollback Hive
+  hosts: backup_hive[0]
+  gather_facts: False
+  tags: hive-rollback
+  vars:
+    service_name: hive
+    restore_snapshot: "{{ restore_service_snapshots_in_hdfs }}"
+  roles:
+    # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3_hdp3_rollback_hive_7.1.7.html
+    - prepare_to_rollback_service
+
+  tasks:
+    - include_role:
+        name: restore_service_snapshot
+      when:
+        restore_snapshot
+
+    - include_role:
+        name: start_hdp_service
+        apply:
+          ignore_errors: "{{ am2cm_source_version == 'HDP3' }}"
+      register:
+        start_service_result
+
+    # detecting hive start fail and trying to fix it
+    # https://jira.cloudera.com/browse/BUG-122579
+
+    - name: Remove stale hive keytab in hdfs
+      block:
+        - name: Execute remove command
+          shell: 'hdfs dfs -rm /user/hive/.yarn/keytabs/hive/hive.service.keytab'
+          become: yes
+          become_user: "{{ hdfs_user_name }}"
+
+        - include_role:
+            name: start_hdp_service
+      when: 'am2cm_source_version == "HDP3" and "Failed to start" in start_service_result.message'

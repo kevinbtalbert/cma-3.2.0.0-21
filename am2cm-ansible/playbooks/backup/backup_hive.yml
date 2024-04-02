@@ -1,0 +1,37 @@
+---
+- name: Get hive db host form jdbc url
+  tags: hive-backup
+  hosts: localhost
+  gather_facts: False
+  roles:
+    - { role: get_db_host_from_jdbc_url, jdbc_url: "{{ hive_jdbc_url }}", db_name: "{{ hive_db_name }}" }
+  tasks:
+    - name: Create backup_hive_db host group
+      add_host:
+        name: "{{ db_host }}"
+        groups: backup_hive_db
+
+- name: Backup Hive DB
+  hosts: backup_hive_db
+  gather_facts: False
+  tags: hive-backup
+  vars:
+    service_name: hive
+  roles:
+    - prepare_to_backup_service
+    - role: backup_db
+      vars:
+        db_host: "{{ inventory_hostname }}"
+        database_type: "{{ hive_jdbc_url | regex_search('jdbc:([a-z]+):.*', '\\1') | first }}"
+
+- name: Backup Hive
+  hosts: backup_hive[0]
+  gather_facts: False
+  tags: hive-backup
+  vars:
+    service_name: hive
+    copy_to_local: "{{ copy_hdfs_snapshots_to_local }}"
+  roles:
+    - prepare_to_backup_service
+    - create_service_snapshot
+    # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3_backup_hive.html

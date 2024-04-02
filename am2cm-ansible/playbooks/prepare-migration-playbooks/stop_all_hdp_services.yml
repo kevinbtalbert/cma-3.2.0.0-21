@@ -1,0 +1,7 @@
+---
+- name: Stop HDP services
+  tags: stop-hdp-services
+  hosts: 'localhost'
+  gather_facts: False
+  roles:
+    - { role: stop_all_hdp_services, skip_errors: false }

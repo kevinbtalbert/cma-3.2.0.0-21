@@ -1,0 +1,244 @@
+---
+
+- hosts: hdfs_all_hosts
+  tags: hdfs-rollback, hdfs-prepare-rollback
+  gather_facts: False
+  vars:
+    service_name: hdfs
+  roles:
+    - prepare_to_rollback_service
+  tasks:
+    - name: Create remote log directory
+      file:
+        path: "{{ am2cm_remote_log_dir }}"
+        mode: 0777
+        state: directory
+
+- hosts: hdfs_journalnodes
+  gather_facts: False
+  vars:
+    service_name: hdfs
+  tasks:
+    - block:
+        - name: Start ZKFC component in Ambari
+          import_role:
+            name: hdp_service_component
+          vars:
+            component_name: ZKFC
+            action: start
+          tags: hdfs-rollback, jn-rollback
+
+        - name: Rollback JournalNodes
+          block:
+            - name: Delete current folder
+              file:
+                path: "{{ hdfs_journalnode_dir }}/{{ hdfs_nameservice_id }}/current"
+                state: absent
+            - name: Copy previous into current folder
+              copy:
+                src: "{{ hdfs_journalnode_dir }}/{{ hdfs_nameservice_id }}/previous/"
+                dest: "{{ hdfs_journalnode_dir }}/{{ hdfs_nameservice_id }}/current/"
+                remote_src: yes
+            - name: Delete previous folder
+              file:
+                path: "{{ hdfs_journalnode_dir }}/{{ hdfs_nameservice_id }}/previous"
+                state: absent
+          become: yes
+          become_user: "{{ hdfs_user_name }}"
+          tags: jn-manual-rollback, never
+
+        - block:
+            - name: Start JournalNode components in Ambari
+              import_role:
+                name: hdp_service_component
+              vars:
+                component_name: JOURNALNODE
+                action: start
+
+            - name: Wait 15 sec
+              wait_for:
+                timeout: 15
+              delegate_to: localhost
+          tags: hdfs-rollback, jn-rollback
+
+      when: hdfs_is_ha
+
+- hosts: hdfs_namenodes
+  tags: hdfs-rollback, nn-rollback
+  gather_facts: False
+  vars:
+    service_name: hdfs
+    nn_rollback_log_file: "{{ am2cm_remote_log_dir }}/nn-{{ inventory_hostname }}-rollback.out"
+  tasks:
+    - name: Run kinit if necessary
+      include_role:
+        name: kinit
+      vars:
+        keytab: "{{ hdfs_nn_keytab }}"
+        principal: "{{ hdfs_nn_principal | replace('_HOST', inventory_hostname) }}"
+        changed_when: false
+        become: yes
+        become_user: "{{ hdfs_user_name }}"
+        skip_kinit: false
+
+      # /etc/hadoop/conf symlink should be restored,
+      # otherwise yes | hdfs --config /etc/hadoop/conf_backup namenode -rollback;
+    - name: Rollback Namenode
+      expect:
+        command: "hdfs namenode -rollback"
+        responses:
+          '(?m).*Roll back file system state?': 'Y'
+      register: rollback_result
+      become: yes
+      become_user: "{{ hdfs_user_name }}"
+
+    - name: Print output
+      debug:
+        msg: "{{ rollback_result.stdout_lines }}"
+
+    # restart JN
+    - block:
+      - name: Restart JournalNode components in Ambari
+        include_role:
+          name: hdp_service_component
+        vars:
+          component_name: JOURNALNODE
+          action: restart
+
+      - name: Wait 15 sec
+        wait_for:
+          timeout: 15
+        delegate_to: localhost
+        run_once: true
+      when: hdfs_is_ha
+
+    # start NN
+    - include_role:
+        name: hdp_service_component
+      vars:
+        component_name: NAMENODE
+        action: start
+        wait_for_complete: True
+
+- hosts: hdfs_datanodes
+  tags: hdfs-rollback, dn-rollback
+  gather_facts: False
+#  become: yes
+#  become_user: "{{ hdfs_user_name }}"
+  vars:
+    service_name: hdfs
+    hadoop_ident_str: "root"
+    hadoop_subcmd: "datanode"
+    err_file: "{{ hdfs_log_dir }}/jsvc.err if am2cm_source_version == 'HDP2' else {{ hdfs_log_dir }}/privileged-{{ hadoop_ident_str }}-{{ hadoop_subcmd }}-{{inventory_hostname}}.err"
+    dn_rollback_log_file: "{{ am2cm_remote_log_dir }}/dn-{{ inventory_hostname }}-rollback.out"
+  environment:
+    - HDFS_DATANODE_SECURE_USER: "{{ hdfs_user_name }}"
+  tasks:
+    - name: Run kinit if necessary
+      include_role:
+        name: kinit
+      vars:
+        keytab: "{{ hdfs_dn_keytab }}"
+        principal: "{{ hdfs_dn_principal | replace('_HOST', inventory_hostname) }}"
+        changed_when: false
+        skip_kinit: false
+
+    - name: Rollback Datanode
+      shell: "hdfs datanode -rollback | tee {{ dn_rollback_log_file }} &"
+
+    - name: Monitoring Datanode
+      shell: tail -F {{ err_file }} | sed -n '/Layout version rolled back to / q';
+
+    - name: Get running Datanode process
+      command: pgrep -f proc_datanode
+      register: running_datanode_process
+
+    - name: Stopping rollbacked Datanode
+      command: kill -15 {{ item }}
+      with_items: "{{ running_datanode_process.stdout_lines }}"
+      ignore_errors: yes
+
+- hosts: hdfs-secondary-namenode
+  tags: hdfs-rollback, snn-rollback
+  gather_facts: False
+  become: yes
+  become_user: "{{ hdfs_user_name }}"
+  vars:
+    service_name: hdfs
+  tasks:
+    - name: Run kinit if necessary
+      include_role:
+        name: kinit
+      vars:
+        keytab: "{{ hdfs_service_keytab }}"
+        principal: "{{ hdfs_principal_name }}"
+        changed_when: false
+        skip_kinit: false
+
+    - name: Delete Secondary Namenode Dir
+      file:
+        path: "{{ hdfs_snn_dir }}"
+        status: absent
+
+    # hdfs --config /etc/hadoop/conf_backup secondarynamenode -format
+    - name: Format Secondary Namenode
+      command: hdfs secondarynamenode -format
+
+# Leave safe mode
+- hosts: hdfs_active_namenode
+  tags: hdfs-rollback, leave-safe-mode
+  gather_facts: False
+  vars:
+    service_name: hdfs
+    nn_tracking_url: "{{ hostvars['localhost']['NAMENODE_start_tracking_url'] }}"
+    delay_sec: "{{ hdfs_rollback_monitor_nn_starting_delay_sec | default(10) }}"
+    retry_count: "{{ hdfs_rollback_monitor_nn_starting_retry_count | default(30) }}"
+  tasks:
+    # wait for NN starting to complete
+    - block:
+        - name: Wait for NAMENODE to finish starting
+          uri:
+            url: "{{ nn_tracking_url }}"
+            method: GET
+            validate_certs: false
+            user: admin
+            password: admin
+            force_basic_auth: yes
+          register: _result
+          until: _result.json.Requests.request_status in ['COMPLETED', 'FAILED', 'ABORTED']
+          delay: "{{ delay_sec }}"
+          retries: "{{ retry_count }}"
+          ignore_errors: true
+
+        - name: Aborting NAMENODE startup
+          uri:
+            url: "{{ nn_tracking_url }}"
+            method: PUT
+            validate_certs: false
+            user: "{{ ambari_username }}"
+            password: "{{ ambari_password }}"
+            force_basic_auth: yes
+            headers:
+              X-Requested-By: ambari
+            body: '{"Requests":{"request_status":"ABORTED","abort_reason":"Aborted by user"}}'
+            body_format: json
+          when: _result.attempts >= (retry_count | int)
+      when: nn_tracking_url | length > 0
+      delegate_to: localhost
+      run_once: True
+
+    - name: Leave safe mode
+      shell: 'hdfs dfsadmin -safemode leave'
+      become: yes
+      become_user: "{{ hdfs_user_name }}"
+      changed_when: false
+
+
+    # Restart HDFS
+    - name: Stop HDFS service in Ambari
+      include_role:
+        name: stop_hdp_service
+
+    - name: Start HDFS service in Ambari
+      include_role:
+        name: start_hdp_service

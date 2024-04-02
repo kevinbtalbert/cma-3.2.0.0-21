@@ -1,0 +1,15 @@
+{
+  "name": "{{ data_context.name }}",
+  "displayName": "{{ data_context.name }}",
+  "services": [
+{%- set service_joiner = joiner(",") -%}
+{%- for service in data_context.services -%}
+{{ service_joiner() }}
+    {
+      "serviceName": "{{ service.name }}",
+      "serviceType": "{{ service.type }}",
+      "clusterName": "{{ cluster_name }}"
+    }
+{%- endfor -%}
+  ]
+}

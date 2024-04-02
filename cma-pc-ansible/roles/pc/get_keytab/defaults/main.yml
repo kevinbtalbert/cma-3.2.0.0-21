@@ -1,0 +1,2 @@
+---
+keytab_file: "{{ pc_keytab_file }}"

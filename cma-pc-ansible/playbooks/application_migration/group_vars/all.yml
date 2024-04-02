@@ -1,0 +1,37 @@
+# Copyright 2021 Cloudera, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+hive3parser_tool_dir: "{{ inventory_dir }}/hive3parser"
+hive3parser_input_dir: "{{ hive3parser_tool_dir }}/work"
+hive3parser_input_local: "{{ hive3parser_input_dir }}/local"
+hive3parser_input_hdfs: "{{ hive3parser_input_dir }}/hdfs"
+hive3parser_input_hdfs_directories: "{{ hive3parser_input_hdfs }}/directories"
+hive3parser_input_remote: "{{ hive3parser_input_dir }}/remote"
+hive3parser_result_dir: "{{ cluster_scan_dir_path }}/hive3parser"
+hive3parser_history_dir: "{{ hive3parser_tool_dir }}/history"
+hive3parser_hdfs_remote: "{{ cma_remote_tmp_dir }}/hdfs"
+hive3parser_hdfs_remote_directories: "{{ hive3parser_hdfs_remote }}/directories"
+hive3parser_hdfs_remote_tmp: "{{ hive3parser_hdfs_remote }}/tmp"
+hive3parser_hdfs_archived: "{{ hive3parser_tool_dir }}/archived"
+hive3parser_hdfs_archive: "hdfs.tar.gz"
+datetime: "{{ now(fmt='%Y%m%d-%H%M%S') }}"
+result_file_prefix: "results"
+result_file_name: "{{ result_file_prefix }}.csv"
+mapping_file_prefix: "mapping"
+mapping_file_name: "{{ mapping_file_prefix }}.csv"
+hive_db_file_prefix: "hive_db_table_resource"
+hive_db_file_name: "{{ hive_db_file_prefix }}.csv"
+scripts_pattern: "*.sql,*.hql,*.q"
+
+inventory_dir: "{{ transition_data_dir }}"

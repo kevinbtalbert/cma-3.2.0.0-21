@@ -1,0 +1,11 @@
+services: [HBASE]
+configs:
+  HBASE:
+    SERVICEWIDE:
+      hdfs_service: "{{ hdfs_service_name }}"
+      zookeeper_service: "{{ zookeeper_service_name }}"
+      hadoop_secure_web_ui: true
+roles:
+  HBASE:
+    MASTER: {{ hbase_master_hosts }}
+    REGIONSERVER: {{ hbase_regionserver_hosts }}

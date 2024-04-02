@@ -1,0 +1,29 @@
+- name: Collecting am2cm-solr-client info
+  set_fact:
+    am2cm_solr_client_config: "{{ am2cm_solr_client_config | default(am2cm_solr_client_configuration_dictionary) | combine ( {item.key : item.value}) }}"
+  with_items:
+    - { 'key': 'backup_dir' , 'value': "{{ service_backup_dir }}/{{ solr_collection }}"}
+
+- name: Print am2cm-solr-client config
+  debug:
+    msg: "{{ am2cm_solr_client_config }}"
+
+- name: "Check if {{ am2cm_solr_client_config['backup_dir'] }} exists"
+  stat:
+    path: "{{ am2cm_solr_client_config['backup_dir'] }}"
+  register: backup_dir_info
+  become: yes
+  failed_when: not backup_dir_info.stat.exists
+
+- name: "Import documents into {{ solr_collection }}"
+  am2cm_solr_client:
+    am2cm_solr_client_configuration: "{{ am2cm_solr_client_config }}"
+    solr_action: 'restore'
+    solr_collection: "{{ solr_collection }}"
+    log_file_path: "{{ am2cm_solr_client_log_file }}"
+  become: yes
+  register: res
+
+- name: Print output
+  debug:
+    msg: "{{ res.stdout_lines }}"

@@ -1,0 +1,19 @@
+services: [HIVE]
+configs:
+  HIVE:
+    SERVICEWIDE:
+      hdfs_service: "{{ hdfs_service_name }}"
+      zookeeper_service: "{{ zookeeper_service_name }}"
+
+      hive_metastore_database_host: "{{ hive_metastore_hosts.split(',')[0] }}"
+      hive_metastore_database_port: {{ hive_metastore_database_port }}
+      hive_metastore_database_type: "{{ hive_metastore_database_type }}"
+      hive_metastore_database_name: "{{ hive_metastore_database_name }}"
+      hive_metastore_database_user: "{{ hive_metastore_database_user }}"
+      hive_metastore_database_password: "{{ hive_metastore_database_password }}"
+
+    HIVEMETASTORE:
+      hive_enable_db_notification: true
+roles:
+  HIVE:
+    HIVEMETASTORE: {{ hive_metastore_hosts }}

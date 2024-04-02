@@ -1,0 +1,162 @@
+---
+- name: Clean HDP bits on the cluster
+  hosts: clients
+  gather_subset: ['!all', '!min', 'distribution']
+  tags: hdp-cleanup
+  vars:
+    packages:
+      # parsed from metainfo.xml
+      - accumulo<<suffix>>
+      - atlas-metadata<<suffix>>
+      - atlas-metadata<<suffix>>-falcon-plugin
+      - atlas-metadata<<suffix>>-hive-plugin
+      - datafu<<suffix>>
+      - druid<<suffix>>
+      - falcon<<suffix>>
+      - flume<<suffix>>
+      - hadoop<<suffix>>
+      - hadoop<<suffix>>-client
+      - hadoop<<suffix>>-hdfs
+      - hadoop<<suffix>>-hdfs-datanode
+      - hadoop<<suffix>>-hdfs-journalnode
+      - hadoop<<suffix>>-hdfs-namenode
+      - hadoop<<suffix>>-hdfs-secondarynamenode
+      - hadoop<<suffix>>-hdfs-zkfc
+      - hadoop<<suffix>>-libhdfs
+      - hadoop<<suffix>>-mapreduce
+      - hadoop<<suffix>>-yarn
+      - hbase-connectors<<suffix>>
+      - hbase<<suffix>>
+      - hbase_connectors<<suffix>>
+      - hive2<<suffix>>
+      - hive<<suffix>>
+      - hive<<suffix>>-hcatalog
+      - hive<<suffix>>-webhcat
+      - kafka<<suffix>>
+      - knox<<suffix>>
+      - libhdfs0<<suffix>>
+      - livy2<<suffix>>
+      - livy<<suffix>>
+      # there is an issue with oozie-client removing on HDP-3.1.5.0
+      #- oozie<<suffix>>-client
+      - oozie<<suffix>>
+      - phoenix-connectors<<suffix>>
+      - phoenix-omid<<suffix>>
+      - phoenix-queryserver<<suffix>>
+      - phoenix<<suffix>>
+      - phoenix_connectors<<suffix>>
+      - phoenix_omid<<suffix>>
+      - phoenix_queryserver<<suffix>>
+      - pig<<suffix>>
+      - ranger<<suffix>>-admin
+      - ranger<<suffix>>-kms
+      - ranger<<suffix>>-tagsync
+      - ranger<<suffix>>-usersync
+      - slider<<suffix>>
+      - spark-atlas-connector<<suffix>>
+      - spark2<<suffix>>
+      - spark2<<suffix>>-python
+      - spark<<suffix>>
+      - spark<<suffix>>-python
+      - sqoop<<suffix>>
+      - storm<<suffix>>
+      - storm<<suffix>>-slider-client
+      - superset<<suffix>>
+      - tez-hive2<<suffix>>
+      - tez<<suffix>>
+      - tez_hive2<<suffix>>
+      - zeppelin<<suffix>>
+      - zookeeper<<suffix>>
+      - zookeeper<<suffix>>-server
+      # not from metainfo.xml
+      - accumulo<<suffix>>-source
+      - accumulo<<suffix>>-test
+      - atlas-metadata<<suffix>>-hbase-plugin
+      - atlas-metadata<<suffix>>-kafka-plugin
+      - atlas-metadata<<suffix>>-sqoop-plugin
+      - atlas-metadata<<suffix>>-storm-plugin
+      - hadoop<<suffix>>-httpfs-server
+      - hadoop<<suffix>>-source
+      - hbase<<suffix>>-doc
+      - hive_warehouse_connector<<suffix>>
+      - ranger<<suffix>>-atlas-plugin
+      - ranger<<suffix>>-hbase-plugin
+      - ranger<<suffix>>-hdfs-plugin
+      - ranger<<suffix>>-hive-plugin
+      - ranger<<suffix>>-kafka-plugin
+      - ranger<<suffix>>-knox-plugin
+      - ranger<<suffix>>-solr-plugin
+      - ranger<<suffix>>-storm-plugin
+      - ranger<<suffix>>-yarn-plugin
+      - shc<<suffix>>
+      - spark2<<suffix>>-yarn-shuffle
+      - spark_schema_registry<<suffix>>
+      - hadooplzo<<suffix>>-native
+      - falcon<<suffix>>-doc
+      - hadoop<<suffix>>-doc
+      - mahout<<suffix>>-doc
+      - spark<<suffix>>-yarn-shuffle
+      - spark_llap<<suffix>>
+    non_version_packages:
+      # skip hdp-select because oozie-client is removed by dependency (that should be skipped, see the comment above)
+      #- hdp-select
+      - bigtop-jsvc
+      - bigtop-tomcat
+  tasks:
+    - name: Clean HDP directory
+      block:
+        - name: Check HDP dir space consumption
+          shell: "du -h -d 1 {{ hdp_bits_directory }} | sort -k1 -h -r"
+          register: du_result
+
+        - name: Print HDP dir space consumption
+          debug:
+            msg: "{{ du_result.stdout }}"
+
+        - name: Collect stack versions
+          find:
+            paths: "{{ hdp_bits_directory }}"
+            patterns: '.*\d+\.\d+\.\d+\.\d+-\d+'
+            file_type: "directory"
+            use_regex: "true"
+          register: stack_directories
+
+        - name: Extract dir names
+          set_fact:
+            dir_names: "{{ dir_names|default([]) + [ '.' ~ (item.path | basename) ] }}"
+          loop: "{{ stack_directories.files }}"
+
+        - name: Prepare version suffix
+          set_fact:
+            suffixes: "{{ dir_names | map('replace', '.', (ansible_distribution == 'Ubuntu') | ternary('-', '_') ) | map('replace', '-', (ansible_distribution == 'Ubuntu') | ternary('-', '_'))  | list }}"
+
+        - name: Prepare packages list
+          set_fact:
+            package_names: "{{ package_names|default([]) + packages | map('replace', '<<suffix>>', suffix) }}"
+          loop: "{{ suffixes }}"
+          loop_control:
+            loop_var: suffix
+
+        - name: Add non-versional packages
+          set_fact:
+            package_names: "{{ package_names|default([]) + non_version_packages }}"
+
+        - name: Print packages to remove
+          debug:
+            msg: "Packages: {{ package_names }}"
+
+        - name: Remove packages
+          block:
+            - name: Remove packages
+              package:
+                name: "{{ package_names }}"
+                state: absent
+          always:
+            - name: Check HDP dir space consumption after cleanup
+              shell: "du -h -d 1 {{ hdp_bits_directory }} | sort -k1 -h -r"
+              register: du_result_after
+
+            - name: Print HDP dir space consumption after cleanup
+              debug:
+                msg: "{{ du_result_after.stdout }}"
+      when: am2cm_ambari_hdp_cleanup_enabled|bool

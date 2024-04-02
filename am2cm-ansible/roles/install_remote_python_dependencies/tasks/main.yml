@@ -1,0 +1,14 @@
+- name: make sure that we know the python version
+  ansible.builtin.setup:
+    gather_subset:
+      - '!all'
+      - '!min'
+      - python_version
+- name: Install venv packages from requirements using remote downloaded_python_packages_directory
+  pip:
+    virtualenv: "{{ remote_venv_directory }}"
+    requirements: "{{ requirements_file }}"
+    extra_args: "--no-index --find-links={{ cma_remote_root_dir }}/{{ downloaded_python_packages_directory }}"
+  when:
+    - custom_python_interpreter_type is defined and custom_python_interpreter_type == 'venv'
+    - hostvars[inventory_hostname]['ansible_facts']['python_version'] is version(desired_remote_python_version,'==')

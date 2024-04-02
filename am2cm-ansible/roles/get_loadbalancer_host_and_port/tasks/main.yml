@@ -1,0 +1,2 @@
+- name: Get loadbalancer host & port based on service name
+  import_tasks: "{{ service_name }}.yml"

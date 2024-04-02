@@ -1,0 +1,39 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+
+- name: Check if input data is provided
+  fail:
+    msg: "Please make sure that both 'source_cluster_data_center' and 'source_cluster_cm_ip_address' is defined!"
+  when: source_cluster_data_center is not defined or source_cluster_cm_ip_address is not defined
+
+- name: Read source cluster's details
+  shell: |
+    cdp --profile {{ profile_id }} \
+    replicationmanager list-clusters
+  register: cluster_list
+
+- name: Set source_cluster_crn
+  set_fact:
+    source_cluster_crn: "{{ cluster_list.stdout | from_json | json_query(query_cluster_crn) | first }}"
+  when: source_cluster_crn is not defined
+
+- name: Set source_cluster_name
+  set_fact:
+    source_cluster_name: "{{ cluster_list.stdout | from_json | json_query(query_cluster_name) | first }}"
+  when: source_cluster_name is not defined
+
+- name: Set source_cluster_id
+  set_fact:
+    source_cluster_id: "{{ data_center }}${{ source_cluster_name }}"
+  when: source_cluster_id is not defined

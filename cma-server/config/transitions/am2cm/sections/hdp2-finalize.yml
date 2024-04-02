@@ -1,0 +1,28 @@
+---
+type: "INPLACE_ONE_STAGE_UPGRADE"
+sourceClusterType: HDP2
+version: 1
+steps:
+  - name: "Finalization"
+    type: "group"
+    steps:
+      - name: "Finalize HDFS Upgrade"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "finalize-hdfs-upgrade"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+      - name: "Toggle CM API encryption on"
+        service: "zookeeper"
+        type: "task"
+        execution: "auto"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/playbooks/utility-playbooks/toggle_redaction.yml --extra-vars "@${path-to-am2cm-extra-vars-json}" -e {"toggle_redaction_to":true}'
+      - name: "HDP bits cleanup"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "hdp-cleanup"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'

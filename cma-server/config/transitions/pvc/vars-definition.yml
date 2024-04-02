@@ -1,0 +1,249 @@
+---
+currentVersion:
+  - CDP_PVC_BASE
+
+uiFieldTypes:
+  text:
+    type: text
+    size: 200
+    editable: true
+  password:
+    type: password
+    size: 200
+    editable: true
+  checkbox:
+    type: checkbox
+    size: 200
+    editable: true
+  url-text:
+    type: text
+    size: 430
+    editable: true
+  file-content:
+    type: text
+    size: 430
+    editable: true
+
+extraVars:
+  - vars:
+      cloudera_manager_admin_username: ${sourceServerVars['username']}
+      cloudera_manager_admin_password: ${sourceServerVars['password']}
+      cloudera_manager_port: ${sourceServerVars['port']}
+      cloudera_manager_protocol: ${sourceServerVars['protocol']}
+      cloudera_manager_repo_username: ${transitionUserSettingVars['paywall_username']}
+      cloudera_manager_repo_password: ${transitionUserSettingVars['paywall_password']}
+      cloudera_manager_version: ${transitionUserSettingVars['cluster.manager.version']}
+      cloudera_manager_repo_base_url: ${transitionUserSettingVars['cluster.manager.repo_base_url']}
+      cluster_name: ${transitionUserSettingVars['source.cluster.name']}
+      pvc_cluster_name: ${transitionUserSettingVars['cluster.name']}
+      pvc_cluster_displayname: ${transitionUserSettingVars['cluster.displayname']}
+      ansible_user: ${targetServerVars['sshUser']}
+      ansible_ssh_private_key_file: ${ transitionVars['transition.ssh.key'] }
+      transition_log_dir: ${transitionVars['transition.log.dir']}
+      cma_root_dir: ${transitionVars['cma.root.dir']}
+      jdk_version: 11
+      pvc_repo_url: ${transitionUserSettingVars['cluster.repo_url']}
+      pvc_version: ${transitionUserSettingVars['cluster.version']}
+      pvc_ecs_server_host: ${targetServerVars['host']}
+      pvc_app_domain: ${targetServerVars['host']}
+    uiFields:
+      cloudera_manager_admin_username: text
+      cloudera_manager_admin_password: password
+      cloudera_manager_protocol: text
+      cloudera_manager_port: text
+      cloudera_manager_repo_username: text
+      cloudera_manager_repo_password: password
+      cloudera_manager_version: text
+      cloudera_manager_repo_url: text
+      ansible_user: text
+      ansible_ssh_private_key_file: text
+      transition_log_dir: text
+      jdk_version: text
+
+  - serviceName: ldap
+    when: ${ not sourceServiceVars['ldap'].exist }
+    vars:
+      ldap_provider_name: ${transitionUserSettingVars['ldap_provider_name']}
+      ldap_url: ${transitionUserSettingVars['ldap_url']}
+      ldap_user_search_base: ${transitionUserSettingVars['ldap_user_search_base']}
+      ldap_user_search_filter: ${transitionUserSettingVars['ldap_user_search_filter']}
+      ldap_group_search_base: ${transitionUserSettingVars['ldap_group_search_base']}
+      ldap_group_search_filter": ${transitionUserSettingVars['ldap_group_search_filter']}
+      ldap_user_bind_dn: ${transitionUserSettingVars['ldap_user_bind_dn']}
+      ldap_bind_password: ${transitionUserSettingVars['ldap_bind_password']}
+      ldap_bind_username: ${ LdapUtils:getUsernameFromUserBindDn(transitionUserSettingVars['ldap_user_bind_dn'])}
+      ldap_email_mapping_attribute: ${transitionUserSettingVars['ldap_email_mapping_attribute']}
+      ldap_crt: ${transitionUserSettingVars['ldap_crt']}
+      ldap_skip_group_sync: ${transitionUserSettingVars['ldap_skip_group_sync']}
+    uiFields:
+      ldap_provider_name: text
+      ldap_url: url-text
+      ldap_user_search_base: text
+      ldap_user_search_filter: text
+      ldap_group_search_base: text
+      ldap_group_search_filter: text
+      ldap_bind_username: text
+      ldap_user_bind_dn: text
+      ldap_bind_password: password
+      ldap_email_mapping_attribute: password
+      ldap_crt: file-content
+      ldap_skip_group_sync: checkbox
+  - serviceName: sdx
+    when: ${ not sourceServiceVars['sdx'].exist }
+    vars:
+      ranger_service_name: ${sourceServiceVars['ranger'].name}
+      hdfs_service_name: ${sourceServiceVars['hdfs'].name}
+      atlas_service_name: ${sourceServiceVars['atlas'].name}
+      hive_service_name: ${sourceServiceVars['hive'].name}
+      hbase_service_name: ${sourceServiceVars['hbase'].name}
+      kafka_service_name: ${sourceServiceVars['kafka'].name}
+      solr_service_name: ${sourceServiceVars['solr'].name}
+      zookeeper_service_name: ${sourceServiceVars['zookeeper'].name}
+    uiFields:
+      ranger_service_name: text
+      hdfs_service_name: text
+      atlas_service_name: text
+      hive_service_name: text
+      hbase_service_name:
+      kafka_service_name: text
+      solr_service_name: text
+      zookeeper_service_name: text
+      
+  - serviceName: kerberos
+    when: ${ not sourceServiceVars['kerberos'].exist }
+    vars:
+      timeout__mgmt__restart_service: 900
+    uiFields:
+      timeout__mgmt__restart_service: text
+  - serviceName: ranger
+    when: ${ not sourceServiceVars['ranger'].exist }
+    vars:
+      ranger_service_name: "ranger"
+      ranger_hosts: ${ HostUtils:getCommaSeparatedHostnames(transitionUserSettingVars['ranger_hosts']) }
+      ranger_database_port: USER_SETTING::RANGER::ranger_database_port
+      ranger_database_type: USER_SETTING::RANGER::ranger_database_type
+      ranger_database_name: USER_SETTING::RANGER::ranger_database_name
+      ranger_database_user: USER_SETTING::RANGER::ranger_database_user
+      ranger_database_password: USER_SETTING::RANGER::ranger_database_password
+      ranger_default_password: USER_SETTING::RANGER::ranger_default_password
+      timeout__ranger__restart_service: 900
+    uiFields:
+      ranger_service_name: text
+      ranger_hosts: text
+      ranger_database_port: text
+      ranger_database_type: text
+      ranger_database_name: text
+      ranger_database_user: text
+      ranger_database_password: password
+      ranger_default_password: password
+      timeout__ranger__restart_service: text
+  - serviceName: hdfs
+    when: ${ not sourceServiceVars['hdfs'].exist }
+    vars:
+      hdfs_service_name: "hdfs"
+      hdfs_name_node_hosts: ${ HostUtils:getCommaSeparatedHostnames(transitionUserSettingVars['hdfs_name_node_hosts']) }
+      hdfs_secondary_name_node_hosts: ${ HostUtils:getCommaSeparatedHostnames(transitionUserSettingVars['hdfs_secondary_name_node_hosts']) }
+      hdfs_data_node_hosts: ${ HostUtils:getCommaSeparatedHostnames(transitionUserSettingVars['hdfs_data_node_hosts']) }
+      hdfs_name_dir: USER_SETTING::HDFS::hdfs_name_dir
+      hdfs_checkpoint_dir: USER_SETTING::HDFS::hdfs_checkpoint_dir
+      hdfs_data_dir: USER_SETTING::HDFS::hdfs_data_dir
+      timeout__hdfs__restart_service: 900
+    uiFields:
+      hdfs_service_name: text
+      hdfs_name_node_hosts: text
+      hdfs_secondary_name_node_hosts: text
+      hdfs_data_node_hosts: text
+      hdfs_name_dir: text
+      hdfs_checkpoint_dir: text
+      hdfs_data_dir: text
+      timeout__hdfs__restart_service: text
+  - serviceName: ozone
+    when: ${ not sourceServiceVars['ozone'].exist }
+    vars:
+      ozone_s3_gateway_recon_hosts: ${ HostUtils:getCommaSeparatedHostnames(transitionUserSettingVars['ozone_s3_gateway_recon_hosts']) }
+      ozone_manager_scm_hosts: ${ HostUtils:getCommaSeparatedHostnames(transitionUserSettingVars['ozone_manager_scm_hosts']) }
+      ozone_datanode_hosts: ${ HostUtils:getCommaSeparatedHostnames(transitionUserSettingVars['ozone_datanode_hosts']) }
+      ozone_service_id: USER_SETTING::OZONE::ozone_service_id
+      timeout__ozone__restart_service: 900
+    uiFields:
+      ozone_s3_gateway_recon_hosts: text
+      ozone_manager_scm_hosts: text
+      ozone_datanode_hosts: text
+      ozone_service_id: text
+      timeout__ozone__restart_service: text
+  - serviceName: yarn
+    when: ${ not sourceServiceVars['yarn'].exist }
+    vars:
+      timeout__yarn__restart_service: 900
+    uiFields:
+      timeout__yarn__restart_service: text
+  - serviceName: solr
+    when: ${ not sourceServiceVars['solr'].exist }
+    vars:
+      solr_service_name: "solr"
+      solr_server_hosts: ${ HostUtils:getCommaSeparatedHostnames(transitionUserSettingVars['solr_server_hosts']) }
+      timeout__solr__restart_service: 900
+    uiFields:
+      solr_service_name: text
+      solr_server_hosts: text
+      timeout__solr__restart_service: text
+  - serviceName: atlas
+    when: ${ not sourceServiceVars['atlas'].exist }
+    vars:
+      atlas_service_name: "atlas"
+      atlas_server_hosts: ${ HostUtils:getCommaSeparatedHostnames(transitionUserSettingVars['atlas_server_hosts']) }
+      atlas_admin_password: USER_SETTING::ATLAS::atlas_admin_password
+      atlas_authentication_method_file: USER_SETTING::ATLAS::atlas_authentication_method_file
+      atlas_solr_replication_factor: USER_SETTING::ATLAS::atlas_solr_replication_factor
+      timeout__atlas__restart_service: 900
+    uiFields:
+      atlas_service_name: text
+      atlas_server_hosts: text
+      atlas_admin_password: password
+      atlas_authentication_method_file: text
+      atlas_solr_replication_factor: text
+      timeout__atlas__restart_service: text
+  - serviceName: hive
+    when: ${ not sourceServiceVars['hive'].exist }
+    vars:
+      hive_metastore_hosts: ${ HostUtils:getCommaSeparatedHostnames(transitionUserSettingVars['hive_metastore_hosts']) }
+      hive_metastore_database_port: USER_SETTING::HIVE::hive_metastore_database_port
+      hive_metastore_database_type: USER_SETTING::HIVE::hive_metastore_database_type
+      hive_metastore_database_name: USER_SETTING::HIVE::hive_metastore_database_name
+      hive_metastore_database_user: USER_SETTING::HIVE::hive_metastore_database_user
+      hive_metastore_database_password: USER_SETTING::HIVE::hive_metastore_database_password
+      timeout__hive__restart_service: 900
+    uiFields:
+      hive_metastore_hosts: text
+      hive_metastore_database_port: text
+      hive_metastore_database_type: text
+      hive_metastore_database_name: text
+      hive_metastore_database_user: text
+      hive_metastore_database_password: password
+      timeout__hive__restart_service: text
+  - serviceName: hbase
+    vars:
+      hbase_service_name: "hbase"
+      hbase_master_hosts: ${ HostUtils:getCommaSeparatedHostnames(transitionUserSettingVars['hbase_master_hosts']) }
+      hbase_regionserver_hosts: ${ HostUtils:getCommaSeparatedHostnames(transitionUserSettingVars['hbase_regionserver_hosts']) }
+    uiFields:
+      hbase_service_name: text
+      hbase_master_hosts: text
+      hbase_regionserver_hosts: text
+  - serviceName: kafka
+    vars:
+      kafka_service_name: "kafka"
+      kafka_broker_hosts: ${ HostUtils:getCommaSeparatedHostnames(transitionUserSettingVars['kafka_broker_hosts']) }
+      kafka_connect_hosts: ${ HostUtils:getCommaSeparatedHostnames(transitionUserSettingVars['kafka_connect_hosts']) }
+    uiFields:
+      kafka_service_name: text
+      kafka_broker_hosts: text
+      kafka_connect_hosts: text
+  - serviceName: cdw
+    vars:
+      ldap_bind_username: ${ LdapUtils:getUsernameFromUserBindDn(transitionUserSettingVars['ldap_user_bind_dn'])}
+      ldap_bind_password: ${transitionUserSettingVars['ldap_bind_password']}
+    uiFields:
+      ldap_bind_username: text
+      ldap_bind_password: password
+

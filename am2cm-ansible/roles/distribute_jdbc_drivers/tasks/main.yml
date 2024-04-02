@@ -1,0 +1,18 @@
+- name: Print jdbc driver directory on control node
+  debug:
+    var: jdbc_control_node_directory
+- name: Make sure that {{ jdbc_remote_driver_directory }} exists on the remotes
+  ansible.builtin.file:
+    path: "{{ jdbc_remote_driver_directory }}"
+    state: directory
+    mode: '0755'
+  become: yes
+  become_user: root
+- name: Copy jdbc drivers from the control node to the remotes
+  copy:
+    src: "{{ item }}"
+    dest: "{{ jdbc_remote_driver_directory }}"
+    mode: '0644'
+  loop: "{{ query('ansible.builtin.fileglob', jdbc_control_node_directory + '/*.jar') }}"
+  become: yes
+  become_user: root

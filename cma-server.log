@@ -1,0 +1,176 @@
+2024-04-02 00:00:15.208 DEBUG 23 --- [qtp1818449913-13071] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:00:15.236 DEBUG 23 --- [qtp1818449913-13071] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:00:35.217 DEBUG 23 --- [qtp1818449913-13066] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:00:35.224 DEBUG 23 --- [qtp1818449913-13066] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:00:37.098 DEBUG 23 --- [qtp1818449913-13033] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:00:37.100 DEBUG 23 --- [qtp1818449913-13033] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:00:47.131 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:00:47.134 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:01:17.273 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:01:17.274 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:01:37.280 DEBUG 23 --- [qtp1818449913-13124] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:01:37.280 DEBUG 23 --- [qtp1818449913-13124] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:01:39.095 DEBUG 23 --- [qtp1818449913-13071] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:01:39.095 DEBUG 23 --- [qtp1818449913-13071] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:01:49.089 DEBUG 23 --- [qtp1818449913-13066] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:01:49.090 DEBUG 23 --- [qtp1818449913-13066] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:02:19.219 DEBUG 23 --- [qtp1818449913-13071] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:02:19.221 DEBUG 23 --- [qtp1818449913-13071] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:02:39.228 DEBUG 23 --- [qtp1818449913-13081] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:02:39.229 DEBUG 23 --- [qtp1818449913-13081] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:02:41.097 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:02:41.097 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:02:51.089 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:02:51.089 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:03:21.213 DEBUG 23 --- [qtp1818449913-13066] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:03:21.215 DEBUG 23 --- [qtp1818449913-13066] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:03:41.225 DEBUG 23 --- [qtp1818449913-13124] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:03:41.228 DEBUG 23 --- [qtp1818449913-13124] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:03:43.136 DEBUG 23 --- [qtp1818449913-13071] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:03:43.138 DEBUG 23 --- [qtp1818449913-13071] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:03:53.078 DEBUG 23 --- [qtp1818449913-13081] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:03:53.079 DEBUG 23 --- [qtp1818449913-13081] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:04:23.178 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:04:23.179 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:04:43.180 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:04:43.181 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:04:45.062 DEBUG 23 --- [qtp1818449913-13066] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:04:45.063 DEBUG 23 --- [qtp1818449913-13066] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:04:55.067 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:04:55.068 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:05:25.187 DEBUG 23 --- [qtp1818449913-13033] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:05:25.189 DEBUG 23 --- [qtp1818449913-13033] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:05:45.184 DEBUG 23 --- [qtp1818449913-13081] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:05:45.186 DEBUG 23 --- [qtp1818449913-13081] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:05:47.091 DEBUG 23 --- [qtp1818449913-13066] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:05:47.096 DEBUG 23 --- [qtp1818449913-13066] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:05:57.111 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:05:57.114 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:06:27.228 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:06:27.231 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:06:47.275 DEBUG 23 --- [qtp1818449913-13071] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:06:47.278 DEBUG 23 --- [qtp1818449913-13071] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:06:49.077 DEBUG 23 --- [qtp1818449913-13033] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:06:49.078 DEBUG 23 --- [qtp1818449913-13033] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:06:59.046 DEBUG 23 --- [qtp1818449913-13081] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:06:59.047 DEBUG 23 --- [qtp1818449913-13081] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:07:29.166 DEBUG 23 --- [qtp1818449913-13033] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:07:29.168 DEBUG 23 --- [qtp1818449913-13033] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:07:49.171 DEBUG 23 --- [qtp1818449913-13124] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:07:49.173 DEBUG 23 --- [qtp1818449913-13124] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:07:51.077 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:07:51.078 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:08:01.066 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:08:01.067 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:08:31.187 DEBUG 23 --- [qtp1818449913-13066] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:08:31.188 DEBUG 23 --- [qtp1818449913-13066] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:08:51.204 DEBUG 23 --- [qtp1818449913-13071] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:08:51.207 DEBUG 23 --- [qtp1818449913-13071] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:08:53.092 DEBUG 23 --- [qtp1818449913-13033] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:08:53.094 DEBUG 23 --- [qtp1818449913-13033] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:09:03.140 DEBUG 23 --- [qtp1818449913-13124] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:09:03.143 DEBUG 23 --- [qtp1818449913-13124] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:09:33.277 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:09:33.280 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:09:53.267 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:09:53.269 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:09:55.076 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:09:55.077 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:10:05.069 DEBUG 23 --- [qtp1818449913-13066] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:10:05.070 DEBUG 23 --- [qtp1818449913-13066] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:10:35.194 DEBUG 23 --- [qtp1818449913-13081] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:10:35.195 DEBUG 23 --- [qtp1818449913-13081] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:10:55.204 DEBUG 23 --- [qtp1818449913-13124] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:10:55.206 DEBUG 23 --- [qtp1818449913-13124] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:10:57.077 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:10:57.078 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:11:07.069 DEBUG 23 --- [qtp1818449913-13168] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:11:07.070 DEBUG 23 --- [qtp1818449913-13168] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:11:37.185 DEBUG 23 --- [qtp1818449913-13066] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:11:37.187 DEBUG 23 --- [qtp1818449913-13066] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:11:57.201 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:11:57.205 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:11:59.187 DEBUG 23 --- [qtp1818449913-13081] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:11:59.190 DEBUG 23 --- [qtp1818449913-13081] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:12:09.090 DEBUG 23 --- [qtp1818449913-13124] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:12:09.092 DEBUG 23 --- [qtp1818449913-13124] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:12:39.231 DEBUG 23 --- [qtp1818449913-13066] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:12:39.233 DEBUG 23 --- [qtp1818449913-13066] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:12:59.225 DEBUG 23 --- [qtp1818449913-13168] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:12:59.226 DEBUG 23 --- [qtp1818449913-13168] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:13:01.069 DEBUG 23 --- [qtp1818449913-13165] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:13:01.070 DEBUG 23 --- [qtp1818449913-13165] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:13:11.067 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:13:11.068 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:13:41.184 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:13:41.185 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:14:01.197 DEBUG 23 --- [qtp1818449913-13124] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:14:01.198 DEBUG 23 --- [qtp1818449913-13124] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:14:03.074 DEBUG 23 --- [qtp1818449913-13165] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:14:03.075 DEBUG 23 --- [qtp1818449913-13165] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:14:13.066 DEBUG 23 --- [qtp1818449913-13168] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:14:13.066 DEBUG 23 --- [qtp1818449913-13168] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:14:43.189 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:14:43.191 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:15:03.202 DEBUG 23 --- [qtp1818449913-13081] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:15:03.205 DEBUG 23 --- [qtp1818449913-13081] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:15:05.100 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:15:05.105 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:15:15.099 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:15:15.101 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:15:45.220 DEBUG 23 --- [qtp1818449913-13170] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:15:45.221 DEBUG 23 --- [qtp1818449913-13170] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:16:05.232 DEBUG 23 --- [qtp1818449913-13168] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:16:05.233 DEBUG 23 --- [qtp1818449913-13168] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:16:07.062 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:16:07.063 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:16:17.065 DEBUG 23 --- [qtp1818449913-13172] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:16:17.067 DEBUG 23 --- [qtp1818449913-13172] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:16:47.195 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:16:47.197 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:17:07.199 DEBUG 23 --- [qtp1818449913-13081] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:17:07.200 DEBUG 23 --- [qtp1818449913-13081] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:17:09.053 DEBUG 23 --- [qtp1818449913-13170] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:17:09.057 DEBUG 23 --- [qtp1818449913-13170] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:17:19.081 DEBUG 23 --- [qtp1818449913-13124] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:17:19.083 DEBUG 23 --- [qtp1818449913-13124] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:17:49.189 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:17:49.192 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:18:09.201 DEBUG 23 --- [qtp1818449913-13172] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:18:09.203 DEBUG 23 --- [qtp1818449913-13172] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:18:11.106 DEBUG 23 --- [qtp1818449913-13165] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:18:11.107 DEBUG 23 --- [qtp1818449913-13165] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:18:21.072 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:18:21.073 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:18:51.194 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:18:51.195 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:18:55.939 DEBUG 23 --- [qtp1818449913-13165] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:18:55.940 DEBUG 23 --- [qtp1818449913-13165] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:20:56.905 DEBUG 23 --- [qtp1818449913-13170] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:20:56.907 DEBUG 23 --- [qtp1818449913-13170] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:20:56.913 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:20:56.913 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:21:06.890 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:21:06.892 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:21:37.017 DEBUG 23 --- [qtp1818449913-13081] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:21:37.021 DEBUG 23 --- [qtp1818449913-13081] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:21:57.026 DEBUG 23 --- [qtp1818449913-13177] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:21:57.030 DEBUG 23 --- [qtp1818449913-13177] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:21:59.109 DEBUG 23 --- [qtp1818449913-13172] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:21:59.110 DEBUG 23 --- [qtp1818449913-13172] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:22:08.923 DEBUG 23 --- [qtp1818449913-13124] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:22:08.927 DEBUG 23 --- [qtp1818449913-13124] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:22:39.236 DEBUG 23 --- [qtp1818449913-13170] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:22:39.240 DEBUG 23 --- [qtp1818449913-13170] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:22:59.187 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:22:59.189 DEBUG 23 --- [qtp1818449913-13093] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:23:00.899 DEBUG 23 --- [qtp1818449913-13170] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:23:00.899 DEBUG 23 --- [qtp1818449913-13170] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:23:10.881 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:23:10.882 DEBUG 23 --- [qtp1818449913-13114] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:23:41.016 DEBUG 23 --- [qtp1818449913-13170] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:23:41.019 DEBUG 23 --- [qtp1818449913-13170] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:24:01.020 DEBUG 23 --- [qtp1818449913-13124] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:24:01.022 DEBUG 23 --- [qtp1818449913-13124] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!
+2024-04-02 00:24:03.193 DEBUG 23 --- [qtp1818449913-13168] c.c.m.am2cm.server.sse.SseService        : registered for sse stream UserId(username=admin)
+2024-04-02 00:24:03.194 DEBUG 23 --- [qtp1818449913-13168] c.c.m.am2cm.server.sse.SseService        : lastSseEvent is NULL!! Nothing can be sent to the client!

@@ -1,0 +1,8 @@
+---
+- hosts: localhost
+  gather_facts: False
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  roles:
+    - role: determine_api_version

@@ -1,0 +1,15 @@
+services: [ATLAS]
+configs:
+  ATLAS:
+    SERVICEWIDE:
+      hdfs_service: "{{ hdfs_service_name }}"
+      hbase_service: "{{ hbase_service_name }}"
+      kafka_service: "{{ kafka_service_name }}"
+      solr_service: "{{ solr_service_name }}"
+    ATLAS_SERVER:
+      atlas_admin_password: "{{ atlas_admin_password }}"
+      atlas_authentication_method_file: {{ atlas_authentication_method_file }}
+      atlas_solr_replication_factor: {{ atlas_solr_replication_factor }}
+roles:
+  ATLAS:
+     ATLAS_SERVER: {{ atlas_server_hosts }}

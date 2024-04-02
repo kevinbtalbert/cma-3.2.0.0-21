@@ -1,0 +1,16 @@
+- name: Get Cloudera Manager License Info
+  uri:
+    url: "{{ cloudera_manager_protocol }}://{{ groups['server'][0] }}:{{ cloudera_manager_port }}/\
+      api/{{ cloudera_manager_api_version }}/cm/license"
+    user: "{{ cloudera_manager_admin_username }}"
+    password: "{{ cloudera_manager_admin_password }}"
+    return_content: yes
+    validate_certs: no
+  register: response
+  delegate_to: localhost
+  run_once: true
+
+- name: Register Cloudera Manager License Name and UUID
+  set_fact:
+    cloudera_manager_license_name: "{{ response['json'] | json_query('owner') }}"
+    cloudera_manager_license_uuid: "{{ response['json'] | json_query('uuid') }}"

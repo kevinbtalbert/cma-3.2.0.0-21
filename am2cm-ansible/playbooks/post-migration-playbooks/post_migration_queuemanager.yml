@@ -1,0 +1,55 @@
+---
+- name: Queue Manager Post Migration
+  hosts: all
+  gather_facts: false
+  tags: queuemanager-post-migration
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  vars:
+    service_name: queuemanager
+  roles:
+    - {role: get_hostnames_where_role_group_is_located, role_group_filter: "QUEUEMANAGER_STORE"}
+
+- name: Install and Configure PostgreSQL for Queue Manager
+  hosts: QUEUEMANAGER_STORE[0]
+  tags: queuemanager-post-migration
+
+  roles:
+    - {role: install_postgresql_queuemanager, qm_db_user: "{{ queuemanager_db_user }}", qm_db_name: "{{ queuemanager_db_name }}", qm_db_password: "{{ queuemanager_db_password }}", qm_db_port: "{{ queuemanager_db_port }}", when: queuemanager_install_postgres}
+
+- name: Update Database Configurations for Queue Manager
+  hosts: localhost
+  gather_facts: False
+  tags: queuemanager-post-migration
+  vars:
+    qm_db_port: "{{ queuemanager_db_port }}"
+    qm_db_user: "{{ queuemanager_db_user }}"
+    qm_db_name: "{{ queuemanager_db_name }}"
+    qm_db_password: "{{ queuemanager_db_password }}"
+    service_name: "queuemanager"
+  tasks:
+    - name: Update PostgreSQL database details for Queue Manager
+      update_configuration_in_service:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        service_configuration:
+          queuemanager_database_name: "{{ qm_db_name }}"
+          queuemanager_database_host: "{{ groups['QUEUEMANAGER_STORE'][0] }}"
+          queuemanager_database_user: "{{ qm_db_user }}"
+          queuemanager_database_port: "{{ qm_db_port }}"
+          queuemanager_database_password: "{{ qm_db_password }}"
+          queuemanager_database_type: "postgresql"
+        service_name: "{{ service_name }}"
+
+
+    - name: Print Variables
+      debug:
+        msg:
+          - "queuemanager_database_name: {{ qm_db_name }}"
+          - "queuemanager_database_host: {{ groups['QUEUEMANAGER_STORE'] }}"
+          - "queuemanager_database_user: {{ qm_db_user }}"
+          - "queuemanager_database_port: {{ qm_db_port }}"
+
+    - name: Restart Queue Manager Service
+      include_role:
+        name: restart_service

@@ -1,0 +1,7 @@
+---
+realm: EXAMPLE.COM
+
+ldap_server: "{{ ipa_server }}"
+ldap_url: "ldaps://{{ ldap_server }}:636"
+ldap_bind_password: "{{ ipa_bind_password }}"
+ldap_ca_crt: "/etc/ipa/ca.crt"

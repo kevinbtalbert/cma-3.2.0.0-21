@@ -1,0 +1,5 @@
+- import_playbook: hive3parser_check.yml
+- import_playbook: upload_hql_files.yml
+- import_playbook: upload_oozie_jobs.yml
+- import_playbook: oozie_check.yml
+- import_playbook: prepare_target_oozie.yml

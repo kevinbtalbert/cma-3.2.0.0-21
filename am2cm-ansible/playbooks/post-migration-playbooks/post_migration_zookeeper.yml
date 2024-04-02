@@ -1,0 +1,79 @@
+---
+# global tag: zookeeper-post-migration
+# tags by documentation steps:
+#   backup-zookeeper-files - https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp/topics/amb-zookeeper.html
+#   delete-znodes - https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp/topics/amb-zk-client-deleteall.html
+#   secure-zookeeper - https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp/topics/amb-zookeeper-secure.html
+- name: Set values of global variables on all hosts for this playbook
+  tags: zookeeper-post-migration, backup-zookeeper-files, delete-znodes, secure-zookeeper
+  hosts: all
+  gather_facts: False
+  tasks:
+    - set_fact:
+        service_name: "zookeeper"
+
+- name: Zookeeper post AM2CM migration, gathering data
+  tags: zookeeper-post-migration, backup-zookeeper-files, delete-znodes, secure-zookeeper
+  hosts: all
+  gather_facts: False
+  vars:
+    role_group_filter: "zookeeper"
+  roles:
+    - get_hostnames_where_role_group_is_located
+
+- name: Zookeeper post AM2CM migration, post migration tasks
+  tags: zookeeper-post-migration
+  hosts: zookeeper
+  gather_facts: False
+  roles:
+    - { role: query_configuration_from_service, configuration_name: "dataDir", tags: backup-zookeeper-files } # run role with an additional variable set here
+    - { role: query_configuration_from_service, configuration_name: "clientPort", tags: delete-znodes } # run role with an additional variable set here
+  tasks:
+    - block: # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp/topics/amb-zookeeper.html
+      - name: Check if myid files exits
+        stat:
+          path: "{{ dataDir }}/myid"
+        register: myid_file_data
+        become: yes
+
+      - name: Back up myid file located in Datadir
+        copy:
+          src: "{{ dataDir }}/myid"
+          dest: "{{ dataDir }}/myid.bak"
+          remote_src: yes
+        when: myid_file_data.stat.exists
+        become: yes
+      - name: Delete old myid file
+        file:
+          path: "{{ dataDir }}/myid"
+          state: absent
+        become: yes
+      - name: Restart zookeeper
+        import_role:
+          name: restart_service # when this role runs 'service_name' has to be set
+        tags: delete-znodes
+      tags: backup-zookeeper-files
+    - name: Delete znodes # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp/topics/amb-zk-client-deleteall.html
+      znode: # required Python library (kazoo >= 2.1)
+        hosts: "{{ inventory_hostname }}:{{ clientPort }}"
+        name: "{{ item }}"
+        state: absent
+        recursive: yes
+      environment:
+        - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+        - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+      delegate_to: localhost
+      run_once: True
+      loop:
+        - /hadoop-ha
+        - /yarn-leader-election
+        - /hive
+        - /hiveserver2
+        - /hbase-secure
+        - /oozie
+      tags: delete-znodes
+      # TODO this 'secure zookeeper' step should happen at the very end of all post migration stuff
+    - name: Secure zookeeper # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp/topics/amb-zookeeper-secure.html
+      import_role:
+        name: secure_zookeeper
+      tags: secure-zookeeper

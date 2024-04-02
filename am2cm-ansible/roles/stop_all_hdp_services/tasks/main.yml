@@ -1,0 +1,13 @@
+- name: Stop all hdp services
+  block:
+    - name: Stopping all services in hdp cluster
+      stop_all_hdp_services:
+        ambari_configuration: "{{ ambari_configuration_dictionary }}"
+      register: stop_all_hdp_result
+      failed_when: stop_all_hdp_result.failed and not skip_errors
+
+    - name: Print response
+      debug:
+        var: stop_all_hdp_result
+  run_once: True
+  delegate_to: localhost

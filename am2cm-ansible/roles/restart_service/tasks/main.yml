@@ -1,0 +1,16 @@
+- name: Restart service
+  block:
+    - name: Service to be restarted
+      debug:
+          var: service_name
+    - name: Send restart service API request to CM server
+      restart_service:
+        service_name: "{{ service_name }}"
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        timeout_seconds: "{{ timeout }}"
+      register: restart_service_result
+    - name: Print response
+      debug:
+        var: restart_service_result
+  run_once: True
+  delegate_to: localhost

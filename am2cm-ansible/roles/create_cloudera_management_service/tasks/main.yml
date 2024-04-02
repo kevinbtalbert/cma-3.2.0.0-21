@@ -1,0 +1,7 @@
+- name: Create Empty Cloudera Management Service
+  create_cloudera_management_service:
+    cm_configuration: "{{ cm_configuration_dictionary }}"
+  register: service_create_request
+- name: Service Create output
+  debug:
+    msg: '{{ service_create_request }}'

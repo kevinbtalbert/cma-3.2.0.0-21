@@ -1,0 +1,34 @@
+---
+
+- name: Backup infra_solr data
+  hosts: backup_infra_solr_server[0]
+  gather_facts: False
+  tags: infra-solr-backup
+  vars:
+    service_name: solr
+  roles:
+    - setup_am2cm_solr_client
+  tasks:
+    - include_role:
+        name: prepare_to_backup_service
+      vars:
+        skip_service_stop: true
+
+    - name: Backup Infra-Solr documents
+      include_role:
+        name: backup_solr_collection
+      loop: "{{ infra_solr_collections.split(',') | map('trim') }}"
+      loop_control:
+        loop_var: solr_collection
+
+    - name: Stop Infra-Solr service in Ambari
+      include_role:
+        name: stop_hdp_service
+      vars:
+        service_name: "{{ infra_solr_service_name }}"
+
+    - name: Fetch am2cm-solr-client.log to local
+      fetch:
+        src: "{{ am2cm_solr_client_log_file }}"
+        dest: "{{ am2cm_local_dir }}/backup_infra_solr.log"
+        flat: yes

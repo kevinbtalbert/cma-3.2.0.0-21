@@ -1,0 +1,41 @@
+---
+
+- name: Print monitored policies
+  debug:
+    var: __replication_policies
+  when: debug | default(false)
+
+- name: Poll replication policies status
+  shell: |
+    cdp --profile {{ cdp_cli_profile_id }} replicationmanager list-policies
+  register: policy_list_resp
+
+- name: Initialize variables
+  set_fact:
+    __running_policies: "{{ empty_running_policies | default([]) }}"
+
+- name: Get policies that are not in the expected state but have not yet failed
+  set_fact:
+    __running_policies: "{{ __running_policies | default([]) + [item] }}"
+  with_items: "{{ __replication_policies }}"
+  when: policy_list_resp.stdout | from_json | json_query(query_for_status) | first | default('') not in [item.expected_state, 'FAILED']
+  vars:
+    query_for_status: "policies[?name=='{{item.name}}'].status"
+
+- name: Update variables
+  set_fact:
+    running_policies: "{{ __running_policies }}"
+
+- block:
+    - ansible.builtin.pause:
+        minutes: "{{ paused_minutes }}"
+
+    - include_tasks:
+        file: "wait_for_policies.yml"
+      vars:
+        __replication_policies: "{{ running_policies }}"
+  when: running_policies | default([]) | length > 0
+
+
+
+

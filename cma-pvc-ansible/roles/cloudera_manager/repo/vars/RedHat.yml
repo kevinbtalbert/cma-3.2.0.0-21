@@ -1,0 +1,5 @@
+
+__cloudera_manager_major_version: "{{ cloudera_manager_version.split('.')[0] }}"
+__cloudera_manager_repo_url: "{{ cloudera_manager_repo_base_url | regex_replace('/?$','') }}/{{ ansible_distribution_file_variety | lower }}{{ ansible_distribution_major_version }}/yum/"
+__cloudera_manager_repo_key_filename: "RPM-GPG-KEY-cloudera"
+

@@ -1,0 +1,16 @@
+- name: Create desired_remote_python_version from ansible_playbook_python variable
+  block:
+    - name: Query and set desired_remote_python_version
+      block:
+        - name: Query python version string via shell
+          command: "{{ ansible_playbook_python }} -V"
+          register: ansible_playbook_python_version
+          changed_when: false
+        - set_fact:
+            desired_remote_python_version: "{{ ansible_playbook_python_version.stdout | split | last }}"
+      when: desired_remote_python_version is not defined
+    - name: Print desired_remote_python_version
+      debug:
+        var: desired_remote_python_version
+  delegate_to: localhost
+  run_once: true

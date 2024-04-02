@@ -1,0 +1,9 @@
+---
+keytab_gen_mode: '-norandkey'
+kadmin_binary_path: "{{ kdc_server_configuration_dictionary.kadmin_binary_path }}"
+
+keytab_path: "{{ am2cm_remote_dir }}/am2cm.keytab"
+keytab_file: "{{ keytab_path | basename }}"
+remote_tmp_keytab_dir: "{{ am2cm_remote_tmp_dir }}/keytab/{{ inventory_hostname }}"
+remote_tmp_keytab_path: "{{ remote_tmp_keytab_dir }}/{{ keytab_file }}"
+local_tmp_keytab_path: "{{ am2cm_local_tmp_dir }}/keytab/{{ inventory_hostname }}/{{ keytab_file }}"

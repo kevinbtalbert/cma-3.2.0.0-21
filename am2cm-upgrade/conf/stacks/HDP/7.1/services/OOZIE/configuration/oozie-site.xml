@@ -1,0 +1,95 @@
+<?xml version="1.0"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<configuration supports_final="true">
+  <!--
+      Refer to the oozie-default.xml file for the complete list of
+      Oozie configuration properties and their default values.
+  -->
+  <property>
+    <name>oozie.https.enabled</name>
+    <display-name>HTTPS enabled</display-name>
+    <value>false</value>
+    <description>
+      HTTPS availability
+    </description>
+    <final>false</final>
+    <value-attributes>
+      <type>boolean</type>
+    </value-attributes>
+    <on-ambari-upgrade add="true"/>
+  </property>
+    <property>
+    <name>oozie.https.keystore.file</name>
+    <display-name>HTTPS keystore file path</display-name>
+    <value></value>
+    <description>
+      HTTPS keystore file path
+    </description>
+    <value-attributes>
+      <empty-value-valid>true</empty-value-valid>
+    </value-attributes>
+    <on-ambari-upgrade add="true"/>
+  </property>
+    <property>
+    <name>oozie.https.keystore.pass</name>
+    <display-name>HTTPS keystore password</display-name>
+    <value></value>
+    <description>
+      HTTPS keystore password
+    </description>
+    <value-attributes>
+      <type>password</type>
+      <overridable>false</overridable>
+      <keystore>true</keystore>
+      <empty-value-valid>true</empty-value-valid>
+    </value-attributes>
+    <on-ambari-upgrade add="true"/>
+    <property-type>PASSWORD</property-type>
+  </property>
+  <property>
+    <name>oozie.action.spark.setup.hadoop.conf.dir</name>
+    <display-name>Copy hadoop configs to action.xml</display-name>
+    <value>true</value>
+    <description>
+      This property will allow users to copy Oozie action.xml as hadoop *-site configurations files.
+    </description>
+    <final>false</final>
+    <value-attributes>
+      <type>boolean</type>
+    </value-attributes>
+    <on-ambari-upgrade add="true"/>
+  </property>
+  <property>
+    <name>oozie.service.HadoopAccessorService.hadoop.configurations</name>
+    <value>*={{conf_dir}}/hadoop-conf</value>
+    <description>
+      Comma separated AUTHORITY=HADOOP_CONF_DIR, where AUTHORITY is the HOST:PORT of
+      the Hadoop service (JobTracker, HDFS). The wildcard '*' configuration is
+      used when there is no exact match for an authority. The HADOOP_CONF_DIR contains
+      the relevant Hadoop *-site.xml files. If the path is relative is looked within
+      the Oozie configuration directory; though the path can be absolute (i.e. to point
+      to Hadoop client conf/ directories in the local filesystem.
+    </description>
+    <value-attributes>
+      <overridable>false</overridable>
+      <empty-value-valid>false</empty-value-valid>
+    </value-attributes>
+    <on-ambari-upgrade add="true"/>
+  </property>
+</configuration>

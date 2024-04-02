@@ -1,0 +1,6 @@
+hive_sre_version: 2.5.1.5
+hive_sre_output_dir_remote: /tmp/hive-sre-out
+hive_sre_u3_output_dir_remote: /tmp/hive-sre-u3-out
+hive_sre_archive_path_local: /tmp/hive_sre_archive.tgz
+hive_sre_converted_results_dir_remote: /tmp/hive-sre-converted-results
+hive_sre_output_dir_local: "{{ cluster_scan_dir_path }}/hive-sre"

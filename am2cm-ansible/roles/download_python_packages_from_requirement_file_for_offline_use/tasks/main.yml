@@ -1,0 +1,6 @@
+- name: Download python package to "{{ target_directory }}" on localhost
+  command: |
+    "{{ ansible_playbook_python }}" -m pip download -r "{{ requirements_file }}" -d "{{ target_directory }}"
+  changed_when: false
+  delegate_to: localhost
+  run_once: true

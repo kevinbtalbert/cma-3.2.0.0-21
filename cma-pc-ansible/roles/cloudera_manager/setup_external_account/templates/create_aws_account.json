@@ -1,0 +1,19 @@
+{
+  "name": "{{ aws_account_name }}",
+  "displayName": "{{ aws_account_display_name }}",
+  "typeName": "AWS_ACCESS_KEY_AUTH",
+  "accountConfigs": {
+    "items": [
+      {
+        "name": "aws_access_key",
+        "value": "{{ aws_access_key }}",
+        "sensitive": true
+      },
+      {
+        "name": "aws_secret_key",
+        "value": "{{ aws_secret_key }}",
+        "sensitive": true
+      }
+    ]
+  }
+}

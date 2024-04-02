@@ -1,0 +1,65 @@
+---
+
+- block:
+    - name: Delete local am2cm tmp dir
+      file:
+        path: "{{ am2cm_local_tmp_dir }}/"
+        state: absent
+
+    - name: Create local am2cm tmp dir
+      file:
+        path: "{{ am2cm_local_tmp_dir }}/"
+        mode: 0777
+        state: directory
+  delegate_to: localhost
+  run_once: true
+
+- block:
+    - name: Delete remote am2cm tmp keytab dir
+      file:
+        path: "{{ remote_tmp_keytab_dir }}/"
+        state: absent
+
+    - name: Create remote am2cm tmp keytab dir
+      file:
+        path: "{{ remote_tmp_keytab_dir }}/"
+        mode: 0777
+        state: directory
+
+    - name: Check if temp keytab file exists
+      stat:
+        path: "{{ remote_tmp_keytab_path }}"
+      register: tmp_keytab_status
+
+    - name: Delete temp keytab file
+      file:
+        path: "{{ remote_tmp_keytab_path }}"
+        state: absent
+      when: tmp_keytab_status.stat.exists
+
+    - debug:
+        var: principal_names
+
+    - name: Generate keytab
+      command: "{{ kadmin_binary_path }} -q 'xst {{ keytab_gen_mode }} -k {{ remote_tmp_keytab_path }} {{ principal_name }}'"
+      changed_when: not tmp_keytab_status.stat.exists
+      loop: "{{ principal_names }}"
+      loop_control:
+        loop_var: principal_name
+
+    - name: Copy keytab to local am2cm temp dir
+      fetch:
+        src: "{{ remote_tmp_keytab_path }}"
+        dest: "{{ local_tmp_keytab_path }}"
+        flat: yes
+  delegate_to: "{{ groups['kdc_server'][0] }}"
+
+- name: "Copy keytab from local am2cm temp dir to {{ keytab_path }}"
+  copy:
+    src: "{{ local_tmp_keytab_path }}"
+    dest: "{{ keytab_path }}"
+    mode: 0400
+  register: copy_res
+
+- debug:
+    var: copy_res

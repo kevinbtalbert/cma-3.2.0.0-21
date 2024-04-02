@@ -1,0 +1,45 @@
+- name: Apply CSD file
+  tags: apply-csd
+  hosts: server
+  gather_facts: False
+
+  tasks:
+    - name: Handling Accumulo CSD file
+      block:
+
+        - name: Download Accumulo csd
+          uri:
+            url: "{{ accumulo_csd_url }}"
+            url_username: "{{ paywall_user }}"
+            url_password: "{{ paywall_password }}"
+            dest: /opt/cloudera/csd/
+            mode: 0644
+            owner: cloudera-scm
+            group: cloudera-scm
+            status_code: 200, 304
+            timeout: 60
+          become: yes
+
+        - name: Restart Cloudera Manager Server
+          service:
+            name: cloudera-scm-server
+            state: restarted
+          become: yes
+
+        - name: Wait for Cloudera Manager Server to be available before continuing # wait for 30 * 10 seconds = 5 minutes
+          uri:
+            url: "{{ cloudera_manager_protocol }}://{{ groups['server'][0] }}:{{ cloudera_manager_port }}"
+            method: GET
+            validate_certs: false
+          register: _result
+          until: _result.status == 200
+          delay: 10
+          retries: 30
+          delegate_to: localhost
+
+        - name: Wait for all agents to be ready
+          wait_for_cm_agent_readiness:
+            cm_configuration: "{{ cm_configuration_dictionary }}"
+          delegate_to: localhost
+
+      when: deploy_accumulo

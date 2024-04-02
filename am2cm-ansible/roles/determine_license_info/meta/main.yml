@@ -1,0 +1,3 @@
+---
+dependencies:
+  - role: determine_api_version

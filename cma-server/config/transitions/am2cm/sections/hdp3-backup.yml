@@ -1,0 +1,125 @@
+---
+name: Snapshot of HDP3
+type: "INPLACE_ONE_STAGE_UPGRADE"
+sourceClusterType: HDP3
+version: 1
+steps:
+  - name: "Backup"
+    type: "group"
+    doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3-one-stage/topics/amb3-one-stage-backup-rollback.html"
+    steps:
+      - name: Backup Oozie
+        service: "oozie"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "oozie-backup"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3_backup_oozie.html"
+      - name: Backup Atlas
+        service: "atlas"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "atlas-backup"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3_backup_atlas.html"
+      - name: Backup Kafka
+        service: "kafka"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "kafka-backup"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3_backup_kafka.html"
+      - name: Setup HBase for Master Procedure Store drain
+        service: "hbase"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - hbase-prepare-migration
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://github.com/apache/hbase/blob/master/src/main/asciidoc/_chapters/upgrading.adoc#33-upgrade-from-20-or-21-to-22"
+      - name: Backup HBase
+        service: "hbase"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "hbase-backup"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3_backup_hbase.html"
+      - name: Backup Hive
+        service: "hive"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "hive-backup"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3_backup_hive.html"
+      - name: Backup HDFS
+        type: "task"
+        service: "hdfs"
+        execution: "auto"
+        ansibleTags:
+          - "hdfs-backup"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3-preparing-hdfs.html"
+      - name: Backup Ranger
+        service: "ranger"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "ranger-backup"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3_backup_ranger_admin_db.html"
+      - name: Backup Ranger KMS
+        service: "ranger_kms"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "ranger-kms-backup"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3_backup_ranger_kms_database.html"
+      - name: Backup Infra-Solr
+        type: "task"
+        service: "ambari_infra_solr"
+        execution: "auto"
+        ansibleTags:
+          - "infra-solr-backup"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3_backup_ambari_infra.html"
+      - name: Backup Zookeeper
+        type: "task"
+        service: "zookeeper"
+        execution: "auto"
+        ansibleTags:
+          - "zookeeper-backup"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3_backup_zookeeper.html"
+      - name: "Backup /etc configs"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "etc-config-backup"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+      - name: Backup Kerberos
+        service: "kerberos"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "kerberos-backup"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+

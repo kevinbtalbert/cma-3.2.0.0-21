@@ -1,0 +1,15 @@
+- import_playbook: backup_kerberos.yml
+- import_playbook: backup_oozie.yml
+- import_playbook: backup_atlas.yml
+- import_playbook: backup_hive.yml
+- import_playbook: backup_kafka.yml
+- import_playbook: backup_hbase.yml
+  # placeholder for yarn
+- import_playbook: backup_steps_for_hdfs.yml
+  # placeholder for hdfs
+- import_playbook: backup_ranger.yml
+- import_playbook: backup_ranger_kms.yml
+- import_playbook: backup_infra_solr.yml
+- import_playbook: backup_zookeeper.yml
+- import_playbook: backup_service_configs.yml
+- import_playbook: move_spark_binaries.yml

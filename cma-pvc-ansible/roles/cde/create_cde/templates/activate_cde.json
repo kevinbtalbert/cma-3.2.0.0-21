@@ -1,0 +1,19 @@
+{
+  "name": "{{ cde_service_name }}",
+  "env": "{{ environment_name }}",
+  "config": {
+    "properties": {
+      "loadbalancer.internal": "true",
+      "dbus-wxm-client.enabled": "false",
+      "kubernetes.api.allowList": "",
+      "mount.SSD": "false",
+      "loadbalancer.allowList": "",
+      "kubernetes.api.proxyCIDRList": "",
+      "subnets": "",
+      "tls.enabled": "false", 
+      "yunikorn.disabled": "false"
+    },
+    "tags": {}
+  },
+  "skipValidation": true
+}

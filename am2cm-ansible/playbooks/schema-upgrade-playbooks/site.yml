@@ -1,0 +1,6 @@
+- import_playbook: schema_upgrade_ranger.yml
+- import_playbook: schema_upgrade_ranger_kms.yml
+- import_playbook: schema_upgrade_hdfs.yml
+- import_playbook: schema_upgrade_oozie.yml
+- import_playbook: schema_pre_upgrade_hive.yml
+- import_playbook: schema_upgrade_hive.yml

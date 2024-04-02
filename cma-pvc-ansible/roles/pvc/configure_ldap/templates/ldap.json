@@ -1,0 +1,16 @@
+{
+    "ldapProviderName": "{{ ldap_provider_name | default('cm-ldap') }}",
+    "skipGroupSyncOnLogin": "{{ ldap_skip_group_sync | default(true) }}",
+    "url": "{{ ldap_url }}",
+    "bindDn": "{{ ldap_user_bind_dn }}",
+    "bindPassword": "{{ ldap_bind_password | default('') }}",
+    "userSearchBase": "{{ ldap_user_search_base }}",
+    "userSearchFilter": "{{ ldap_user_search_filter }}",
+    "groupSearchBase": "{{ ldap_group_search_base }}",
+    "groupSearchFilter": "{{ ldap_group_search_filter }}",
+    "emailMappingAttribute": "{{ ldap_email_mapping_attribute | default('mail') }}",
+    "showAdvanced": false,
+    "tlsCaCertificates": [
+      "{{ ldap_crt | replace('\n', '\\n') }}"
+    ]
+}

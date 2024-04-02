@@ -1,0 +1,135 @@
+# Copyright (c) 2023, Cloudera, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+
+- block:
+  - name: Find YARN process directory
+    find:
+      paths: "{{ cloudera_agent_process_path }}"
+      patterns: "*RESOURCEMANAGER*"
+      file_type: directory
+      recurse: no
+    register: found_dirs
+
+  - name: Get newest directory
+    set_fact:
+      yarn_process_dir: "{{ found_dirs.files | sort(attribute='mtime', reverse=true) | map(attribute='path') | first }}"
+
+  - name: Print Yarn dir
+    debug:
+      var: yarn_process_dir
+
+  - name: Create cma_remote_tmp_dir
+    file:
+      path: "{{ cma_remote_tmp_dir }}"
+      state: directory
+      mode: '0777'
+
+  - name: Set Yarn fs2cs directory variable
+    set_fact:
+      yarn_fs2cs_dir: "{{ cma_remote_tmp_dir }}/yarn_fs2cs_output_{{ lookup('pipe', 'date +%Y%m%d%H%M%S') }}"
+
+  - name: Print Yarn fs2cs directory variable
+    debug:
+      msg: "Yarn fs2cs directory: {{ yarn_fs2cs_dir }}"
+
+  - name: Create Yarn fs2cs directory
+    file:
+      path: "{{ yarn_fs2cs_dir }}"
+      state: directory
+
+  - name: Run yarn fs2cs command
+    command: "yarn fs2cs --yarnsiteconfig {{ yarn_process_dir }}/yarn-site.xml --fsconfig {{ yarn_process_dir }}/fair-scheduler.xml --output-directory {{ yarn_fs2cs_dir }}"
+
+  - name: Fetch yarn-site.xml to local
+    fetch:
+      src: "{{ yarn_fs2cs_dir }}/yarn-site.xml"
+      dest: "{{ cma_local_tmp_dir }}/yarn-site.xml"
+      flat: yes
+
+  - name: Fetch capacity-scheduler.xml to local
+    fetch:
+      src: "{{ yarn_fs2cs_dir }}/capacity-scheduler.xml"
+      dest: "{{ cma_local_tmp_dir }}/capacity-scheduler.xml"
+      flat: yes
+  become: yes
+  become_method: sudo
+
+- block:
+  - name: Parse generated yarn-site.xml
+    include_tasks: read_xml.yml
+    vars:
+      xml_filename: "{{ cma_local_tmp_dir }}/yarn-site.xml"
+
+  - name: Save yarn-site.xml dict to variable
+    set_fact:
+      yarn_properties: "{{ properties }}"
+
+  - name: Parse generated capacity-scheduler.xml
+    include_tasks: read_xml.yml
+    vars:
+      xml_filename: "{{ cma_local_tmp_dir }}/capacity-scheduler.xml"
+
+  - name: Save capacity-scheduler.xml dict to variable
+    set_fact:
+      capacity_scheduler_properties: "{{ properties }}"
+
+  - name: Print generated yarn-site.xml properties
+    debug:
+      msg: "{{ yarn_properties }}"
+
+  - name: Print generated capacity-scheduler.xml properties
+    debug:
+      msg: "{{ capacity_scheduler_properties }}"
+
+  - name: Update yarn-site safety valve in CM
+    include_role:
+      name: update_safety_valve
+    vars:
+      service_name: "yarn"
+      name: "yarn_service_config_safety_valve"
+      value: "{{ yarn_properties }}"
+      cm_configuration: "{{ pc_cm_configuration_dictionary }}"
+      state: present
+
+  - name: Update capacity-scheduler safety valve in CM
+    include_role:
+      name: update_safety_valve
+    vars:
+      configuration_format: "XML"
+      service_name: "yarn"
+      configuration_type: "ROLE"
+      cm_role_name: "yarn-RESOURCEMANAGER"
+      role_display_name: "ResourceManager Default Group"
+      name: "resourcemanager_capacity_scheduler_configuration"
+      value: "{{ capacity_scheduler_properties }}"
+      cm_configuration: "{{ pc_cm_configuration_dictionary }}"
+      requires_parent_xml_tag: True
+      state: present
+
+  - name: Restart YARN via CM server
+    restart_service:
+      service_name: "yarn"
+      cm_configuration: "{{ pc_cm_configuration_dictionary }}"
+      timeout_seconds: 900 # 15 minutes
+    register: restart_service_result
+
+  - name: Restart QUEUEMANAGER via CM server
+    restart_service:
+      service_name: "queuemanager"
+      cm_configuration: "{{ pc_cm_configuration_dictionary }}"
+      timeout_seconds: 900 # 15 minutes
+    register: restart_service_result
+  delegate_to: localhost

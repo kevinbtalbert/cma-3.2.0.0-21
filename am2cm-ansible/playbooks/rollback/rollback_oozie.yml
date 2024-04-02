@@ -1,0 +1,52 @@
+---
+- name: Rollback Oozie HA keytab
+  hosts: all
+  gather_facts: False
+  tags: oozie-rollback
+  vars:
+    service_name: oozie
+    skip_service_stop: true
+    principal_prefix: "HTTP/"
+    principal_suffix: "{{ kerberos_realm_name }}"
+    default_oozie_ha_principals: "{{ [principal_prefix] | product(groups['all']) | map('join') | product([principal_suffix]) | map('join') | list }}"
+    oozie_ha_keytab_backup_path: "{{ service_backup_dir }}/{{ oozie_ha_keytab_backup_file }}"
+  roles:
+    - prepare_to_rollback_service
+  tasks:
+    - block:
+        - name: Check if Oozie HA keytab exists
+          stat:
+            path: "{{ oozie_ha_keytab_backup_path }}"
+          register: oozie_ha_keytab_backup_path_status
+
+        - block:
+            - name: Get Principals from existing Oozie HA keytab
+              shell: "klist -kt {{ oozie_ha_keytab_backup_path }} | awk '{print $4}' | uniq | sed -r '/^\\s*$/d'"
+              register: oozie_ha_principals
+
+            - debug:
+                var: oozie_ha_principals
+
+            - name: Generate Oozie HA keytab
+              include_role:
+                name: generate_kerberos_keytab
+              vars:
+                principal_names: "{{ oozie_ha_principals.stdout_lines | default(default_oozie_ha_principals) }}"
+                keytab_path: "{{ oozie_ha_keytab_path }}"
+          when: oozie_ha_keytab_backup_path_status.stat.exists
+      when: oozie_is_ha
+
+- name: Rollback Oozie
+  hosts: backup_oozie_db
+  gather_facts: False
+  tags: oozie-rollback
+  vars:
+    service_name: oozie
+  roles:
+    # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3_rollback_hdp3_oozie_7.1.7.html
+    - prepare_to_rollback_service
+    - { role: rollback_db, db_host: "{{ inventory_hostname }}", database_type: "{{ oozie_database_host_url | regex_search('jdbc:([a-z]+):\/\/.*', '\\1') | first }}" }
+  tasks:
+    - name: Start Oozie in Ambari
+      include_role:
+        name: start_hdp_service

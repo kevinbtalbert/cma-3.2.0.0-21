@@ -1,0 +1,114 @@
+- name: Evaluate status - CM host
+  tags: enable-kerberos
+  gather_facts: True
+  gather_subset:
+    - '!all'
+    - 'virtual'
+  hosts: server
+  tasks:
+    - name: Set OS type
+      set_fact:
+        cm_server_os_type: "{{ ansible_facts['distribution'] | trim }}"
+    - name: Check for keytab file presence
+      stat:
+        path: /etc/cloudera-scm-server/cmf.keytab
+      register: keytab_file
+    - name: Check for principal file presence
+      stat:
+        path: /etc/cloudera-scm-server/cmf.principal
+      register: principal_file
+    - debug:
+        msg: "Should kerberos keytab & principal files be generated? {{ not (keytab_file.stat.exists and principal_file.stat.exists) }}"
+    - name: Set fact whether kerberos keytab & principal files should be generated
+      set_fact:
+        kerberos_data_should_be_generated: "{{ not (keytab_file.stat.exists and principal_file.stat.exists) }}"
+      delegate_to: "{{ item }}"
+      delegate_facts: True
+      loop:
+        - "{{ groups['kdc_server'][0] }}"
+        - "{{ groups['server'][0] }}"
+
+- name: Create Keytab on KDC host if needed
+  tags: enable-kerberos
+  gather_facts: False
+  hosts: kdc_server
+  tasks:
+    - name: Generate & fetch keytab
+      block:
+        - name: Create temporary location on KDC server for keytab generation
+          tempfile:
+            state: directory
+            suffix: keytab_generation
+          register: keytab_temp_dir
+
+        - name: Generate MIT keytab # the -norandkey option is needed so that kerberos doesn't randomize the password when saving the keytab
+          shell: |
+            "{{ kdc_server_configuration_dictionary.kadmin_binary_path }}" -q 'addprinc -pw "{{ cm_configuration_dictionary.kerberos_configuration.kerberos_admin_password }}" "{{ cm_configuration_dictionary.kerberos_configuration.kerberos_principal_name }}"/admin'
+            "{{ kdc_server_configuration_dictionary.kadmin_binary_path }}" -q 'xst -norandkey -k "{{ keytab_temp_dir.path }}"/cmf.keytab "{{ cm_configuration_dictionary.kerberos_configuration.kerberos_principal_name }}"/admin'
+          when: not cm_configuration_dictionary.kerberos_configuration.use_ad
+          become: yes
+        - name: Generate AD keytab
+          shell: |
+            {
+              echo "addent -password -p {{ cm_configuration_dictionary.kerberos_configuration.kerberos_principal_name }} -k 1 -e rc4-hmac"
+              sleep 1
+              echo "{{ cm_configuration_dictionary.kerberos_configuration.kerberos_admin_password }}"
+              echo "wkt {{ keytab_temp_dir.path }}/cmf.keytab"
+            } | ktutil
+          when: cm_configuration_dictionary.kerberos_configuration.use_ad
+          become: yes
+
+        - name: Fetch generated keytab
+          fetch:
+            src: "{{ keytab_temp_dir.path }}/cmf.keytab"
+            dest: /tmp/cloudera-scm.keytab/cmf.keytab
+            flat: yes
+          become: yes
+
+        - name: Remove temporary directory
+          file:
+            path: "{{ keytab_temp_dir.path }}"
+            state: absent
+          when: keytab_temp_dir.path is defined
+          become: yes
+      when: kerberos_data_should_be_generated
+
+- name: Handle Keytab and Principal file on CM host
+  tags: enable-kerberos
+  gather_facts: False
+  hosts: server
+  tasks:
+     - block:
+       - name: Copy keytab to CM host & set permissions
+         copy:
+           mode: 0444
+           owner: root
+           group: root
+           src: /tmp/cloudera-scm.keytab/cmf.keytab
+           dest: /etc/cloudera-scm-server/cmf.keytab
+         become: yes
+
+       - name: Create principal file & set permissions
+         copy:
+           mode: 0600
+           owner: cloudera-scm
+           group: cloudera-scm
+           dest: /etc/cloudera-scm-server/cmf.principal
+           content: |
+             {{ cm_configuration_dictionary.kerberos_configuration.kerberos_principal_name }}/admin@{{ cm_configuration_dictionary.kerberos_configuration.realm_name }}
+         become: yes
+       when: kerberos_data_should_be_generated
+
+- name: Enable Kerberos in CM
+  tags: enable-kerberos
+  hosts: localhost
+  gather_facts: False
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  tasks:
+    - name: Enable Kerberos
+      enable_kerberos:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        kdc_server_configuration: "{{ kdc_server_configuration_dictionary }}"
+        os_type: "{{ hostvars[groups['server'][0]]['cm_server_os_type'] }}"

@@ -1,0 +1,12 @@
+- name: get renew lifetime
+  command: "{{ shell_command }}"
+  register: renew_lifetime
+  changed_when: false
+
+- name: check renew lifetime
+  check_kerberos_renew_lifetime:
+    renew_lifetime: "{{ renew_lifetime.stdout | split('=') | last | trim }}"
+    target: "{{ kerberos_renew_lifetime }}"
+  delegate_to: localhost
+- debug:
+    msg: 'Kerberos Renew Lifetime is set correctly'

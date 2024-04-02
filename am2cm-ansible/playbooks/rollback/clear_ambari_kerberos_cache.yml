@@ -1,0 +1,12 @@
+---
+
+- name: Clear ambari-agent kerberos cache
+  hosts: all
+  tags: clear-ambari-agent-kerberos-cache
+  gather_facts: False
+  tasks:
+    - name: Delete ambari-agent kerberos cache
+      file:
+        state: absent
+        path: "{{ ambari_agent_kerberos_cache_path }}"
+      when: kerberos_is_active

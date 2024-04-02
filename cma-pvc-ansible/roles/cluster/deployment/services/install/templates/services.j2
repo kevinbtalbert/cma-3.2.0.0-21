@@ -1,0 +1,65 @@
+{% import 'cm_api.j2' as cm_api with context %}
+{% set config_sep = joiner(",") -%}
+[
+  {%- set service_descriptor = service_descriptors[service_to_install] -%}
+  {%- for service in service_descriptor["services"] -%}
+  {{ config_sep() }}
+  {
+    {%- set service_ref = service | lower -%}
+
+
+    "name": "{{ service_ref }}",
+    "type": "{{ service }}",
+
+    "clusterRef": {
+      "clusterName": "{{ cluster_name }}",
+      "displayName": "{{ cluster_name }}"
+    },
+
+    "config": {{ cm_api.ApiConfigList(service_descriptor["configs"][service]["SERVICEWIDE"]) }},
+
+    "roles": [
+    {%- set roles_joiner = joiner(",") -%}
+    {%- for role in service_descriptor["roles"][service] -%}
+      {%- set hosts = service_descriptor["roles"][service][role].split(',') -%}
+      {%- for host in hosts -%}
+      {{ roles_joiner() }}
+
+        {
+          "name": "{{ service_ref }}-{{ role }}-{{ host | md5 }}",
+          "type" : "{{ role }}",
+          "hostRef" : {
+            "hostId" : "{{ host }}",
+            "hostname": "{{ host }}"
+          },
+          "roleConfigGroupRef" : {
+            "roleConfigGroupName" : "{{ service_ref }}-{{ role }}-BASE"
+          }
+        }
+
+      {%- endfor -%}
+    {%- endfor -%}
+    ],
+
+    "roleConfigGroups": [
+    {%- set role_group_sep = joiner(",") -%}
+    {%- set service_role_types = role_mappings[service] -%}
+    {%- if service_role_types is iterable -%}
+      {%- for role_type in service_role_types -%}
+      {{ role_group_sep() }}
+
+        {
+          "name": "{{ service_ref }}-{{ role_type }}-BASE",
+          "displayName": "{{ service_ref }}-{{ role_type }}",
+          "roleType": "{{ role_type }}",
+          "config": {{ cm_api.ApiConfigList(service_descriptor["configs"][service][role_type]) }},
+          "base": true
+        }
+
+      {%- endfor -%}
+    {%- endif -%}
+    ]
+
+  }
+  {%- endfor -%}
+]

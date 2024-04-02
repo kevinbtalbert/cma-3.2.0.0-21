@@ -1,0 +1,70 @@
+# Copyright 2023 Cloudera, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+- name: Install Atlas Service
+  vars:
+    services_to_delete: ["atlas"]
+  import_playbook: delete_services.yml
+  tags:
+    - atlas-delete
+
+- name: Install Hive Service
+  vars:
+    services_to_delete: ["hive"]
+  import_playbook: delete_services.yml
+  tags:
+    - hive-delete
+
+- name: Install Hbase Service
+  vars:
+    services_to_delete: ["hbase"]
+  import_playbook: delete_services.yml
+  tags:
+    - hbase-delete
+
+- name: Install Kafka Service
+  vars:
+    services_to_delete: ["kafka"]
+  import_playbook: delete_services.yml
+  tags:
+    - kafka-delete
+
+- name: Install Ozone Service
+  vars:
+    services_to_delete: ["ozone"]
+  import_playbook: delete_services.yml
+  tags:
+    - ozone-delete
+
+- name: Install Ranger Service
+  vars:
+    services_to_delete: ["ranger"]
+  import_playbook: delete_services.yml
+  tags:
+    - ranger-delete
+
+- name: Install Solr Service
+  vars:
+    services_to_delete: ["solr"]
+  import_playbook: delete_services.yml
+  tags:
+    - solr-delete
+
+- name: Install Yarn Service
+  vars:
+    services_to_delete: ["yarn"]
+  import_playbook: delete_services.yml
+  tags:
+    - yarn-delete

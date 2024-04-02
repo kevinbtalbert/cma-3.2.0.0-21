@@ -1,0 +1,5 @@
+---
+type: "INPLACE_ONE_STAGE_UPGRADE"
+sourceClusterType: HDP2
+version: 1
+steps:

@@ -1,0 +1,9 @@
+---
+- name: Download Atlas Migration Tool for offline use
+  hosts: localhost
+  gather_facts: false
+  tags: download_atlas_migration_tool_for_offline_use
+  tasks:
+    - name: Download Atlas Migration Tool
+      include_role:
+        name: download_atlas_migration_tool

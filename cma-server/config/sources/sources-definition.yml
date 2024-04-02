@@ -1,0 +1,63 @@
+sourceTypes:
+  - type: HDP3
+    name: Hortonworks Data Platform 3
+    svgIcon: hdp3
+    configureSsh: true
+    server:
+      name: Ambari
+      svgIcon: ambari
+
+  - type: HDP2
+    name: Hortonworks Data Platform 2
+    svgIcon: hdp2
+    configureSsh: true
+    server:
+      name: Ambari
+      svgIcon: ambari
+
+  - type: CDH6
+    name: Cloudera Distributed Hadoop 6
+    svgIcon: cm_logo
+    configureSsh: true
+    server:
+      name: CDH Cloudera Manager
+      svgIcon: cm_logo
+
+  - type: CDH5
+    name: Cloudera Distributed Hadoop 5
+    svgIcon: cm_logo
+    configureSsh: true
+    server:
+      name: CDH Cloudera Manager
+      svgIcon: cm_logo
+
+  - type: CDP_PVC_BASE
+    name: Cloudera Data Platform - Private Cloud Base
+    svgIcon: cm_logo
+    server:
+      name: Cloudera Manager
+      svgIcon: cm_logo
+
+############## SOURCE ANSIBLE ##############
+
+sourceDefinitions:
+  - sourceType: HDP2
+    inventory: inventory-definition.yml
+    vars: vars-definition.yml
+    settings: settings-definition.yml
+  - sourceType: HDP3
+    inventory: inventory-definition.yml
+    vars: vars-definition.yml
+    settings: settings-definition.yml
+  - sourceType: CDH6
+    inventory: inventory-definition.yml
+    vars: vars-definition.yml
+    settings: settings-definition.yml
+  - sourceType: CDH5
+    inventory: inventory-definition.yml
+    vars: vars-definition.yml
+    settings: settings-definition.yml
+  - sourceType: CDP_PVC_BASE
+    inventory: inventory-definition.yml
+    vars: vars-definition.yml
+    settings: settings-definition.yml

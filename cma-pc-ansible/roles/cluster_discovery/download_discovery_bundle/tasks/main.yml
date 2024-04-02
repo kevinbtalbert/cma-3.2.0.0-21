@@ -1,0 +1,111 @@
+# Copyright (c) 2023, Cloudera, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+- name: 'Print discovery module'
+  debug:
+    var: discovery_bundle_module
+
+- name: Create cma_remote_tmp_dir
+  file:
+    path: "{{ cma_remote_tmp_dir }}"
+    state: directory
+    mode: '0777'
+
+- name: Check if rsync is present on localhost
+  command: which rsync
+  delegate_to: localhost
+  register: rsync_check_local
+  ignore_errors: true
+
+- name: Check if rsync is present on remote
+  command: which rsync
+  register: rsync_check_remote
+  ignore_errors: true
+
+# Normal `copy` is very slow for some reason. Use `rsync` if possible.
+- name: Synchronize folder using rsync
+  synchronize:
+    src: "{{ cdh_discovery_tool_path }}/"
+    dest: "{{ discovery_tool_remote_dir }}/"
+  when: rsync_check_local.rc == 0 and rsync_check_remote.rc == 0
+
+- name: Copy folder using copy module as fallback
+  copy:
+    src: "{{ cdh_discovery_tool_path }}/"
+    dest: "{{ discovery_tool_remote_dir }}/"
+    remote_src: no
+  when: rsync_check_local.rc != 0 or rsync_check_remote.rc != 0
+
+- name: Create config file
+  copy:
+    dest: "{{ discovery_tool_remote_dir }}/mac-discovery-bundle-builder/config/config.ini"
+    content: |
+      [credentials]
+      cm_user={{ cloudera_manager_admin_username }}
+      cm_password={{ cloudera_manager_admin_password }}
+      [database]
+      db_driver_path={{ cloudera_manager_jdbc_driver_path }}
+
+- name: Hdfs kinit
+  include_role:
+    name: cluster_discovery/cm_kinit
+  vars:
+    keytab_name: hdfs.keytab
+  when: is_kerberized_cluster
+
+- include_tasks: run_discovery_bundle_tool.yml
+  with_items: "{{ discovery_bundle_module | split(',') }}"
+
+- name: Get CM Cluster Display Name
+  import_role:
+    name: get_cm_cluster_display_name
+  delegate_to: localhost
+
+- block:
+    - name: Print the hdfs output dir
+      debug:
+        var: hdfs_output_dir
+
+    - name: Find hdfs result files
+      find:
+        paths: "{{ hdfs_output_dir }}/workload/{{ cm_cluster_display_name | regex_replace('[\\s]', '_') }}/service/{{ hdfs_service_name }}/"
+      register: result_files
+
+    - name: Download hdfs result files
+      fetch:
+        src: "{{ item.path }}"
+        dest: "{{ hdfs_report_dir }}/"
+        flat: yes
+      with_items: "{{ result_files.files }}"
+  when: '"hdfs_report" in discovery_bundle_module or discovery_bundle_module == "all"'
+
+- block:
+    - name: Print the hive output dir
+      debug:
+        var: hive_output_dir
+
+    - name: Find hive result files
+      find:
+        paths: "{{ hive_output_dir }}/workload/{{ cm_cluster_display_name | regex_replace('[\\s]', '_') }}/service/{{ hive_service_name }}/"
+      register: result_files
+
+    - name: Download hive result files
+      fetch:
+        src: "{{ item.path }}"
+        dest: "{{ hive_report_dir }}/"
+        flat: yes
+      with_items: "{{ result_files.files }}"
+  when: '"hive_metastore" in discovery_bundle_module or discovery_bundle_module == "all"'
+

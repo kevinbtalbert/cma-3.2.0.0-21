@@ -1,0 +1,6 @@
+dependencies:
+  - role: calculate_timeout
+    vars:
+      command_type: "run_role_command"
+      command_name: "{{ command }}"
+  - role: stop_all_hdp_services

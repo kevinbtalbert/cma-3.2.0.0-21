@@ -1,0 +1,21 @@
+# Note: this role should be either run first, or as a pre_task
+- name: Get ansible control node's IP address
+  block:
+    # ex. output: ansible_env['SSH_CLIENT']: 10.19.17.170 35754 22  <== the first token is always the IP of the interface that the control node uses for the SSH
+    # I'm 'caching' this information in the groups['all'][0] node's ansible_env segment, since the control IP is NOT expected to change per host
+    # i.e. we're expecting the same network interface to be used for the SSH connections per playbook run
+    - name: Gather ansible control node's IP address info into ansible_env['SSH_CLIENT'] variable
+      setup:
+        gather_subset: [ '!all','!min','env' ]
+      delegate_to: "{{ groups['all'][0] }}"
+      delegate_facts: true
+      run_once: true
+      when: hostvars[groups['all'][0]]['ansible_env'] is not defined
+    - name: Set control_node_ip_address variable
+      set_fact:
+        control_node_ip_address: "{{ hostvars[groups['all'][0]]['ansible_env']['SSH_CLIENT'] | split() | first }}"
+  when: control_node_ip_address is not defined
+- name: Print control_node_ip_address
+  debug:
+    var: control_node_ip_address
+  run_once: true

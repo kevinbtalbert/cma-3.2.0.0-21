@@ -1,0 +1,137 @@
+---
+- name: Oozie Server listing
+  tags: oozie-post-migration
+  gather_facts: False
+  hosts: all
+  roles:
+    - {role: get_hostnames_where_role_group_is_located, role_group_filter: OOZIE_SERVER}
+
+- name: Oozie Post migration - Validate Database URL
+  tags: oozie-post-migration
+  gather_facts: False
+  hosts: localhost
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  roles:
+    - { role: query_configuration_from_service, service_name: oozie, configuration_name: oozie_database_host,
+        configuration_type: ROLE }
+    - { role: get_db_host_from_jdbc_url, jdbc_url: "{{ oozie_database_host_url }}", db_name: "{{ oozie_db_name }}" }
+  tasks:
+    # JDBC check
+    - name: Create Oozie jdbc db host group
+      set_fact:
+        oozie_jdbc_host: "{{ db_host }}"
+
+    - name: Verify JDBC Database settings
+      include_role:
+        name: update_configuration_in_role_configuration_group
+      vars:
+        service_name: oozie
+        role_configuration_group_name: "oozie-OOZIE_SERVER"
+        configuration_name: "oozie_database_host"
+        configuration_value: "{{ oozie_jdbc_host }}"
+      when:
+        "oozie_jdbc_host != oozie_database_host"
+
+    # load balancer check
+    - name: Load balancer check
+      block:
+      - name: Create Oozie load balancer host group if required
+        add_host:
+          name: "{{ oozie_load_balancer_url | regex_search('(https*\\:\\/\\/)(.*)(\\:\\d+.*)', '\\2') | first }}"
+          groups: oozie_load_balancer
+
+      - name: Determine load balancer protocol
+        set_fact:
+          oozie_lb_https: "{{ 'https' in oozie_load_balancer_url }}"
+
+      - name: Determine load balancer port (http)
+        set_fact:
+          oozie_load_balancer_http_port: "{{ oozie_load_balancer_url | regex_search('(https*\\:\\/\\/)(.*)(\\:)(\\d+)(.*)', '\\4') | first }}"
+          oozie_load_balancer_https_port: "{{ oozie_load_balancer_default_https_port }}"
+        when: 'not oozie_lb_https'
+
+      - name: Determine load balancer port (https)
+        set_fact:
+          oozie_load_balancer_http_port: "{{ oozie_load_balancer_default_http_port }}"
+          oozie_load_balancer_https_port: "{{ oozie_load_balancer_url | regex_search('(https*\\:\\/\\/)(.*)(\\:)(\\d+)(.*)', '\\4') | first }}"
+        when: 'oozie_lb_https'
+
+      - name: Configure oozie load balancer if HA is enabled
+        update_configuration_in_service:
+          cm_configuration: "{{ cm_configuration_dictionary }}"
+          service_configuration:
+            oozie_load_balancer: '{{ groups["oozie_load_balancer"][0] }}'
+            oozie_load_balancer_http_port: "{{ oozie_load_balancer_http_port }}"
+            oozie_load_balancer_https_port: "{{ oozie_load_balancer_https_port }}"
+          service_name: oozie
+      when: 'groups["OOZIE_SERVER"] | length > 1'
+
+    - name: Update oozie safety valve
+      include_role:
+        name: update_safety_valve
+      vars:
+        configuration_type: "ROLE"
+        cm_role_name: "oozie-OOZIE_SERVER"
+        name: oozie_config_safety_valve
+        service_name: oozie
+        value:
+          oozie.service.AuthorizationService.admin.users: "oozie, oozie-admin"
+        state: present
+
+- name: Import oozie's loadbalancer host certificate into the CM global truststore
+  tags: oozie-post-migration
+  gather_facts: False
+  hosts: all
+  tasks:
+    - name: Set load balancer port
+      set_fact:
+        load_balancer_port: "{{ oozie_load_balancer_url | regex_search('(https*\\:\\/\\/)(.*)(\\:)(\\d+)(.*)', '\\4') | first }}"
+
+    - name: Import oozie's loadbalancer host certificate into the CM global truststore
+      include_role:
+        name: import_loadbalancer_certificate_into_global_truststore
+      vars:
+        service_name: "oozie"
+        load_balancer_host: "{{ groups['oozie_load_balancer'][0] }}"
+
+- name: Oozie Post migration - Install new Shared Libraries
+  tags: oozie-post-migration
+  gather_facts: False
+  hosts: localhost
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  tasks:
+    - name: Start Oozie service
+      include_role:
+        name: restart_service
+      vars:
+        service_name: "oozie"
+
+    - name: Install oozie shared lib
+      install_oozie_sharelib:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+
+- name: Access Oozie load balancer URL
+  tags: oozie-post-migration
+  gather_facts: False
+  hosts: oozie_load_balancer
+  tasks:
+    - name: Update httpd conf file
+      lineinfile:
+        path: /etc/httpd/conf/httpd.conf
+        regexp: "SSLProxyVerify require"
+        line: "SSLProxyVerify off"
+      become: yes
+
+    - name: Stop httpd
+      shell:
+        "apachectl -k stop"
+      become: yes
+
+    - name: Start httpd
+      shell:
+        "apachectl -k start"
+      become: yes

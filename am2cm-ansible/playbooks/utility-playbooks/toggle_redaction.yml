@@ -1,0 +1,9 @@
+---
+# recommended way of usage:
+# ansible-playbook -i inventories/<inventory>.ini toggle_redaction.yml --extra-vars {toggle_redaction_to: <boolean>}
+- hosts: server
+  vars:
+    toggle_redaction_to: false # recommended being set by using --extra-vars
+  gather_facts: False
+  roles:
+    - role: toggle_redaction

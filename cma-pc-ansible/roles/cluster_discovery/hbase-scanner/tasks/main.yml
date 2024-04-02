@@ -1,0 +1,71 @@
+# Copyright (c) 2023, Cloudera, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+- name: Clear remote working dir
+  file:
+    path: "{{ hbase_remote_work_dir }}"
+    state: absent
+
+- name: Create remote working dir
+  file:
+    path: "{{ hbase_remote_work_dir }}"
+    state: directory
+    owner: "{{ hbase_user }}"
+
+- name: Copy hbase scanner tool to master node
+  copy:
+    src: "{{ hbase_scanner_tool_path }}"
+    dest: "{{ hbase_remote_work_dir }}"
+    owner: "{{ hbase_user }}"
+    mode: 0755
+
+- name: Run kinit for HBase
+  include_role:
+    name: cluster_discovery/cm_kinit
+  vars:
+    keytab_name: hbase.keytab
+    kinit_user: "{{ hbase_user }}"
+  when: is_kerberized_cluster
+
+- name: Run hbase_scanner tool
+  command:
+    cmd: "{{ ansible_python_interpreter }} hbase-scanner.py"
+    chdir: "{{ hbase_remote_work_dir }}"
+  become: true
+  become_user: "{{ hbase_user }}"
+  register: hbase_scanner_result
+
+- name: Print out
+  debug:
+    msg: "{{ hbase_scanner_result.stdout }}"
+
+- name: Find generated files
+  find:
+    paths: "{{ hbase_remote_work_dir }}"
+    patterns: "*.csv"
+  register: result_files
+
+- name: Get generated files
+  fetch:
+    src: "{{ item.path }}"
+    dest: "{{ hbase_work_dir }}"
+    flat: true
+  loop: "{{ result_files.files }}"
+
+- name: Get log files
+  fetch:
+    src: "{{ hbase_remote_work_dir }}/hbase-scanner.log"
+    dest: "{{ transition_log_dir }}/"
+    flat: true

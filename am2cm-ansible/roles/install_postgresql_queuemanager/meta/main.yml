@@ -1,0 +1,4 @@
+dependencies:
+  - role: install_remote_python_dependencies
+    vars:
+      requirements_file: "{{ cma_remote_root_dir }}/postgresql_remote_requirements.txt"

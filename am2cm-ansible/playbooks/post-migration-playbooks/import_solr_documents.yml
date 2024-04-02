@@ -1,0 +1,124 @@
+---
+
+- name: Import existing solr data
+  hosts: backup_infra_solr_server[0]
+  tags: restore-solr-collections
+  gather_facts: False
+  vars:
+    service_name: solr
+    solr_collections: "{{ collections | d(infra_solr_collections) }}"
+    service_backup_dir: "{{ backup_root_dir }}/{{ service_name }}"
+  roles:
+    - setup_am2cm_solr_client
+    - { role: get_hostnames_where_role_group_is_located, role_group_filter: "zookeeper" }
+    - { role: query_configuration_from_service, service_name: zookeeper, configuration_name: "clientPort" }
+    - { role: query_configuration_from_service, configuration_name: "zookeeper_znode" }
+  tasks:
+    - name: Create ZK connection string
+      set_fact:
+        zk_connect_string: "{{ groups['zookeeper'] | join(':' + clientPort + ',') + ':' + clientPort + zookeeper_znode }}"
+
+    - name: Add ZK connection string to the am2cm-solr-client config
+      set_fact:
+        am2cm_solr_client_config: "{{ am2cm_solr_client_config | default(am2cm_solr_client_configuration_dictionary) | combine ( {item.key : item.value}, list_merge='append_rp') }}"
+      with_items:
+        - { 'key': 'backup_dir' , 'value': "{{ service_backup_dir }}" }
+        - { 'key': 'zookeeper_connect_string' , 'value': "{{ zk_connect_string }}" }
+
+    - name: Configure kerberos for am2cm-solr-client
+      block:
+        - name: Find solr-SOLR_SERVER folder in process
+          find:
+            paths: "{{ cloudera_agent_process_path }}"
+            recurse: yes
+            patterns: "*solr-SOLR_SERVER*"
+            file_type: directory
+          become: yes
+          register: proc_solr_server_path
+
+        - name: Fail if solr-SOLR_SERVER folder is not found
+          fail:
+            msg:
+              - "Couldn't find any solr-SOLR_SERVER folder under '{{ cloudera_agent_process_path }}' directory!"
+              - "Make sure that a Solr instance is running on the node!"
+          when: proc_solr_server_path.matched == 0
+
+        - name: Get jaas.conf file path
+          find:
+            paths: "{{ proc_solr_server_path.files[0].path }}"
+            recurse: yes
+            patterns: jaas.conf
+          become: yes
+          register: jaas_conf_file
+
+        - name: Fail if jaas.conf file is not found
+          fail:
+            msg:
+              - "Couldn't find any jaas.conf files under '{{ cloudera_agent_process_path }}' directory!"
+              - "Make sure that a Solr instance that uses KERBEROS is running on the node!"
+          when: jaas_conf_file.matched == 0
+
+        - name: Add jaas_file to am2cm-solr-client config
+          set_fact:
+            am2cm_solr_client_config: "{{ am2cm_solr_client_config | default(am2cm_solr_client_configuration_dictionary) | combine ( {item.key : item.value}, list_merge='append_rp') }}"
+          with_items:
+            - { 'key': 'jaas_file' , 'value': "{{ jaas_conf_file.files[0].path }}" }
+      when: kerberos_is_active
+
+    - name: Configure SSL for am2cm-solr-client
+      block:
+        # find ssl-client.xml get truststore type, location, password
+        - name: Get ssl-client.xml file path
+          find:
+            paths: "{{ cloudera_agent_process_path }}"
+            recurse: yes
+            patterns: ssl-client.xml
+          become: yes
+          register: ssl_client_xmls
+
+        - name: Fail if ssl-client.xml file is not found
+          fail:
+            msg:
+              - "Couldn't find any ssl-client.xml files under '{{ cloudera_agent_process_path }}' directory!"
+              - "Make sure that at least one Cloudera Service that uses TLS is running on the node!"
+          when: ssl_client_xmls.matched == 0
+
+        - name: Read truststore info
+          # do a jinja style for loop, instead of ansible loop, so we only need one SSH connection
+          # grep for the given key, then take the line coming right after
+          # then, cut off leading and trailing spaces & cut off leading and trailing xml tags
+          shell: |
+            {% for key in keys_to_loop_over %}
+              grep -A1 {{ key }} {{ filename }} | tail -n1 | sed 's#^ *<value>\(.*\)</value> *$#\1#'
+            {% endfor %}
+          register: ssl_properties
+          become: yes
+          vars:
+            filename: "{{ ssl_client_xmls.files[0].path }}"
+            keys_to_loop_over:
+              - "ssl.client.truststore.type"
+              - "ssl.client.truststore.location"
+              - "ssl.client.truststore.password"
+
+        - name: Add SSL info to am2cm-solr-client config
+          set_fact:
+            am2cm_solr_client_config: "{{ am2cm_solr_client_config | default(am2cm_solr_client_configuration_dictionary) | combine ( {item.key : item.value}, list_merge='append_rp') }}"
+          with_items:
+            - { 'key': 'trust_store_type' , 'value': "{{ ssl_properties['stdout_lines'][0] }}" }
+            - { 'key': 'trust_store_location' , 'value': "{{ ssl_properties['stdout_lines'][1] }}" }
+            - { 'key': 'trust_store_password' , 'value': "{{ ssl_properties['stdout_lines'][2] }}" }
+
+      when: solr_ssl_is_active
+
+    - name: Import Infra-Solr documents
+      include_role:
+        name: import_solr_collection
+      loop: "{{ solr_collections.split(',') | map('trim') }}"
+      loop_control:
+        loop_var: solr_collection
+
+    - name: Fetch am2cm-solr-client.log to local
+      fetch:
+        src: "{{ am2cm_solr_client_log_file }}"
+        dest: "{{ am2cm_local_dir }}/import_solr_documents.log"
+        flat: yes

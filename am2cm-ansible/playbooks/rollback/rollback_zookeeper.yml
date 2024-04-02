@@ -1,0 +1,39 @@
+---
+- name: Rollback Zookeeper
+  hosts: backup_zookeeper
+  gather_facts: False
+  tags: zookeeper-rollback
+  vars:
+    service_name: zookeeper
+  roles:
+    - prepare_to_rollback_service
+  tasks:
+    - name: "Check if the backup file of {{ service_name }} exists"
+      stat:
+        path: "{{ service_backup_dir }}/{{ zookeeper_backup_file_name }}"
+      register: service_backup_file_info
+      when: service_backup_dir_info.stat.exists
+
+    - name: Print info about backup file
+      debug:
+        var: service_backup_file_info.stat.exists
+      when: service_backup_dir_info.stat.exists
+
+    # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3_rollback_hdp_zk_7.1.7.html
+    - name: Delete Zookeeper data files
+      file:
+        state: absent
+        path: "{{ zk_data_dir }}"
+      when: service_backup_dir_info.stat.exists and service_backup_file_info.stat.exists
+
+    - name: Restore Zookeeper data files from backup
+      unarchive:
+        src: "{{ service_backup_dir }}/{{ zookeeper_backup_file_name }}"
+        dest: "{{ zk_data_dir | dirname }}"
+        remote_src: yes
+      when: service_backup_dir_info.stat.exists and service_backup_file_info.stat.exists
+
+    - name: Start Zookeeper in Ambari
+      include_role:
+        name: start_hdp_service
+

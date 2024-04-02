@@ -1,0 +1,28 @@
+- name: Create/update host_vars entry for host
+  block:
+    - name: Create host_vars directory
+      file:
+        state: directory
+        path: "{{ inventory_dir }}/host_vars"
+      run_once: true
+    - name: Create file for host in host_vars
+      file:
+        path: "{{ inventory_dir }}/host_vars/{{ inventory_hostname }}.yml"
+        state: touch
+        modification_time: preserve
+        access_time: preserve
+    - name: Print entries to write
+      debug:
+        msg:
+          - "Entry: {{ item.name }}: {{ item.value }}"
+      loop: "{{ entry_list }}"
+    - name: Write entries into host_vars
+      lineinfile:
+        path: "{{ inventory_dir }}/host_vars/{{ inventory_hostname }}.yml"
+        regexp: "{{ item.name }}: .*"
+        line: "{{ item.name }}: {{ item.value }}"
+      loop: "{{ entry_list }}"
+  delegate_to: localhost
+- set_fact:
+    "{{ item.name }}": "{{ item.value }}"
+  loop: "{{ entry_list }}"

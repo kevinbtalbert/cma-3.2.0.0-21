@@ -1,0 +1,52 @@
+# Copyright (c) 2023, Cloudera, Inc. All Rights Reserved.
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#  http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+---
+
+- name: Fail if input data is not provided
+  fail:
+    msg: "Please make sure that 'host_ip_list' is defined!"
+  when: host_ip_list is undefined
+  run_once: True
+
+# this solution also works on ycloud/docker
+- block:
+    - name: "generate /etc/hosts.ansible file"
+      template: "src='templates/hosts.j2' dest='/etc/hosts.ansible' owner=root group=root mode=0644"
+
+    - name: get /etc/hosts.ansible content
+      shell: "cat /etc/hosts.ansible"
+      register: content
+
+    - debug:
+        var: content
+      when: debug | default(False)
+
+    - name: "Searching the hosts in /etc/hosts"
+      shell: "grep -i '{{ content.stdout }}' /etc/hosts"
+      register: presence
+      failed_when: "presence.rc == 2"
+
+    - debug:
+        var: presence
+      when: debug | default(False)
+
+    - name: "append hosts.ansible to /etc/hosts file"
+      shell: cat /etc/hosts.ansible >> /etc/hosts
+      when: presence.rc == 1
+  become: true

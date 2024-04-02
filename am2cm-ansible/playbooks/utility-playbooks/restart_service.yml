@@ -1,0 +1,12 @@
+---
+# recommended way of usage:
+# ansible-playbook -i inventories/<inventory>.ini restart_service.yml --extra-vars "service_name=<service name>"
+- hosts: localhost
+  vars:
+    service_name: "zookeeper" # recommended to be set by using --extra-vars
+  gather_facts: False
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  roles:
+    - role: restart_service

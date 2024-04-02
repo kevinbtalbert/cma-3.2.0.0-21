@@ -1,0 +1,41 @@
+---
+- name: Backup Atlas
+  hosts: backup_atlas[0]
+  gather_facts: False
+  tags: atlas-backup
+  vars:
+    service_name: atlas
+    atlas_tables: "{{ ['atlas_titan', 'ATLAS_ENTITY_AUDIT_EVENTS'] if am2cm_source_version == 'HDP2' else ['atlas_janus', 'ATLAS_ENTITY_AUDIT_EVENTS'] }}"
+    keytab: "{{ atlas_service_keytab }}"
+    principal: "{{ atlas_service_principal }}"
+    become_user: "{{ atlas_user_name }}"
+    skip_kinit: False
+  roles:
+    - prepare_to_backup_service
+    - { role: export_atlas_metadata, when: am2cm_source_version == 'HDP2' }
+  tasks:
+    # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3_backup_atlas.html
+    - name: "Disable HBase tables"
+      shell: "echo \"disable '{{ item }}'\" | hbase shell"
+      loop: "{{ atlas_tables }}"
+      become: yes
+      become_user: "{{ atlas_user_name }}"
+
+    - name: "Remove previous snapshots from HBase tables"
+      shell: "echo \"delete_snapshot '{{ item }}-backup'\" | hbase shell"
+      loop: "{{ atlas_tables }}"
+      become: yes
+      become_user: atlas
+      failed_when: false    # to disable stop of playbook if script can't remove non-existing snapshot(s)
+
+    - name: "Create a snapshot from HBase tables"
+      shell: "echo \"snapshot '{{ item }}', '{{ item }}-backup'\" | hbase shell"
+      loop: "{{ atlas_tables }}"
+      become: yes
+      become_user: "{{ atlas_user_name }}"
+
+    - name: "Re-enable HBase tables"
+      shell: "echo \"enable '{{ item }}'\" | hbase shell"
+      loop: "{{ atlas_tables }}"
+      become: yes
+      become_user: "{{ atlas_user_name }}"

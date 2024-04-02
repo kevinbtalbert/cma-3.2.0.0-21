@@ -1,0 +1,78 @@
+---
+- name: HBase master procedure store drain steps
+  tags: hbase-prepare-migration
+  hosts: 'localhost'
+  gather_facts: False
+  tasks:
+    - name: Stop HBase masters before Master Procedure Store drain
+      perform_action_on_ambari_component:
+        ambari_configuration: "{{ ambari_configuration_dictionary }}"
+        component_name: HBASE_MASTER
+        component_hosts: "{{ groups['hbase_master'] }}"
+        action: stop
+      run_once: true
+
+    - name: Setup HBase for Master Procedure Store drain
+      setup_hbase_master_procedure_store_drain:
+        ambari_configuration: "{{ ambari_configuration_dictionary }}"
+      run_once: true
+
+    - name: List logfiles
+      find:
+        paths: "{{ hbase_log_dir }}"
+        patterns: '*hbase-master-*.log'
+      register: logfiles
+      delegate_to: "{{ groups['hbase_master'][0] }}"
+      run_once: true
+
+    - name: Print logfile that will be watched
+      debug:
+        msg: "Watched logfile path: {{ logfiles['files'][0]['path'] }}"
+
+    - name: Save current length of logfile to {{ cma_remote_root_dir }}/hbase_last_line_number
+      shell: 'wc -l < {{ logfiles["files"][0]["path"] }} > {{ cma_remote_root_dir }}/hbase_last_line_number'
+      delegate_to: "{{ groups['hbase_master'][0] }}"
+      run_once: true
+
+    - name: Save last line of logfile to {{ cma_remote_root_dir }}/hbase_last_line
+      shell: 'tail -1 {{ logfiles["files"][0]["path"] }} > {{ cma_remote_root_dir }}/hbase_last_line'
+      delegate_to: "{{ groups['hbase_master'][0] }}"
+      run_once: true
+
+    - name: Start one HBase master
+      perform_action_on_ambari_component:
+        ambari_configuration: "{{ ambari_configuration_dictionary }}"
+        component_name: HBASE_MASTER
+        component_hosts: "{{ [groups['hbase_master'][0]] }}"
+        action: start
+      environment:
+        - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+        - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Wait for HBase Master Procedure Store will be drained
+      shell: |
+        last_line_number=$(cat {{ cma_remote_root_dir }}/hbase_last_line_number)
+        last_line=$(cat {{ cma_remote_root_dir }}/hbase_last_line)
+        last_line_before_hbase_restart=$(awk -v linenum="$last_line_number" 'NR == linenum' {{ logpath }} | awk -v lastline="$last_line" '$0 ~ lastline')
+        if [ -n "$last_line_before_hbase_restart" ]; then  # if no logrotate happened
+          awk -v linenum="$last_line_number" 'NR > linenum' {{ logpath }} | grep -m1 "{{ success_message }}";  # grep from last_line_number+1
+        else
+          grep -m1 "{{ success_message }}" {{ logpath }};  # grep from the beginning
+        fi
+      vars:
+        logpath: "{{ logfiles['files'][0]['path'] }}"
+        success_message: "UPGRADE OK: All existed procedures have been finished"
+      delegate_to: "{{ groups['hbase_master'][0] }}"
+      changed_when: false
+      run_once: true
+      register: result
+      until: result.rc == 0
+      retries: 30
+      delay: 10
+
+    - name: Complete HBase for Master Procedure Store drain
+      complete_hbase_master_procedure_store_drain:
+        ambari_configuration: "{{ ambari_configuration_dictionary }}"
+      run_once: true

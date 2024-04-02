@@ -1,0 +1,290 @@
+---
+name: Upgrade to CDP PvC
+type: INPLACE_ONE_STAGE_UPGRADE
+sourceClusterType: HDP3
+version: 1
+steps:
+  - name: "Transition"
+    type: "group"
+    doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3_migrating_amb_hdp_to_cm_dc.html"
+    steps:
+      - name: "Stop all HDP services"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "stop-hdp-services"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3-migrating-the-cluster.html"
+      - name: "Move Spark Binaries"
+        service: "spark2"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "move-spark-binaries"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3_pretransition_spark.html"
+      - name: "Add Custom Service Descriptors"
+        type: "task"
+        service: "accumulo"
+        userSettingEnabler: "SERVICE_ACCUMULO_ON_CDP_deploy_accumulo"
+        execution: "auto"
+        ansibleTags:
+          - "apply-csd"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+      - name: "Upgrade the HDP configurations"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "hdp-config-upgrade"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.google.com/document/d/1dZKupEtlaLu3ZHc3j7E4rPn2zbwdTmrSXDZD3sgt4uM"
+      - name: "Using the AM2CM tool"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "am2cm-one-stage"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3-migrating-the-cluster.html"
+      - name: Download and distribute parcels
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "cm-parcel-distribution"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3-migrating-the-cluster.html"
+      - name: Enable Kerberos
+        service: "kerberos"
+        doc: "https://docs.cloudera.com/cdp-private-cloud-base/7.1.7/security-kerberos-authentication/topics/cm-security-kerberos-enabling-step3-cm-principal.html"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "enable-kerberos"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+      - name: Enable Auto TLS 1
+        doc: "https://docs.cloudera.com/cdp-private-cloud-base/7.1.7/security-encrypting-data-in-transit/topics/cm-security-use-case-1.html"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "enable-auto-tls-1"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        serverActions:
+          - com.cloudera.migration.am2cm.server.transitions.server_actions.SwitchToSSL
+
+  - name: Post-transition
+    type: group
+    doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3-post-migration-steps.html"
+    steps:
+      - name: "Toggle CM API encryption off"
+        type: "task"
+        execution: "auto"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/playbooks/utility-playbooks/toggle_redaction.yml --extra-vars "@${path-to-am2cm-extra-vars-json}" -e {"toggle_redaction_to":false}'
+      - name: "Enable Auto Start setting"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "enable-auto-start"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3-enable-auto-start.html"
+      - name: "ZooKeeper"
+        service: "zookeeper"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "backup-zookeeper-files"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3-zookeeper.html"
+      - name: "Delete ZNodes"
+        service: "zookeeper"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "delete-znodes"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3-zk-client-deleteall.html"
+      - name: "Infra-Solr"
+        service: "ambari_infra_solr"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "infra-solr-post-migration"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3-hdfs-2.html"
+      - name: "Ranger"
+        service: "ranger"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "ranger-db-schema-upgrade"
+          - "ranger-post-migration"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3-ranger-port-number.html"
+      - name: "Ranger KMS"
+        service: "ranger_kms"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "ranger-kms-db-schema-upgrade"
+          - "ranger-kms-post-migration"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3-rangerkms.html"
+      - name: "HDFS"
+        service: "hdfs"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "hdfs-post-migration"
+          - "hdfs-schema-upgrade"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3-hdfs-2.html"
+      - name: "Accumulo"
+        service: "accumulo"
+        type: "task"
+        userSettingEnabler: "SERVICE_ACCUMULO_ON_CDP_deploy_accumulo"
+        execution: "auto"
+        ansibleTags:
+          - "accumulo-post-migration"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+      - name: "Kafka"
+        service: "kafka"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "kafka-post-migration"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3-kafka-cleanup.html"
+      - name: "HBase"
+        service: "hbase"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "hbase-post-migration"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3-enable-hbase-cm.html"
+      - name: "YARN"
+        service: "yarn"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "yarn-post-migration"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3-yarn.html"
+      - name: "YARN Queue Manager"
+        service: queuemanager
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "queuemanager-post-migration"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-base/7.1.9/installation/topics/cm-yarn-qm-post-installation.html"
+        when: ${ RuntimeUtils:isTargetRuntimeVersionGreaterThanOrEqual(transitionUserSettingVars['cluster.version'], '7.1.9') }
+      - name: "Spark"
+        service: "spark2"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "spark-post-migration"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3-spark.html"
+      - name: "Tez"
+        service: "tez"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "tez-post-migration"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3-tez.html"
+      - name: "Hive"
+        service: "hive"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "hive-schema-upgrade"
+          - "hive-post-migration"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3-hive.html"
+      - name: "Oozie"
+        service: "oozie"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "oozie-db-schema-upgrade"
+          - "oozie-post-migration"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3-oozie.html"
+      - name: "Atlas"
+        service: "atlas"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "atlas-post-migration"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3-atlas-safety-valve.html"
+      - name: "Knox"
+        service: "knox"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "knox-post-migration"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3_knox_gateway.html"
+      - name: "Client Configurations"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "deploy-client-configurations-post-migration"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3-client-configurations.html"
+      - name: "Starting all services"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "start-all-services"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3-starting-all-services.html"
+      - name: "Securing ZooKeeper"
+        service: "zookeeper"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "secure-zookeeper"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3-zookeeper-secure.html"
+      - name: "Import Infra-Solr documents"
+        service: "ambari_infra_solr"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "restore-solr-collections"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3-backup-solr-collections-cdp.html"

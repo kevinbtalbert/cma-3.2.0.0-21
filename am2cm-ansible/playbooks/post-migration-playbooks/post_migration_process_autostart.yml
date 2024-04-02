@@ -1,0 +1,18 @@
+- name: Enable Auto Start setting
+  tags: enable-auto-start
+  hosts: localhost
+  gather_facts: False
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  tasks:
+    - name: Enable Auto Start setting for every process in CM # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3-enable-auto-start.html
+      auto_start_handler:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        autostart_state_enabled: true
+      tags: enable-auto-start
+    - name: Restart Management service
+      include_role:
+        name: restart_service
+      vars:
+        service_name: mgmt

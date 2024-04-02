@@ -1,0 +1,17 @@
+---
+type: PRIVATE_CLOUD_MIGRATION
+sourceClusterType: CDP_PVC_BASE
+version: 1
+steps:
+  - name: "Pre-transition Validation"
+    type: "group"
+    doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3-one-stage/topics/amb3-cluster-environment-readiness-one-stage.html"
+    steps:
+      - name: "Check Java Version"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "check-java-versions"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/release-guide/topics/cdpdc-java-requirements.html"

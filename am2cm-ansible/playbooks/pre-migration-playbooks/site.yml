@@ -1,0 +1,9 @@
+- import_playbook: setup_remote_python_environment.yml
+  when: airgapped is not defined or (airgapped is defined and not airgapped)
+- import_playbook: setup_remote_python_environment_airgapped.yml
+  when: airgapped is defined and airgapped
+- import_playbook: check_os_version_is_in_required.yml
+- import_playbook: check_java_version.yml
+- import_playbook: check_kerberos_renew_lifetime.yml
+- import_playbook: check_disk_space.yml
+- import_playbook: check_support_matrix_compatibility.yml

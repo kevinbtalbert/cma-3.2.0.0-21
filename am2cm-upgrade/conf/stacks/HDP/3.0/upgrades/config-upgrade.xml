@@ -1,0 +1,425 @@
+<?xml version="1.0"?>
+<!--
+   Licensed to the Apache Software Foundation (ASF) under one or more
+   contributor license agreements.  See the NOTICE file distributed with
+   this work for additional information regarding copyright ownership.
+   The ASF licenses this file to You under the Apache License, Version 2.0
+   (the "License"); you may not use this file except in compliance with
+   the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+
+<upgrade-config-changes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="upgrade-config.xsd">
+  <services>
+
+    <service name="KAFKA">
+      <component name="KAFKA_BROKER">
+        <changes>
+          <definition xsi:type="configure" id="hdp_3_0_x_kafka_plaintext_sasl_removal">
+            <type>kafka-broker</type>
+            <set key="security.inter.broker.protocol" value="SASL_PLAINTEXT"
+                 if-type="kafka-broker" if-key="security.inter.broker.protocol" if-value="PLAINTEXTSASL"/>
+            <replace key="listeners" find="PLAINTEXTSASL" replace-with="SASL_PLAINTEXT"/>
+          </definition>
+          <definition xsi:type="configure" id="hdp_7_1_kafka_kerberos_patch">
+            <type>kafka-env</type>
+            <replace key="content" find="KAFKA_KERBEROS_PARAMS" replace-with="KAFKA_OPTS"/>
+          </definition>
+        </changes>
+      </component>
+    </service>
+
+    <service name="ATLAS">
+      <component name="ATLAS_SERVER">
+        <changes>
+          <definition xsi:type="configure" id="hdp_3_0_x_atlas_plaintext_sasl_removal" summary="Updating Atlas security protocol for Kafka">
+            <type>application-properties</type>
+            <set key="atlas.kafka.security.protocol" value="SASL_PLAINTEXT"
+                 if-type="application-properties" if-key="atlas.kafka.security.protocol" if-key-state="present" if-value="PLAINTEXTSASL"/>
+          </definition>
+          <definition xsi:type="configure" id="hdp_7_1_6_maint_jaas_config_for_atlas" summary="Updating atlas jaas application properties">
+            <type>application-properties</type>
+            <set key ="atlas.jaas.ticketBased-KafkaClient.loginModuleControlFlag" value="required"
+                 if-type="cluster-env" if-key="security_enabled" if-value="true"/>
+            <set key ="atlas.jaas.ticketBased-KafkaClient.loginModuleName" value="com.sun.security.auth.module.Krb5LoginModule"
+                 if-type="cluster-env" if-key="security_enabled" if-value="true"/>
+            <set key ="atlas.jaas.ticketBased-KafkaClient.option.useTicketCache" value="true"
+                 if-type="cluster-env" if-key="security_enabled" if-value="true"/>
+          </definition>
+        </changes>
+      </component>
+    </service>
+
+    <service name="RANGER">
+      <component name="RANGER_TAGSYNC">
+        <changes>
+          <definition xsi:type="configure" id="hdp_3_0_x_tagsync_plaintext_sasl_removal" summary="Updating Tagsync security protocol for Kafka">
+            <type>tagsync-application-properties</type>
+            <set key="atlas.kafka.security.protocol" value="SASL_PLAINTEXT"
+                 if-type="tagsync-application-properties" if-key="atlas.kafka.security.protocol" if-key-state="present" if-value="PLAINTEXTSASL"/>
+          </definition>
+        </changes>
+      </component>
+
+      <component name="RANGER_ADMIN">
+        <changes>
+          <definition xsi:type="configure" id="hdp_3_1_0_0_ranger_services_heap_size_configuration" summary="Upgrading ranger-env configurations for Ranger service components">
+            <type>ranger-env</type>
+
+            <replace key="content" find="export RANGER_USER={{unix_user}}" replace-with="export RANGER_USER={{unix_user}}&#xA;ranger_admin_max_heap_size={{ranger_admin_max_heap_size}}&#xA;" if-key="content" if-type="ranger-env" if-key-state="present" if-value="ranger_admin_max_heap_size={{ranger_admin_max_heap_size}}" if-value-match-type="partial" if-value-not-matched="true" />
+
+            <set key="ranger_admin_max_heap_size" value="1g" if-type="ranger-env" if-key="ranger_admin_max_heap_size" if-key-state="absent"/>
+
+            <replace key="content" find="export UNIX_USERSYNC_USER={{unix_user}}" replace-with="export UNIX_USERSYNC_USER={{unix_user}}&#xA;ranger_usersync_max_heap_size={{ranger_usersync_max_heap_size}}&#xA;" if-key="content" if-type="ranger-env" if-key-state="present" if-value="ranger_usersync_max_heap_size={{ranger_usersync_max_heap_size}}" if-value-match-type="partial" if-value-not-matched="true" />
+
+            <set key="ranger_usersync_max_heap_size" value="1g" if-type="ranger-env" if-key="ranger_usersync_max_heap_size" if-key-state="absent"/>
+
+            <replace key="content" find="export UNIX_TAGSYNC_USER={{unix_user}}" replace-with="export UNIX_TAGSYNC_USER={{unix_user}}&#xA;ranger_tagsync_max_heap_size={{ranger_tagsync_max_heap_size}}&#xA;" if-key="content" if-type="ranger-env" if-key-state="present" if-value="ranger_tagsync_max_heap_size={{ranger_tagsync_max_heap_size}}" if-value-match-type="partial" if-value-not-matched="true" />
+
+            <set key="ranger_tagsync_max_heap_size" value="1g" if-type="ranger-env" if-key="ranger_tagsync_max_heap_size" if-key-state="absent"/>
+          </definition>
+          <definition xsi:type="configure" id="hdp_3_1_0_0_ranger_patch_retry_configuration" summary="Upgrading admin-properties configurations for Ranger service components">
+            <type>admin-properties</type>
+            <set key="PATCH_RETRY_INTERVAL" value="120" if-type="admin-properties" if-key="PATCH_RETRY_INTERVAL" if-key-state="absent"/>
+          </definition>
+        </changes>
+      </component>
+    </service>
+
+    <service name="RANGER_KMS">
+      <component name="RANGER_KMS_SERVER">
+        <changes>
+          <definition xsi:type="configure" id="hdp_3_1_0_0_ranger_kms_services_heap_size_configuration">
+            <type>kms-env</type>
+            <replace key="content" find="export KMS_USER={{kms_user}}" replace-with="export KMS_USER={{kms_user}}&#xA;ranger_kms_max_heap_size={{ranger_kms_max_heap_size}}&#xA;"/>
+
+            <set key="ranger_kms_max_heap_size" value="1g" if-type="ranger-env" if-key="ranger_kms_max_heap_size" if-key-state="absent"/>
+          </definition>
+        </changes>
+      </component>
+    </service>
+
+    <service name="SPARK2">
+      <component name="SPARK2_CLIENT">
+        <changes>
+          <definition xsi:type="configure" id="hdp_7_1_0_0_spark2_env">
+            <type>spark2-env</type>
+            <insert key="content" insert-type="append" newline-before="true" newline-after="false"
+                    value="# Add Hadoop lzo jar to the classpath (if found)
+                      &#10;if [ -z &quot;${HADOOP_VERSION}&quot; ]; then
+                      &#10; if [ `command -v hdp-select` ]; then
+                      &#10;   HADOOP_VERSION=`hdp-select status | grep hadoop-client | awk -F &quot; &quot; &apos;{print $3}&apos;`
+                      &#10; else
+                      &#10;   echo -e &quot;command hdp-select is not found, please manually set HADOOP_VERSION in spark-env.sh or current environment&quot; 1>&amp;2
+                      &#10;   exit 1
+                      &#10; fi
+                      &#10;fi
+                      &#10;
+                      &#10;HADOOP_LZO_JAR=
+                      &#10;HADOOP_LZO_DIR=&quot;/usr/hdp/${HADOOP_VERSION}/hadoop/lib&quot;
+                      &#10;num_jars=&quot;$(ls -1 &quot;$HADOOP_LZO_DIR&quot; | grep &quot;^hadoop-lzo.*${HADOOP_VERSION}\.jar$&quot; | wc -l)&quot;
+                      &#10;if [ &quot;$num_jars&quot; -eq &quot;0&quot; -a -z &quot;$HADOOP_LZO_JAR&quot; ]; then
+                      &#10; HADOOP_LZO_JAR=
+                      &#10;elif [ &quot;$num_jars&quot; -gt &quot;1&quot; ]; then
+                      &#10; echo &quot;Found multiple Hadoop lzo jars in $HADOOP_LZO_DIR:&quot; 1>&amp;2
+                      &#10; echo &quot;Please remove all but one jar.&quot; 1>&amp;2
+                      &#10; exit 1
+                      &#10;elif [ &quot;$num_jars&quot; -eq &quot;1&quot; ]; then
+                      &#10; LZO_JARS=&quot;$(ls -1 &quot;$HADOOP_LZO_DIR&quot; | grep &quot;^hadoop-lzo-.*${HADOOP_VERSION}\.jar$&quot; || true)&quot;
+                      &#10; HADOOP_LZO_JAR=&quot;${HADOOP_LZO_DIR}/${LZO_JARS}&quot;
+                      &#10;fi
+                      &#10;
+                      &#10;export SPARK_DIST_CLASSPATH=${SPARK_DIST_CLASSPATH}:${HADOOP_LZO_JAR}"/>
+          </definition>
+          <definition xsi:type="configure" id="hdp_7_1_0_0_remove_hive_metastore">
+            <type>spark2-defaults</type>
+            <transfer operation="delete" delete-key="spark.sql.hive.metastore.version" />
+            <transfer operation="delete" delete-key="spark.sql.hive.metastore.jars" />
+          </definition>
+        </changes>
+      </component>
+    </service>
+
+    <service name="OOZIE">
+      <component name="OOZIE_SERVER">
+        <changes>
+          <definition xsi:type="configure" id="hdp_7_1_update_oozie_env_template_config">
+            <type>oozie-env</type>
+            <insert key="content" insert-type="append" newline-before="true" newline-after="true" value='unset OOZIE_CONFIG'/>
+            <insert key="content" insert-type="append" newline-before="true" newline-after="true" value='unset CATALINA_BASE'/>
+            <insert key="content" insert-type="append" newline-before="true" newline-after="true" value='unset CATALINA_TMPDIR'/>
+            <insert key="content" insert-type="append" newline-before="true" newline-after="true" value='unset OOZIE_CATALINA_HOME'/>
+            <insert key="content" insert-type="append" newline-before="true" newline-after="true" value='unset CATALINA_OPTS'/>
+            <insert key="content" insert-type="append" newline-before="true" newline-after="true" value='export JETTY_PID_FILE="$CATALINA_PID"'/>
+            <insert key="content" insert-type="append" newline-before="true" newline-after="true" value='unset CATALINA_PID'/>
+            <insert key="content" insert-type="append" newline-before="true" newline-after="true" value='export OOZIE_CONFIG={{conf_dir}}'/>
+          </definition>
+          <definition xsi:type="configure" id="hdp_7_1_update_oozie_hadoop_accessor_service_config">
+            <type>oozie-site</type>
+            <set key="oozie.service.HadoopAccessorService.hadoop.configurations" value="*={{conf_dir}}/hadoop-conf" />
+          </definition>
+          <definition xsi:type="configure" id="hdp_7_1_update_oozie_credentials_credentialclasses_config">
+            <type>oozie-site</type>
+            <replace key="oozie.credentials.credentialclasses" find="HiveCredentials" replace-with="HCatCredentials" />
+          </definition>
+        </changes>
+      </component>
+    </service>
+
+    <service name="AMBARI_METRICS">
+      <component name="METRICS_GRAFANA">
+        <changes>
+          <definition xsi:type="configure" id="hdp_3_1_0_0_ams_grafana_ini_template_update">
+            <type>ams-grafana-ini</type>
+            <replace key="content" find="; app_mode = production"
+                     replace-with="; app_mode = production
+                      &#10;
+                      &#10;# instance name, defaults to HOSTNAME environment variable value or hostname if HOSTNAME var is empty
+                      &#10;; instance_name = ${HOSTNAME}
+                      &#10;"/>
+            <replace key="content" find="logs = {{ams_grafana_log_dir}}"
+                     replace-with="logs = {{ams_grafana_log_dir}}
+                      &#10;#
+                      &#10;# Directory where grafana will automatically scan and look for plugins
+                      &#10;#
+                      &#10;plugins = /var/lib/ambari-metrics-grafana/plugins
+                      &#10;"/>
+            <replace key="content" find=";protocol = http" replace-with=""/>
+            <replace key="content" find=";http_port = 3000" replace-with=""/>
+            <replace key="content" find=";static_root_path = public" replace-with=""/>
+            <replace key="content" find=";cert_file =" replace-with=""/>
+            <replace key="content" find=";cert_key =" replace-with=""/>
+            <replace key="content" find="cert_key = {{ams_grafana_cert_key}}"
+                     replace-with="cert_key = {{ams_grafana_cert_key}}
+                      &#10;
+                      &#10;# Unix socket path
+                      &#10;;socket ="/>
+            <replace key="content" find=";password ="
+                     replace-with="# If the password contains # or ; you have to wrap it with trippel quotes. Ex &quot;&quot;&quot;#password;&quot;&quot;&quot;
+                      &#10;;password =
+                      &#10;
+                      &#10;# Use either URL or the previous fields to configure the database
+                      &#10;# Example: mysql://user:secret@host:port/database
+                      &#10;;url ="/>
+            <replace key="content" find=";session_life_time = 86400"
+                     replace-with=";session_life_time = 86400
+                      &#10;
+                      &#10;#################################### Data proxy ###########################
+                      &#10;[dataproxy]
+                      &#10;
+                      &#10;# This enables data proxy logging, default is false
+                      &#10;;logging = false
+                      &#10;"/>
+            <replace key="content" find="# Google Analytics universal tracking code, only enabled if you specify an id here"
+                     replace-with="# Set to false to disable all checks to https://grafana.net
+                      &#10;# for new vesions (grafana itself and plugins), check is used
+                      &#10;# in some UI views to notify that grafana or plugin update exists
+                      &#10;# This option does not cause any auto updates, nor send any information
+                      &#10;# only a GET request to http://grafana.com to get latest versions
+                      &#10;;check_for_updates = true
+                      &#10;
+                      &#10;# Google Analytics universal tracking code, only enabled if you specify an id here"/>
+            <replace key="content" find="#################################### Users ####################################"
+                     replace-with="[snapshots]
+                      &#10;# snapshot sharing options
+                      &#10;;external_enabled = true
+                      &#10;;external_snapshot_url = https://snapshots-origin.raintank.io
+                      &#10;;external_snapshot_name = Publish to snapshot.raintank.io
+                      &#10;
+                      &#10;# remove expired snapshot
+                      &#10;;snapshot_remove_expired = true
+                      &#10;
+                      &#10;# remove snapshots after 90 days
+                      &#10;;snapshot_TTL_days = 90
+                      &#10;
+                      &#10;#################################### Users ####################################"/>
+            <replace key="content" find="#################################### Anonymous Auth ##########################"
+                     replace-with="# Default UI theme (&quot;dark&quot; or &quot;light&quot;)
+                      &#10;;default_theme = dark
+                      &#10;
+                      &#10;# External user management, these options affect the organization users view
+                      &#10;;external_manage_link_url =
+                      &#10;;external_manage_link_name =
+                      &#10;;external_manage_info =
+                      &#10;
+                      &#10;[auth]
+                      &#10;# Set to true to disable (hide) the login form, useful if you use OAuth, defaults to false
+                      &#10;;disable_login_form = false
+                      &#10;
+                      &#10;# Set to true to disable the signout link in the side menu. useful if you use auth.proxy, defaults to false
+                      &#10;;disable_signout_menu = false
+                      &#10;
+                      &#10;#################################### Anonymous Auth ##########################"/>
+            <replace key="content" find="#################################### Auth Proxy ##########################"
+                     replace-with="#################################### Generic OAuth ##########################
+                      &#10;[auth.generic_oauth]
+                      &#10;;enabled = false
+                      &#10;;name = OAuth
+                      &#10;;allow_sign_up = true
+                      &#10;;client_id = some_id
+                      &#10;;client_secret = some_secret
+                      &#10;;scopes = user:email,read:org
+                      &#10;;auth_url = https://foo.bar/login/oauth/authorize
+                      &#10;;token_url = https://foo.bar/login/oauth/access_token
+                      &#10;;api_url = https://foo.bar/user
+                      &#10;;team_ids =
+                      &#10;;allowed_organizations =
+                      &#10;
+                      &#10;#################################### Grafana.com Auth ####################
+                      &#10;[auth.grafana_com]
+                      &#10;;enabled = false
+                      &#10;;allow_sign_up = true
+                      &#10;;client_id = some_id
+                      &#10;;client_secret = some_secret
+                      &#10;;scopes = user:email
+                      &#10;;allowed_organizations =
+                      &#10;
+                      &#10;#################################### Auth Proxy ##########################"/>
+            <replace key="content" find="[emails]"
+                     replace-with=";from_name = Grafana
+                      &#10;# EHLO identity in SMTP dialog (defaults to instance_name)
+                      &#10;;ehlo_identity = dashboard.example.com
+                      &#10;
+                      &#10;[emails]"/>
+            <replace key="content" find="# Either &quot;Trace&quot;, &quot;Debug&quot;, &quot;Info&quot;, &quot;Warn&quot;, &quot;Error&quot;, &quot;Critical&quot;, default is &quot;Trace&quot;"
+                     replace-with="# Either &quot;debug&quot;, &quot;info&quot;, &quot;warn&quot;, &quot;error&quot;, &quot;critical&quot;, default is &quot;info&quot;"/>
+            <replace key="content" find=";level = Info"
+                     replace-with=";level = info"/>
+            <replace key="content" find="# Buffer length of channel, keep it as it is if you don't know what it is.&#10;;buffer_len = 10000"
+                     replace-with="# optional settings to set different levels for specific loggers. Ex filters = sqlstore:debug
+                      &#10;;filters ="/>
+          </definition>
+        </changes>
+      </component>
+    </service>
+
+    <service name="DRUID">
+      <component name="DRUID_OVERLORD">
+        <changes>
+          <definition xsi:type="configure" id="hdp_7_1_0_0_druid_common">
+            <type>druid-common</type>
+            <replace key="druid.monitoring.monitors" find="io.druid.java.util.metrics.JvmMonitor"
+            replace-with="org.apache.druid.java.util.metrics.JvmMonitor"/>
+            <regex-replace key="druid.extensions.loadList" find="([, ]*)&quot;druid-kafka-eight&quot;" replace-with=""/>
+            <regex-replace key="druid.extensions.loadList" find="&quot;druid-kafka-eight&quot;([, ]*)" replace-with=""/>
+          </definition>
+
+          <definition xsi:type="configure" id="hdp_7_1_0_0_druid_env">
+            <type>druid-env</type>
+            <replace key="druid.broker.jvm.opts" find="io.druid.common.config.Log4jShutdown"
+            replace-with="org.apache.druid.common.config.Log4jShutdown"/>
+
+            <replace key="druid.coordinator.jvm.opts" find="io.druid.common.config.Log4jShutdown"
+            replace-with="org.apache.druid.common.config.Log4jShutdown"/>
+
+            <replace key="druid.middlemanager.jvm.opts" find="io.druid.common.config.Log4jShutdown"
+            replace-with="org.apache.druid.common.config.Log4jShutdown"/>
+
+            <replace key="druid.historical.jvm.opts" find="io.druid.common.config.Log4jShutdown"
+            replace-with="org.apache.druid.common.config.Log4jShutdown"/>
+
+            <replace key="druid.overlord.jvm.opts" find="io.druid.common.config.Log4jShutdown"
+            replace-with="org.apache.druid.common.config.Log4jShutdown"/>
+
+            <replace key="druid.router.jvm.opts" find="io.druid.common.config.Log4jShutdown"
+            replace-with="org.apache.druid.common.config.Log4jShutdown"/>
+          </definition>
+
+          <definition xsi:type="configure" id="hdp_7_1_0_0_druid_log4j">
+            <type>druid-log4j</type>
+            <replace key="content" find="io.druid"
+            replace-with="org.apache.druid"/>
+          </definition>
+
+          <definition xsi:type="configure" id="hdp_7_1_0_0_druid_router">
+            <type>druid-router</type>
+            <set key="druid.router.managementProxy.enabled" value="true"/>
+          </definition>
+        </changes>
+      </component>
+    </service>
+
+    <service name="HIVE">
+      <component name="HIVE_METASTORE">
+        <changes>
+          <definition xsi:type="configure" id="hdp_7_1_disable_hive_metastore_strict_check" summary="Disable metastore strict table location check">
+            <type>hivemetastore-site</type>
+            <set key="metastore.strict.table.location.check" value="false"/>
+          </definition>
+          <definition xsi:type="configure" id="hdp_7_1_change_drfa_log_appender" summary="Update HIVE log appender type">
+            <type>hive-log4j2</type>
+            <replace key="content" find="RollingFile" replace-with="RollingRandomAccessFile" if-key="content" if-key-state="present"/>
+          </definition>
+        </changes>
+      </component>
+    </service>
+
+    <service name="TEZ">
+      <component name="TEZ_CLIENT">
+        <changes>
+          <definition xsi:type="configure" id="hdp_3_x_tez_native_path_update">
+            <type>tez-site</type>
+            <replace key="tez.am.launch.env"
+                     find="/usr/hdp/${hdp.version}/hadoop/lib/native:/usr/hdp/${hdp.version}/hadoop/lib/native/Linux-{{architecture}}-64"
+                     replace-with="/usr/hdp/current/hadoop-client/lib/native:/usr/hdp/current/hadoop-client/lib/native/Linux-{{architecture}}-64"/>
+            <replace key="tez.task.launch.env"
+                     find="/usr/hdp/${hdp.version}/hadoop/lib/native:/usr/hdp/${hdp.version}/hadoop/lib/native/Linux-{{architecture}}-64"
+                     replace-with="/usr/hdp/current/hadoop-client/lib/native:/usr/hdp/current/hadoop-client/lib/native/Linux-{{architecture}}-64"/>
+          </definition>
+        </changes>
+      </component>
+    </service>
+
+    <service name="MAPREDUCE2">
+      <component name="MAPREDUCE2_CLIENT">
+        <changes>
+          <definition xsi:type="configure" id="hdp_3_x_mapreduce_native_path_update">
+            <type>mapred-site</type>
+            <replace key="mapreduce.admin.user.env"
+                     find="/usr/hdp/${hdp.version}/hadoop/lib/native:/usr/hdp/${hdp.version}/hadoop/lib/native/Linux-{{architecture}}-64"
+                     replace-with="/usr/hdp/current/hadoop-client/lib/native:/usr/hdp/current/hadoop-client/lib/native/Linux-{{architecture}}-64"/>
+          </definition>
+        </changes>
+      </component>
+    </service>
+
+    <service name="KNOX">
+      <component name="KNOX_GATEWAY">
+        <changes>
+          <definition xsi:type="configure" id="hdp_7_x_enable_ranger_knox_sso">
+            <type>gateway-site</type>
+            <set key="gateway.incoming.xforwarded.enabled" value="false" if-type="gateway-site" if-key="gateway.incoming.xforwarded.enabled" if-key-state="absent"/>
+          </definition>
+          <definition xsi:type="configure" id="hdp_7_x_knox_topology_fix_hive_schema">
+            <type>topology</type>
+            <replace key="content"
+                     find="&lt;url&gt;http://{{hive_server_host}}:{{hive_http_port}}/{{hive_http_path}}&lt;/url&gt;"
+                     replace-with="&lt;url&gt;{{hive_scheme}}://{{hive_server_host}}:{{hive_http_port}}/{{hive_http_path}}&lt;/url&gt;"/>
+          </definition>
+        </changes>
+      </component>
+    </service>
+
+    <service name="HBASE">
+      <component name="HBASE_MASTER">
+        <changes>
+          <definition xsi:type="configure" id="hdp_7_1_7_setup_hbase_master_procedure_store_drain" summary="Setup HBase for Master Procedure Store drain">
+            <type>hbase-site</type>
+            <set key ="hbase.procedure.upgrade-to-2-2" value="true" if-type="hbase-site" if-key="hbase.procedure.upgrade-to-2-2" if-key-state="absent"/>
+          </definition>
+          <definition xsi:type="configure" id="hdp_7_1_7_complete_hbase_master_procedure_store_drain" summary="Complete HBase for Master Procedure Store drain">
+            <type>hbase-site</type>
+            <transfer operation="delete" delete-key="hbase.procedure.upgrade-to-2-2" />
+          </definition>
+        </changes>
+      </component>
+    </service>
+  </services>
+</upgrade-config-changes>

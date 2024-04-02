@@ -1,0 +1,54 @@
+# Cloudera Migration Assistant (AM2CM) Versions and their Supported Migration Paths
+
+- AM2CM 1.1.0.x
+  - HDP 2.6.5.x →  CDP 7.1.4
+- AM2CM 1.1.1
+  - HDP 2.6.5.x → CDP DC 7.1.6
+- AM2CM 1.2.0
+  - HDP 3.1.5.x → CDP DC 7.1.6
+- AM2CM 2.0.0 and 2.0.1
+  - HDP 2.6.5.x → CDP DC 7.1.7
+  - HDP 3.1.5.x → CDP DC 7.1.7 
+  - HDF 3.5.2.x → CPD DC 7.1.7
+- AM2CM 2.0.2 and 2.0.3 
+  - HDP 2.6.5.x →  CDP 7.1.4 
+  - HDP 2.6.5.x → CDP DC 7.1.6 
+  - HDP 3.1.5.x → CDP DC 7.1.6 
+  - HDP 2.6.5.x → CDP DC 7.1.7 
+  - HDP 3.1.5.x → CDP DC 7.1.7 
+  - HDF 3.5.2.0 → CPD DC 7.1.7
+- [AM2CM 2.0.4](https://archive.cloudera.com/am2cm/2.0.4.0/)
+    - _All above in 2.0.2.0, plus the log4j 2.17 included version of 7.1.7.0:
+  - HDP 3.1.5 → CDP DC 7.1.7.78 via [Ambari 7.1.7.1](https://archive.cloudera.com/p/ambaridc/7.x/7.1.7.1/) ( CDP DC 7.1.7.78 is a CPD DC 7.1.7.0 with log4j2.17.1)
+  - HDP 2.6.5 → CDP DC 7.1.7.78 via [Ambari 7.1.7.1](https://archive.cloudera.com/p/ambaridc/7.x/7.1.7.1/)
+- [AM2CM 2.3.0](https://archive.cloudera.com/am2cm/2.3.0.0/) 
+  - _All above paths_ + 
+  - HDP 3.1.5 → [CDP Private Cloud Base 7.1.8](https://archive.cloudera.com/p/cdh7/7.1.8.0/)  Two-stage Upgrade via [Ambari 7.1.8.0](https://archive.cloudera.com/p/ambaridc/7.x/7.1.8.0/) and [HDP 7.1.8.0](https://archive.cloudera.com/p/HDPDC/7.x/7.1.8.0/)
+- [CMA 2.4.0](https://archive.cloudera.com/am2cm/2.4.0.0/)
+  - _All above paths_ + 
+  - HDP 3.1.5 → [CDP Private Cloud Base 7.1.7SP1](https://archive.cloudera.com/p/cdh7/7.1.7.1000/) One-stage Upgrade (without HDP7)
+  - HDP 3.1.5 → [CDP Private Cloud Base 7.1.8](https://archive.cloudera.com/p/cdh7/7.1.8.0/)   One-stage Upgrade (without HDP7)
+- [CMA 2.4.1](https://archive.cloudera.com/am2cm/2.4.1/)
+  - _All above paths_
+  - HDP 3.1.5 → [CDP Private Cloud Base 7.1.7SP2](https://archive.cloudera.com/p/cdh7/7.1.7.2000/)  One-stage Upgrade (without HDP7)
+  - HDP 2.6.5 → [CDP Private Cloud Base 7.1.7SP2](https://archive.cloudera.com/p/cdh7/7.1.7.2000/)  Two-stage Upgrade with HDP 7.1.7SP2
+- [CMA 2.6.0](https://archive.cloudera.com/am2cm/2.6.0/)
+    - _All above paths_
+    - [CDP Private Cloud Base 7.1.7SP2](https://archive.cloudera.com/p/cdh7/7.1.7.2000/) →  [CDP PvC DS 1.5.1](https://archive.cloudera.com/p/cdp-pvc-ds/1.5.1/) as Tech Preview
+    - [CDP Private Cloud Base 7.1.8](https://archive.cloudera.com/p/cdh7/7.1.8.0/) →  [CDP PvC DS 1.5.1](https://archive.cloudera.com/p/cdp-pvc-ds/1.5.1/) as Tech Preview
+- [CMA 2.6.2](https://archive.cloudera.com/am2cm/2.6.2/)
+    - _All above paths_
+    - HDP 3.1.5 → [CDP Private Cloud Base 7.1.9](https://archive.cloudera.com/p/cdh7/7.1.9.0/)   One-stage Upgrade (without HDP7) 
+    - HDP 2.6.5 → [CDP Private Cloud Base 7.1.8](https://archive.cloudera.com/p/cdh7/7.1.8.0/)   One-stage Upgrade (without HDP7) including _Accumulo_
+    - HDP 2.6.5 → [CDP Private Cloud Base 7.1.7SP2](https://archive.cloudera.com/p/cdh7/7.1.7.2000/)  One-stage Upgrade (without HDP7) including _Accumulo_
+    - HDP 3.1.5 → [CDP Private Cloud Base 7.1.8](https://archive.cloudera.com/p/cdh7/7.1.8.0/)   One-stage Upgrade (without HDP7) including _Accumulo_
+    - HDP 3.1.5 → [CDP Private Cloud Base 7.1.7SP2](https://archive.cloudera.com/p/cdh7/7.1.7.2000/) One-stage Upgrade (without HDP7) including _Accumulo_
+- [CMA 2.8.0](https://archive.cloudera.com/am2cm/2.8.0/)
+    - _All above paths_
+    - CDH 6.3.x → CDP Public Cloud 7.2.17 migration, as Tech Preview (only AWS, Hive, HDFS)
+- [CMA 3.0.0](https://archive.cloudera.com/am2cm/3.0.0/)
+    - _All above paths except_ the HDP 2-stage upgrades (aka Upgrade via HDP7)
+    - CDH 6.3.x → CDP Public Cloud 7.2.x migration (only AWS, Hive, HDFS)
+    - CDH 5.16.2 → CDP Public Cloud 7.2.x migration (only AWS, Hive, HDFS)
+- [CMA 3.2.0](https://archive.cloudera.com/am2cm/3.2.0/)
+    - _All above paths_ plus see changes in the [supported services for lift&shift](supported-lift-and-shift-workloads)

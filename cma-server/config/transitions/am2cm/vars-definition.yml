@@ -1,0 +1,784 @@
+---
+
+currentVersion:
+  - HDP3
+
+uiFieldTypes:
+  text:
+    type: text
+    size: 200
+    editable: true
+  password:
+    type: password
+    size: 200
+    editable: true
+  checkbox:
+    type: checkbox
+    size: 200
+    editable: true
+  url-text:
+    type: text
+    size: 430
+    editable: true
+
+extraVars:
+  - vars:
+      ambari_username: ${ sourceServerVars['username'] }
+      ambari_password: ${ sourceServerVars['password'] }
+      ambari_port: ${ sourceServerVars['port'] }
+      ambari_protocol: ${ sourceServerVars['protocol'] }
+      ambari_cluster_name: ${ sourceClusterVars['id'] }
+      cloudera_manager_admin_username: ${ targetServerVars['username'] }
+      cloudera_manager_admin_password: ${ targetServerVars['password'] }
+      cloudera_manager_port: ${ targetServerVars['port'] }
+      cloudera_manager_protocol: ${ targetServerVars['protocol'] }
+      cluster_name: ${ transitionUserSettingVars['cluster.name'] }
+      ansible_user: ${ targetServerVars['sshUser'] }
+      ansible_ssh_private_key_file: ${ transitionVars['transition.ssh.key'] }
+      am2cm_role_groups_enabled: ${ transitionUserSettingVars['cm.rolegroups.enable'] }
+      am2cm_ambari_hdp_cleanup_enabled: ${ transitionUserSettingVars['ambari.hdp.cleanup'] }
+      am2cm_ambari_blueprint_file: ${ pluginVars['am2cm_ambari_blueprint_file'] }
+      am2cm_cluster_topology_file: ${ pluginVars['am2cm_cluster_topology_file'] }
+      am2cm_cm_blueprint_file: ${ pluginVars['am2cm_cm_blueprint_file'] }
+      am2cm_config_path: ${ pluginVars['am2cm_config_path'] }
+      am2cm_deployment_template_file: ${ pluginVars['am2cm_deployment_template_file'] }
+      am2cm_script_path: ${ pluginVars['am2cm_script_path'] }
+      am2cm_skip_pre_upgrade: ${ pluginVars['am2cm_skip_pre_upgrade'] }
+      am2cm_source_version: ${ sourceClusterVars['sourceVersion'] }
+      am2cm_target_version: ${ transitionUserSettingVars['cluster.version'] }
+      am2cm_user_settings_file: ${ pluginVars['am2cm_user_settings_file'] }
+      hdp_config_upgrade_script_path: ${ pluginVars['hdp_config_upgrade_script_path'] }
+      hdp_config_upgrade_refresh_data: false
+      parcel_cldr_runtime_repo: ${ pluginVars['parcel_cldr_runtime_repo'] }
+      parcel_cldr_runtime_version: ${ transitionUserSettingVars['cluster.fullversion'] }
+      parcel_gplextras_repo: ${ pluginVars['parcel_gplextras_repo'] }
+      parcel_gplextras_version: ${ transitionUserSettingVars['cluster.gplversion'] }
+      distribute_gplextras_parcel: ${ pluginVars['is_hdp_configured_with_lzo'] }
+      transition_log_dir: ${ transitionVars['transition.log.dir'] }
+      etc_service_dirs: ${ pluginVars['etc_service_dirs'] }
+      hdp_version: ${ pluginVars['hdp_version'] }
+      cma_root_dir: ${ transitionVars['cma.root.dir'] }
+    defaults:
+      ambari_username: admin
+      ambari_password: admin
+      cloudera_manager_admin_username: admin
+      cloudera_manager_admin_password: admin
+    uiFields:
+      ambari_username: text
+      ambari_password: password
+      hdp_version: text
+      cloudera_manager_admin_username: text
+      cloudera_manager_admin_password: password
+      cloudera_manager_protocol: text
+      cloudera_manager_port: text
+      parcel_cldr_runtime_repo: text
+      parcel_cldr_runtime_version: text
+      parcel_gplextras_repo: text
+      parcel_gplextras_version: text
+      ansible_user: text
+      ansible_ssh_private_key_file: text
+      transition_log_dir: text
+      am2cm_role_groups_enabled: checkbox
+      am2cm_ambari_hdp_cleanup_enabled: checkbox
+      hdp_config_upgrade_refresh_data: checkbox
+
+  - serviceName: accumulo
+    when: ${ sourceServiceVars['accumulo'].exist }
+    vars:
+      deploy_accumulo: ${ pluginVars['deploy_accumulo'] }
+      parcel_accumulo_repo: ${ pluginVars['parcel_accumulo_repo'] }
+      parcel_accumulo_version: ${ pluginVars['parcel_accumulo_version'] }
+      accumulo_csd_url: ${ pluginVars['accumulo_csd_url'] }
+      paywall_user: ${ pluginVars['paywall_user'] }
+      paywall_password: ${ pluginVars['paywall_password'] }
+      accumulo_instance_name: ACCUMULO::accumulo-env::accumulo_instance_name
+    defaults:
+    uiFields:
+      deploy_accumulo: checkbox
+      parcel_accumulo_repo: text
+      parcel_accumulo_version: text
+      accumulo_csd_url: text
+      paywall_user: text
+      paywall_password: text
+
+  - serviceName: kerberos
+    when: ${ sourceServiceVars['kerberos'].exist }
+    vars:
+      kerberos_admin_user: USER_SETTING::KERBEROS::kerberos_admin_user
+      kerberos_admin_password: USER_SETTING::KERBEROS::kerberos_admin_password
+      kerberos_realm_name: KERBEROS::kerberos-env::realm
+      kerberos_ad_domain: KERBEROS::kerberos-env::container_dn
+      kerberos_is_active: true
+      kerberos_use_ad: false
+      kerberos_kadmin_binary_path: USER_SETTING::KERBEROS::kerberos_kadmin_binary_path
+      timeout__mgmt__restart_service: 900
+      timeout__mgmt__run_service_command: 900
+      timeout__mgmt__run_role_command: 900
+    uiFields:
+      kerberos_admin_user: text
+      kerberos_admin_password: password
+      kerberos_realm_name: text
+      kerberos_kadmin_binary_path: text
+      timeout__mgmt__restart_service: text
+      timeout__mgmt__run_service_command: text
+      timeout__mgmt__run_role_command: text
+
+  - serviceName: hdfs
+    when: ${ sourceServiceVars['hdfs'].exist }
+    vars:
+      hadoop_rpc_protection: HDFS::core-site::hadoop.rpc.protection
+      net_topology_script_file_name:  HDFS::core-site::net.topology.script.file.name
+      dfs_ha_proxy_provider: HDFS::hdfs-site::dfs.client.failover.proxy.provider
+      hdfs_user_name: HDFS::hadoop-env::hdfs_user
+      hdfs_service_keytab: HDFS::hadoop-env::hdfs_user_keytab
+      hdfs_service_principal: HDFS::hadoop-env::hdfs_principal_name
+      hdfs_nameservice_id: HDFS::hdfs-site::dfs.nameservices
+      hdfs_namenode_dir: HDFS::hdfs-site::dfs.namenode.name.dir
+      hdfs_journalnode_dir: HDFS::hdfs-site::dfs.journalnode.edits.dir
+      hdfs_nn_keytab: HDFS::hdfs-site::dfs.namenode.keytab.file
+      hdfs_nn_principal: HDFS::hdfs-site::dfs.namenode.kerberos.principal
+      hdfs_dn_keytab: HDFS::hdfs-site::dfs.datanode.keytab.file
+      hdfs_dn_principal: HDFS::hdfs-site::dfs.datanode.kerberos.principal
+      hdfs_log_dir_root: HDFS::hadoop-env::hdfs_log_dir_prefix
+      hdfs_is_ha: ${ pluginVars['hdfs_is_ha'] }
+      timeout__hdfs__restart_service: 900
+      timeout__hdfs__run_service_command: 900
+      timeout__hdfs__run_role_command: 900
+    defaults:
+      hadoop_rpc_protection: authentication
+    uiFields:
+      hdfs_is_ha: checkbox
+      hadoop_rpc_protection: text
+      net_topology_script_file_name: text
+      dfs_ha_proxy_provider: text
+      hdfs_user_name: text
+      hdfs_nameservice_id: text
+      hdfs_journalnode_dir: text
+      hdfs_log_dir_root: text
+      hdfs_service_principal: text
+      hdfs_service_keytab: text
+      hdfs_nn_principal: text
+      hdfs_nn_keytab: text
+      hdfs_dn_principal: text
+      hdfs_dn_keytab: text
+      timeout__hdfs__restart_service: text
+      timeout__hdfs__run_service_command: text
+      timeout__hdfs__run_role_command: text
+
+  - serviceName: hbase
+    when: ${ sourceServiceVars['hbase'].exist }
+    vars:
+      hbase_master_keytab: HBASE::hbase-site::hbase.master.keytab.file
+      hbase_master_principal: HBASE::hbase-site::hbase.master.kerberos.principal
+      hbase_master_user_name: HBASE::hbase-env::hbase_user
+      hbase_site_zookeeper_znode_parent: HBASE::hbase-site::zookeeper.znode.parent
+      hbase_log_dir: HBASE::hbase-env::hbase_log_dir
+      timeout__hbase__restart_service: 900
+      timeout__hbase__run_service_command: 900
+      timeout__hbase__run_role_command: 900
+    defaults:
+    uiFields:
+      hbase_master_user_name: text
+      hbase_site_zookeeper_znode_parent: text
+      hbase_log_dir: text
+      hbase_master_principal: text
+      hbase_master_keytab: text
+      timeout__hbase__restart_service: text
+      timeout__hbase__run_service_command: text
+      timeout__hbase__run_role_command: text
+
+  - serviceName: ranger
+    when: ${ sourceServiceVars['ranger'].exist }
+    vars:
+      ranger_db_root_user: RANGER::admin-properties::db_root_user
+      ranger_db_root_user_password: USER_SETTING::RANGER::SERVICE_RANGER_dba_password
+      ranger_create_db_user: RANGER::ranger-env::create_db_dbuser
+      ranger_admin_max_heap_size: RANGER::ranger-env::ranger_admin_max_heap_size
+      ranger_db_flavor: RANGER::admin-properties::DB_FLAVOR
+      ranger_db_name: RANGER::admin-properties::db_name
+      ranger_ha_spnego_keytab_path: RANGER::ranger-admin-site::ranger.ha.spnego.kerberos.keytab
+      ranger_is_ha: ${ pluginVars['ranger_is_ha'] }
+      timeout__ranger__restart_service: 900
+      timeout__ranger__run_service_command: 900
+      timeout__ranger__run_role_command: 900
+      hdp_rangeradmin_user_password: USER_SETTING::RANGER::SERVICE_RANGER_rangeradmin_user_password
+      ranger_jdbc_url: USER_SETTING::RANGER::SERVICE_RANGER_ranger_jdbc_url_override
+    defaults:
+    uiFields:
+      ranger_db_root_user: text
+      ranger_db_root_user_password: password
+      ranger_create_db_user: text
+      ranger_db_flavor: text
+      ranger_db_name: text
+      hdp_rangeradmin_user_password: password
+      ranger_admin_max_heap_size: text
+      ranger_is_ha: checkbox
+      ranger_ha_spnego_keytab_path: text
+      timeout__ranger__restart_service: text
+      timeout__ranger__run_service_command: text
+      timeout__ranger__run_role_command: text
+      ranger_jdbc_url: text
+
+  - serviceName: ranger_kms
+    when: ${ sourceServiceVars['ranger_kms'].exist }
+    vars:
+      ranger_kms_db_flavor: RANGER_KMS::kms-properties::DB_FLAVOR
+      ranger_kms_db_name: RANGER_KMS::kms-properties::db_name
+      ranger_kms_db_root_user: RANGER_KMS::kms-properties::db_root_user
+      ranger_kms_db_root_user_password: USER_SETTING::RANGER_KMS::SERVICE_RANGER_KMS_dba_password
+      ranger_kms_create_db_user: RANGER_KMS::kms-env::create_db_user
+      timeout__ranger_kms__restart_service: 900
+      timeout__ranger_kms__run_service_command: 900
+      timeout__ranger_kms__run_role_command: 900
+      ranger_kms_jdbc_url: USER_SETTING::RANGER_KMS::SERVICE_RANGER_KMS_rangerkms_jdbc_url_override
+    defaults:
+    uiFields:
+      ranger_kms_db_root_user: text
+      ranger_kms_db_root_user_password: password
+      ranger_kms_create_db_user: text
+      ranger_kms_db_flavor: text
+      ranger_kms_db_name: text
+      timeout__ranger_kms__restart_service: text
+      timeout__ranger_kms__run_service_command: text
+      timeout__ranger_kms__run_role_command: text
+      ranger_kms_jdbc_url: text
+
+
+  - serviceName: oozie
+    when: ${ sourceServiceVars['oozie'].exist }
+    vars:
+      oozie_database_host_url: USER_SETTING::OOZIE::SERVICE_OOZIE_oozie_service_JPAService_jdbc_url
+      oozie_load_balancer_url: OOZIE::oozie-site::oozie.base.url
+      oozie_db_name: OOZIE::oozie-site::oozie.db.schema.name
+      oozie_db_root_user: OOZIE::oozie-site::oozie.service.JPAService.jdbc.username
+      oozie_db_root_user_password: USER_SETTING::OOZIE::SERVICE_OOZIE_oozie_database_password
+      oozie_ha_keytab_path: OOZIE::oozie-site::oozie.ha.authentication.kerberos.keytab
+      oozie_is_ha: ${ pluginVars['oozie_is_ha'] }
+      timeout__oozie__restart_service: 900
+      timeout__oozie__run_service_command: 900
+      timeout__oozie__run_role_command: 900
+    defaults:
+    uiFields:
+      oozie_database_host_url: url-text
+      oozie_load_balancer_url: url-text
+      oozie_db_root_user: text
+      oozie_db_root_user_password: password
+      oozie_db_name: text
+      oozie_ha_keytab_path: text
+      oozie_is_ha: checkbox
+      timeout__oozie__restart_service: text
+      timeout__oozie__run_service_command: text
+      timeout__oozie__run_role_command: text
+
+  - serviceName: knox
+    when: ${ sourceServiceVars['knox'].exist }
+    vars:
+      knox_gateway_master_secret: USER_SETTING::KNOX::SERVICE_KNOX_gateway_master_secret
+      knox_gateway_knox_admin_groups: KNOX::gateway-site::gateway.knox.admin.groups
+      knox_gateway_knox_admin_users: KNOX::gateway-site::gateway.knox.admin.users
+      knox_ui_password_salt: ${ pluginVars['knox_ui_password_salt'] }
+      timeout__knox__restart_service: 900
+      timeout__knox__run_service_command: 900
+      timeout__knox__run_role_command: 900
+    defaults:
+    uiFields:
+      knox_gateway_master_secret: password
+      knox_gateway_knox_admin_groups: text
+      knox_gateway_knox_admin_users: text
+      timeout__knox__restart_service: text
+      timeout__knox__run_service_command: text
+      timeout__knox__run_role_command: text
+
+
+  - serviceName: zookeeper
+    when: ${ sourceServiceVars['zookeeper'].exist }
+    vars:
+      zk_data_dir: ZOOKEEPER::zoo.cfg::dataDir
+      timeout__zookeeper__restart_service: 900
+      timeout__zookeeper__run_service_command: 900
+      timeout__zookeeper__run_role_command: 900
+    defaults:
+    uiFields:
+      zk_data_dir: text
+      timeout__zookeeper__restart_service: text
+      timeout__zookeeper__run_service_command: text
+      timeout__zookeeper__run_role_command: text
+
+  - serviceName: atlas
+    when: ${ sourceServiceVars['atlas'].exist }
+    vars:
+      atlas_service_keytab: ATLAS::application-properties::atlas.authentication.keytab
+      atlas_user_name: ATLAS::atlas-env::metadata_user
+      timeout__atlas__restart_service: 900
+      timeout__atlas__run_service_command: 900
+      timeout__atlas__run_role_command: 900
+    defaults:
+    uiFields:
+      atlas_user_name: text
+      atlas_service_keytab: text
+      timeout__atlas__restart_service: text
+      timeout__atlas__run_service_command: text
+      timeout__atlas__run_role_command: text
+
+  - serviceName: hive
+    when: ${ sourceServiceVars['hive'].exist }
+    vars:
+      hive_db_flavor: HIVE::hive-env::hive_database_type
+      hive_db_name: HIVE::hive-site::ambari.hive.db.schema.name
+      hive_db_root_user: HIVE::hive-site::javax.jdo.option.ConnectionUserName
+      hive_db_root_user_password: USER_SETTING::HIVE::SERVICE_HIVE_hive_metastore_database_password
+      hive_metastore_warehouse_dir: HIVE::hive-site::hive.metastore.warehouse.dir
+      hive_user_name: HIVE::hive-env::hive_user
+      hive_service_keytab: HIVE::hive-site::hive.metastore.kerberos.keytab.file
+      hive_jdbc_url: USER_SETTING::HIVE::SERVICE_HIVE_hive_jdbc_url_override
+      timeout__hive__restart_service: 900
+      timeout__hive__run_service_command: 900
+      timeout__hive__run_role_command: 900
+    defaults:
+    uiFields:
+      hive_user_name: text
+      hive_jdbc_url: url-text
+      hive_db_root_user: text
+      hive_db_root_user_password: password
+      hive_db_flavor: text
+      hive_db_name: text
+      hive_metastore_warehouse_dir: text
+      timeout__hive__restart_service: text
+      timeout__hive__run_service_command: text
+      timeout__hive__run_role_command: text
+
+  - serviceName: yarn
+    when: ${ sourceServiceVars['yarn'].exist }
+    vars:
+      yarn_hbase_master_keytab_file: YARN::yarn-hbase-site::hbase.master.keytab.file
+      yarn_hbase_master_kerberos_principal: YARN::yarn-hbase-site::hbase.master.kerberos.principal
+      yarn_zookeeper_znode_parent: YARN::yarn-hbase-site::zookeeper.znode.parent
+      yarn_user_name: YARN::yarn-env::yarn_user
+      yarn_ats_user: YARN::yarn-env::yarn_ats_user
+      timeout__yarn__restart_service: 900
+      timeout__yarn__run_service_command: 900
+      timeout__yarn__run_role_command: 900
+    defaults:
+    uiFields:
+      yarn_zookeeper_znode_parent: text
+      yarn_hbase_master_kerberos_principal: text
+      yarn_hbase_master_keytab_file: text
+      timeout__yarn__restart_service: text
+      timeout__yarn__run_service_command: text
+      timeout__yarn__run_role_command: text
+
+  - serviceName: queuemanager
+    when: ${ RuntimeUtils:isTargetRuntimeVersionGreaterThanOrEqual(transitionUserSettingVars['cluster.version'], '7.1.9') }
+    vars:
+      queuemanager_db_name: "configstore"
+      queuemanager_db_user: "qmadmin"
+      queuemanager_db_password: "password"
+      queuemanager_db_port: "5432"
+      queuemanager_install_postgres: true
+    defaults:
+    uiFields:
+      queuemanager_db_name: text
+      queuemanager_db_user: text
+      queuemanager_db_password: password
+      queuemanager_db_port: text
+      queuemanager_install_postgres: checkbox
+
+  - serviceName: ambari_infra_solr
+    when: ${ sourceServiceVars['ambari_infra_solr'].exist }
+    vars:
+      infra_solr_zk_connection_string: ${ pluginVars['infra_solr_zk_connection_string'] }
+      infra_solr_collections: ${ pluginVars['infra_solr_collections'] }
+      infra_solr_service_name: ${ pluginVars['INFRA_SOLR_SERVICE_NAME'] }
+      am2cm_solr_client_script_path: ${ pluginVars['AM2CM_SOLR_CLIENT_SCRIPT_PATH'] }
+      timeout__solr__restart_service: 900
+      timeout__solr__run_service_command: 900
+      timeout__solr__run_role_command: 900
+    defaults:
+      infra_solr_collections: text
+      infra_solr_zk_connection_string: text
+    uiFields:
+      timeout__solr__restart_service: text
+      timeout__solr__run_service_command: text
+      timeout__solr__run_role_command: text
+
+---
+
+currentVersion:
+  - HDP2
+
+uiFieldTypes:
+  text:
+    type: text
+    size: 200
+    editable: true
+  password:
+    type: password
+    size: 200
+    editable: true
+  checkbox:
+    type: checkbox
+    size: 200
+    editable: true
+  url-text:
+    type: text
+    size: 430
+    editable: true
+
+extraVars:
+  - vars:
+      ambari_username: ${ sourceServerVars['username'] }
+      ambari_password: ${ sourceServerVars['password'] }
+      ambari_port: ${ sourceServerVars['port'] }
+      ambari_protocol: ${ sourceServerVars['protocol'] }
+      ambari_cluster_name: ${ sourceClusterVars['id'] }
+      cloudera_manager_admin_username: ${ targetServerVars['username'] }
+      cloudera_manager_admin_password: ${ targetServerVars['password'] }
+      cloudera_manager_port: ${ targetServerVars['port'] }
+      cloudera_manager_protocol: ${ targetServerVars['protocol'] }
+      cluster_name: ${ transitionUserSettingVars['cluster.name'] }
+      ansible_user: ${ targetServerVars['sshUser'] }
+      ansible_ssh_private_key_file: ${ transitionVars['transition.ssh.key'] }
+      am2cm_role_groups_enabled: ${ transitionUserSettingVars['cm.rolegroups.enable'] }
+      am2cm_ambari_hdp_cleanup_enabled: ${ transitionUserSettingVars['ambari.hdp.cleanup'] }
+      am2cm_ambari_blueprint_file: ${ pluginVars['am2cm_ambari_blueprint_file'] }
+      am2cm_cluster_topology_file: ${ pluginVars['am2cm_cluster_topology_file'] }
+      am2cm_cm_blueprint_file: ${ pluginVars['am2cm_cm_blueprint_file'] }
+      am2cm_config_path: ${ pluginVars['am2cm_config_path'] }
+      am2cm_deployment_template_file: ${ pluginVars['am2cm_deployment_template_file'] }
+      am2cm_script_path: ${ pluginVars['am2cm_script_path'] }
+      am2cm_skip_pre_upgrade: ${ pluginVars['am2cm_skip_pre_upgrade'] }
+      am2cm_source_version: ${ sourceClusterVars['sourceVersion'] }
+      am2cm_target_version: ${ transitionUserSettingVars['cluster.version'] }
+      am2cm_user_settings_file: ${ pluginVars['am2cm_user_settings_file'] }
+      hdp_config_upgrade_script_path: ${ pluginVars['hdp_config_upgrade_script_path'] }
+      hdp_config_upgrade_refresh_data: false
+      parcel_cldr_runtime_repo: ${ pluginVars['parcel_cldr_runtime_repo'] }
+      parcel_cldr_runtime_version: ${ transitionUserSettingVars['cluster.fullversion'] }
+      parcel_gplextras_repo: ${ pluginVars['parcel_gplextras_repo'] }
+      parcel_gplextras_version: ${ transitionUserSettingVars['cluster.gplversion'] }
+      distribute_gplextras_parcel: ${ pluginVars['is_hdp_configured_with_lzo'] }
+      transition_log_dir: ${ transitionVars['transition.log.dir'] }
+      etc_service_dirs: ${ pluginVars['etc_service_dirs'] }
+      hdp_version: ${ pluginVars['hdp_version'] }
+      cma_root_dir: ${ transitionVars['cma.root.dir'] }
+    defaults:
+    uiFields:
+      ambari_username: text
+      ambari_password: password
+      hdp_version: text
+      cloudera_manager_admin_username: text
+      cloudera_manager_admin_password: password
+      cloudera_manager_protocol: text
+      cloudera_manager_port: text
+      parcel_cldr_runtime_repo: text
+      parcel_cldr_runtime_version: text
+      parcel_gplextras_repo: text
+      parcel_gplextras_version: text
+      ansible_user: text
+      ansible_ssh_private_key_file: text
+      transition_log_dir: text
+      am2cm_role_groups_enabled: checkbox
+      am2cm_ambari_hdp_cleanup_enabled: checkbox
+      hdp_config_upgrade_refresh_data: checkbox
+
+  - serviceName: accumulo
+    when: ${ sourceServiceVars['accumulo'].exist }
+    vars:
+      deploy_accumulo: ${ pluginVars['deploy_accumulo'] }
+      parcel_accumulo_repo: ${ pluginVars['parcel_accumulo_repo'] }
+      parcel_accumulo_version: ${ pluginVars['parcel_accumulo_version'] }
+      accumulo_csd_url: ${ pluginVars['accumulo_csd_url'] }
+      paywall_user: ${ pluginVars['paywall_user'] }
+      paywall_password: ${ pluginVars['paywall_password'] }
+      accumulo_instance_name: ACCUMULO::accumulo-env::accumulo_instance_name
+    defaults:
+    uiFields:
+      deploy_accumulo: checkbox
+      parcel_accumulo_repo: text
+      parcel_accumulo_version: text
+      accumulo_csd_url: text
+      paywall_user: text
+      paywall_password: text
+
+  - serviceName: kerberos
+    when: ${ sourceServiceVars['kerberos'].exist }
+    vars:
+      kerberos_admin_user: USER_SETTING::KERBEROS::kerberos_admin_user
+      kerberos_admin_password: USER_SETTING::KERBEROS::kerberos_admin_password
+      kerberos_realm_name: KERBEROS::kerberos-env::realm
+      kerberos_ad_domain: KERBEROS::kerberos-env::container_dn
+      kerberos_is_active: true
+      kerberos_use_ad: false
+      kerberos_kadmin_binary_path: USER_SETTING::KERBEROS::kerberos_kadmin_binary_path
+      timeout__mgmt__restart_service: 900
+      timeout__mgmt__run_service_command: 900
+      timeout__mgmt__run_role_command: 900
+    defaults:
+    uiFields:
+      kerberos_kadmin_binary_path: text
+      timeout__mgmt__restart_service: text
+      timeout__mgmt__run_service_command: text
+      timeout__mgmt__run_role_command: text
+      kerberos_admin_user: text
+      kerberos_admin_password: password
+      kerberos_realm_name: text
+
+  - serviceName: hdfs
+    when: ${ sourceServiceVars['hdfs'].exist }
+    vars:
+      hadoop_rpc_protection: HDFS::core-site::hadoop.rpc.protection
+      net_topology_script_file_name: HDFS::core-site::net.topology.script.file.name
+      dfs_ha_proxy_provider: HDFS::hdfs-site::dfs.client.failover.proxy.provider
+      hdfs_user_name: HDFS::hadoop-env::hdfs_user
+      hdfs_service_keytab: HDFS::hadoop-env::hdfs_user_keytab
+      hdfs_service_principal: HDFS::hadoop-env::hdfs_principal_name
+      hdfs_nameservice_id: HDFS::hdfs-site::dfs.nameservices
+      hdfs_namenode_dir: HDFS::hdfs-site::dfs.namenode.name.dir
+      hdfs_journalnode_dir: HDFS::hdfs-site::dfs.journalnode.edits.dir
+      hdfs_nn_keytab: HDFS::hdfs-site::dfs.namenode.keytab.file
+      hdfs_nn_principal: HDFS::hdfs-site::dfs.namenode.kerberos.principal
+      hdfs_dn_keytab: HDFS::hdfs-site::dfs.datanode.keytab.file
+      hdfs_dn_principal: HDFS::hdfs-site::dfs.datanode.kerberos.principal
+      hdfs_log_dir_root: HDFS::hadoop-env::hdfs_log_dir_prefix
+      hdfs_is_ha: ${ pluginVars['hdfs_is_ha'] }
+      timeout__hdfs__restart_service: 900
+      timeout__hdfs__run_service_command: 900
+      timeout__hdfs__run_role_command: 900
+    defaults:
+      hadoop_rpc_protection: authentication
+    uiFields:
+      timeout__hdfs__restart_service: text
+      timeout__hdfs__run_service_command: text
+      timeout__hdfs__run_role_command: text
+      hdfs_is_ha: checkbox
+      hadoop_rpc_protection: text
+      net_topology_script_file_name: text
+      dfs_ha_proxy_provider: text
+      hdfs_user_name: text
+      hdfs_nameservice_id: text
+      hdfs_journalnode_dir: text
+      hdfs_log_dir_root: text
+      hdfs_service_principal: text
+      hdfs_service_keytab: text
+      hdfs_nn_principal: text
+      hdfs_nn_keytab: text
+      hdfs_dn_principal: text
+      hdfs_dn_keytab: text
+
+  - serviceName: hbase
+    when: ${ sourceServiceVars['hbase'].exist }
+    vars:
+      hbase_master_keytab: HBASE::hbase-site::hbase.master.keytab.file
+      hbase_master_principal: HBASE::hbase-site::hbase.master.kerberos.principal
+      hbase_master_user_name: HBASE::hbase-env::hbase_user
+      hbase_site_zookeeper_znode_parent: HBASE::hbase-site::zookeeper.znode.parent
+      timeout__hbase__restart_service: 900
+      timeout__hbase__run_service_command: 900
+      timeout__hbase__run_role_command: 900
+    defaults:
+    uiFields:
+      timeout__hbase__restart_service: text
+      timeout__hbase__run_service_command: text
+      timeout__hbase__run_role_command: text
+      hbase_master_user_name: text
+      hbase_site_zookeeper_znode_parent: text
+      hbase_log_dir: text
+      hbase_master_principal: text
+      hbase_master_keytab: text
+
+  - serviceName: ranger
+    when: ${ sourceServiceVars['ranger'].exist }
+    vars:
+      ranger_db_root_user: RANGER::admin-properties::db_root_user
+      ranger_db_root_user_password: USER_SETTING::RANGER::SERVICE_RANGER_dba_password
+      ranger_create_db_user: RANGER::ranger-env::create_db_dbuser
+      ranger_admin_max_heap_size: RANGER::ranger-env::ranger_admin_max_heap_size
+      ranger_db_flavor: RANGER::admin-properties::DB_FLAVOR
+      ranger_db_name: RANGER::admin-properties::db_name
+      ranger_ha_spnego_keytab_path: RANGER::ranger-admin-site::ranger.ha.spnego.kerberos.keytab
+      ranger_is_ha: ${ pluginVars['ranger_is_ha'] }
+      timeout__ranger__restart_service: 900
+      timeout__ranger__run_service_command: 900
+      timeout__ranger__run_role_command: 900
+      hdp_rangeradmin_user_password: USER_SETTING::RANGER::current_rangeradmin_password
+      ranger_jdbc_url: USER_SETTING::RANGER::SERVICE_RANGER_ranger_jdbc_url_override
+    defaults:
+    uiFields:
+      timeout__ranger__restart_service: text
+      timeout__ranger__run_service_command: text
+      timeout__ranger__run_role_command: text
+      ranger_db_root_user: text
+      ranger_db_root_user_password: password
+      ranger_create_db_user: text
+      ranger_db_flavor: text
+      ranger_db_name: text
+      hdp_rangeradmin_user_password: password
+      ranger_admin_max_heap_size: text
+      ranger_is_ha: checkbox
+      ranger_ha_spnego_keytab_path: text
+      ranger_jdbc_url: text
+
+  - serviceName: ranger_kms
+    when: ${ sourceServiceVars['ranger_kms'].exist }
+    vars:
+      ranger_kms_db_flavor: RANGER_KMS::kms-properties::DB_FLAVOR
+      ranger_kms_db_name: RANGER_KMS::kms-properties::db_name
+      ranger_kms_db_root_user: RANGER_KMS::kms-properties::db_root_user
+      ranger_kms_db_root_user_password: USER_SETTING::RANGER_KMS::SERVICE_RANGER_KMS_dba_password
+      ranger_kms_create_db_user: RANGER_KMS::kms-env::create_db_user
+      timeout__ranger_kms__restart_service: 900
+      timeout__ranger_kms__run_service_command: 900
+      timeout__ranger_kms__run_role_command: 900
+      ranger_kms_jdbc_url: USER_SETTING::RANGER_KMS::SERVICE_RANGER_KMS_rangerkms_jdbc_url_override
+    defaults:
+    uiFields:
+      timeout__ranger_kms__restart_service: text
+      timeout__ranger_kms__run_service_command: text
+      timeout__ranger_kms__run_role_command: text
+      ranger_kms_db_root_user: text
+      ranger_kms_db_root_user_password: password
+      ranger_kms_create_db_user: text
+      ranger_kms_db_flavor: text
+      ranger_kms_db_name: text
+      ranger_kms_jdbc_url: text
+
+  - serviceName: oozie
+    when: ${ sourceServiceVars['oozie'].exist }
+    vars:
+      oozie_db_flavor: OOZIE::oozie-env::oozie_database_type
+      oozie_database_host_url: USER_SETTING::OOZIE::SERVICE_OOZIE_oozie_service_JPAService_jdbc_url
+      oozie_load_balancer_url: OOZIE::oozie-site::oozie.base.url
+      oozie_db_name: OOZIE::oozie-site::oozie.db.schema.name
+      oozie_db_root_user: OOZIE::oozie-site::oozie.service.JPAService.jdbc.username
+      oozie_db_root_user_password: USER_SETTING::OOZIE::SERVICE_OOZIE_oozie_database_password
+      oozie_ha_keytab_path: OOZIE::oozie-site::oozie.ha.authentication.kerberos.keytab
+      oozie_is_ha: ${ pluginVars['oozie_is_ha'] }
+      timeout__oozie__restart_service: 900
+      timeout__oozie__run_service_command: 900
+      timeout__oozie__run_role_command: 900
+    defaults:
+    uiFields:
+      timeout__oozie__restart_service: text
+      timeout__oozie__run_service_command: text
+      timeout__oozie__run_role_command: text
+      oozie_database_host_url: url-text
+      oozie_load_balancer_url: url-text
+      oozie_db_root_user: text
+      oozie_db_root_user_password: password
+      oozie_db_name: text
+      oozie_ha_keytab_path: text
+      oozie_is_ha: checkbox
+
+
+
+  - serviceName: knox
+    when: ${ sourceServiceVars['knox'].exist }
+    vars:
+      knox_gateway_master_secret: USER_SETTING::KNOX::SERVICE_KNOX_gateway_master_secret
+      knox_gateway_knox_admin_groups: KNOX::gateway-site::gateway.knox.admin.groups
+      knox_gateway_knox_admin_users: KNOX::gateway-site::gateway.knox.admin.users
+      knox_ui_password_salt: ${ pluginVars['knox_ui_password_salt'] }
+      timeout__knox__restart_service: 900
+      timeout__knox__run_service_command: 900
+      timeout__knox__run_role_command: 900
+    defaults:
+    uiFields:
+      timeout__knox__restart_service: text
+      timeout__knox__run_service_command: text
+      timeout__knox__run_role_command: text
+      knox_gateway_master_secret: password
+      knox_gateway_knox_admin_groups: text
+      knox_gateway_knox_admin_users: text
+
+  - serviceName: zookeeper
+    when: ${ sourceServiceVars['zookeeper'].exist }
+    vars:
+      zk_data_dir: ZOOKEEPER::zoo.cfg::dataDir
+      timeout__zookeeper__restart_service: 900
+      timeout__zookeeper__run_service_command: 900
+      timeout__zookeeper__run_role_command: 900
+    defaults:
+    uiFields:
+      timeout__zookeeper__restart_service: text
+      timeout__zookeeper__run_service_command: text
+      timeout__zookeeper__run_role_command: text
+      zk_data_dir: text
+
+  - serviceName: atlas
+    when: ${ sourceServiceVars['atlas'].exist }
+    vars:
+      atlas_service_keytab: ATLAS::application-properties::atlas.authentication.keytab
+      atlas_user_name: ATLAS::atlas-env::metadata_user
+      timeout__atlas__restart_service: 900
+      timeout__atlas__run_service_command: 900
+      timeout__atlas__run_role_command: 900
+    defaults:
+    uiFields:
+      timeout__atlas__restart_service: text
+      timeout__atlas__run_service_command: text
+      timeout__atlas__run_role_command: text
+      atlas_user_name: text
+      atlas_service_keytab: text
+
+  - serviceName: hive
+    when: ${ sourceServiceVars['hive'].exist }
+    vars:
+      hive_db_flavor: HIVE::hive-env::hive_database_type
+      hive_db_name: HIVE::hive-site::ambari.hive.db.schema.name
+      hive_db_root_user: HIVE::hive-site::javax.jdo.option.ConnectionUserName
+      hive_db_root_user_password: USER_SETTING::HIVE::SERVICE_HIVE_hive_metastore_database_password
+      hive_metastore_warehouse_dir: HIVE::hive-site::hive.metastore.warehouse.dir
+      hive_user_name: HIVE::hive-env::hive_user
+      hive_service_keytab: HIVE::hive-site::hive.metastore.kerberos.keytab.file
+      hive_jdbc_url: USER_SETTING::HIVE::SERVICE_HIVE_hive_jdbc_url_override
+      hive_metastore_principal: HIVE::hive-site::hive.metastore.kerberos.principal
+      timeout__hive__restart_service: 900
+      timeout__hive__run_service_command: 900
+      timeout__hive__run_role_command: 900
+    defaults:
+    uiFields:
+      timeout__hive__restart_service: text
+      timeout__hive__run_service_command: text
+      timeout__hive__run_role_command: text
+      hive_user_name: text
+      hive_jdbc_url: url-text
+      hive_db_root_user: text
+      hive_db_root_user_password: password
+      hive_db_flavor: text
+      hive_db_name: text
+      hive_metastore_warehouse_dir: text
+
+  - serviceName: yarn
+    when: ${ sourceServiceVars['yarn'].exist }
+    vars:
+      yarn_hbase_master_keytab_file: YARN::yarn-hbase-site::hbase.master.keytab.file
+      yarn_hbase_master_kerberos_principal: YARN::yarn-hbase-site::hbase.master.kerberos.principal
+      yarn_zookeeper_znode_parent: YARN::yarn-hbase-site::zookeeper.znode.parent
+      timeout__yarn__restart_service: 900
+      timeout__yarn__run_service_command: 900
+      timeout__yarn__run_role_command: 900
+    defaults:
+    uiFields:
+      timeout__yarn__restart_service: text
+      timeout__yarn__run_service_command: text
+      timeout__yarn__run_role_command: text
+      yarn_zookeeper_znode_parent: text
+      yarn_hbase_master_kerberos_principal: text
+      yarn_hbase_master_keytab_file: text
+
+  - serviceName: ambari_infra
+    when: ${ sourceServiceVars['ambari_infra'].exist }
+    vars:
+      infra_solr_client_log_dir: AMBARI_INFRA::infra-solr-client-log4j::infra_solr_client_log_dir
+      infra_solr_zk_connection_string: ${ pluginVars['infra_solr_zk_connection_string'] }
+      infra_solr_collections: ${ pluginVars['infra_solr_collections'] }
+      infra_solr_service_name: ${ pluginVars['INFRA_SOLR_SERVICE_NAME'] }
+      am2cm_solr_client_script_path: ${ pluginVars['AM2CM_SOLR_CLIENT_SCRIPT_PATH'] }
+      timeout__solr__restart_service: 900
+      timeout__solr__run_service_command: 900
+      timeout__solr__run_role_command: 900
+    defaults:
+    uiFields:
+      timeout__solr__restart_service: text
+      timeout__solr__run_service_command: text
+      timeout__solr__run_role_command: text

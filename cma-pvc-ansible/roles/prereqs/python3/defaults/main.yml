@@ -1,0 +1,16 @@
+---
+install_python3_from_source: false
+
+python_version: 3.8.12
+python_major: 3
+
+python_download_url: "https://www.python.org/ftp/python/{{ python_version }}/Python-{{ python_version }}.tgz"
+python_downloaded_file: "{{ ansible_user_dir }}/Python-{{ python_version }}.tgz"
+python_dir: "{{ ansible_user_dir }}/Python-{{ python_version }}"
+python_path: "/opt/python/{{ python_version }}"
+pip_download_url: https://bootstrap.pypa.io/get-pip.py
+
+python3_executable: python3
+pip3_executable: pip3
+
+

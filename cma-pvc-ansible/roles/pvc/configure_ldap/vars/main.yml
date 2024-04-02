@@ -1,0 +1,9 @@
+---
+
+ldap_dc_suffix: "{% for i in realm.split('.') %}dc={{ i | lower }}{% if not loop.last %},{% endif %}{% endfor %}"
+ldap_user_bind_dn: "uid=admin,cn=users,cn=accounts,{{ ldap_dc_suffix }}"
+ldap_user_search_base: "cn=users,cn=accounts,{{ ldap_dc_suffix }}"
+ldap_user_search_filter: "(&(uid={0})(objectClass=person))"
+ldap_group_search_base: "cn=groups,cn=accounts,{{ ldap_dc_suffix }}"
+#ldap_user_group_filter: "(&(member={1})(objectClass=posixgroup))"
+ldap_group_search_filter: "(&(|(member={0})(member={1}))(objectClass=posixgroup)(!(cn=admins)))"

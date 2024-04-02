@@ -1,0 +1,62 @@
+version: 1
+name: Legacy to CDP PC transition paths
+id: L2PC
+type: ansible
+scriptDir: cma-pc-ansible
+pluginPackage: com.cloudera.migration.cma.plugins.pc
+
+sourceClusters:
+  - type: CDH6
+    runtimeVersions:
+      - name: CDH 6.3.5
+        version: 6.3.5
+  - type: CDH5
+    runtimeVersions:
+      - name: CDH 5.16.2
+        version: 5.16.2
+  - type: CDP_PVC_BASE
+    runtimeVersions:
+      - name: CDP 7.1.7
+        version: 7.1.7
+      - name: CDP 7.1.8
+        version: 7.1.8
+      - name: CDP 7.1.9
+        version: 7.1.9
+
+targetClusters:
+  - type: CDP_PC
+    runtimeVersions:
+      - name: CDP PC 7.2.15
+        version: 7.2.15
+        fullVersion: 7.2.15-1.cdh7.2.15.p0.26459873
+      - name: CDP PC 7.2.16
+        version: 7.2.16
+        fullVersion: 7.2.16-1.cdh7.2.16.p0.36344516
+      - name: CDP PC 7.2.17
+        version: 7.2.17
+        fullVersion: 7.2.17-1.cdh7.2.17.p0.41749497
+      - name: CDP PC 7.2.18
+        version: 7.2.18
+        fullVersion: 7.2.18-1.cdh7.2.18.p0.40992461
+    defaultRuntimeVersion: 7.2.16
+    serverRuntimeRelations:
+      - runtimeVersion: 7.2.15
+        serverVersion: 7.6.2
+      - runtimeVersion: 7.2.16
+        serverVersion: 7.9.0
+      - runtimeVersion: 7.2.17
+        serverVersion: 7.11.0
+      - runtimeVersion: 7.2.18
+        serverVersion: 7.11.2
+
+transitionTypes:
+  - name: Migrate to CDP Public Cloud
+    type: PUBLIC_CLOUD_DATA_MIGRATION
+    bgColor: "#74aeff33"
+    fontColor: black
+    svgIcon: public_cloud_migration
+    description: >
+      Migrate data & workload to existing CDP Public Cloud...
+
+transitionDefinitions:
+  - transition-definition.yml

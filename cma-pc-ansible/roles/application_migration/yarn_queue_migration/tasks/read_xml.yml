@@ -1,0 +1,48 @@
+# Copyright (c) 2023, Cloudera, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+
+- name: Fetch the XML file from the remote host
+  fetch:
+    src: "{{ xml_filename }}"
+    dest: "{{ local_tmp_xml_file }}"
+    flat: yes
+
+- name: Read the XML file
+  set_fact:
+    xml_file_contents: "{{ lookup('file', '{{ local_tmp_xml_file }}') }}"
+
+- name: Get property names
+  xml:
+    xmlstring: "{{ xml_file_contents }}"
+    content: text
+    xpath: /configuration/property/name
+  register: property_names
+
+- name: Get property values
+  xml:
+    xmlstring: "{{ xml_file_contents }}"
+    content: text
+    xpath: /configuration/property/value
+  register: property_values
+
+- name: Check if values and keys have the same length
+  fail:
+    msg: "Error: number of names and values is different"
+  when: property_names.matches | length != property_values.matches | length
+
+- name: Create dictionary
+  set_fact:
+    properties: "{{ dict(property_names.matches | map(attribute='name') | zip(property_values.matches | map(attribute='value')) | list) }}"

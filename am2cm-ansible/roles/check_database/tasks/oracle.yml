@@ -1,0 +1,26 @@
+- name: Get DB version
+  shell: |
+    sqlplus system/cloudera << EOF 
+    exit; 
+    EOF
+  changed_when: false
+  register: oracle_version
+
+- name: Display DB version
+  debug:
+    msg: "{{ oracle_version['stdout_lines'] | last }}"
+
+- set_fact:
+    version_full: "{{ (oracle_version['stdout_lines'] | last | split)[1] }}"
+- set_fact:
+    version: "{{ ((version_full | split('.'))[1] == 0) | ternary((version_full | split('.'))[0], (version_full | split('.'))[0] + '.' + (version_full | split('.'))[1]) }}"
+
+- set_fact:
+    result: true
+  when: (item.family.lower() == 'oracledb' and item.version == version)
+  with_items: "{{ support_matrix['json']['databases'] }}"
+
+- assert:
+    that: result | default(false) is true
+    fail_msg: "Unsupported database version"
+    success_msg: "Supported database version"

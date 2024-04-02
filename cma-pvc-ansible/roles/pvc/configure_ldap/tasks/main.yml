@@ -1,0 +1,65 @@
+
+---
+
+- block:
+    - name: Fetch LDAP CA file
+      slurp:
+        src: "{{ ldap_ca_crt }}"
+      register: slurped_ca_crt
+
+    - name: Decode ca
+      set_fact:
+        ldap_crt: "{{ slurped_ca_crt.content | b64decode }}"
+
+  when: ldap_crt is undefined
+
+- set_fact:
+    cm_ldap_json: "{{ lookup('template', 'ldap.json') }}"
+
+- name: DEBUG - ldap.json
+  debug:
+    var: cm_ldap_json
+  when: debug | default(false)
+
+- name: Set LDAP provider
+  uri:
+    url: "{{ pvc_api_call }}/iam/createLdapProvider"
+    method: POST
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+      Cookie: "{{ all_cookies }}"
+    body: "{{ cm_ldap_json }}"
+    body_format: json
+    status_code: [200, 409]
+    return_content: yes
+    validate_certs: no
+  register: ldap_provider_answer
+
+- name: DEBUG - ldap_provider_answer
+  debug:
+    msg: "{{ ldap_provider_answer }}"
+  when: debug | default(false)
+
+
+- name: Update LDAP provider
+  uri:
+    url: "{{ pvc_api_call }}/iam/updateLdapProvider"
+    method: POST
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+      Cookie: "{{ all_cookies }}"
+    body: "{{ cm_ldap_json }}"
+    body_format: json
+    status_code: [200]
+    return_content: yes
+    validate_certs: no
+  register: ldap_provider_answer
+  when: ldap_provider_answer.status == 409
+
+
+- name: DEBUG - ldap_provider_answer
+  debug:
+    msg: "{{ ldap_provider_answer }}"
+  when: debug | default(false)

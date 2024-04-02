@@ -1,0 +1,74 @@
+---
+- name: Add hue user to policies in ranger
+  hosts: localhost
+  tags: hive-post-migration
+  gather_facts: False
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  roles:
+    - {role: query_configuration_from_service, service_name: ranger, configuration_name: load_balancer_url,
+       configuration_type: SERVICE}
+    - {role: query_configuration_from_service, service_name: ranger, configuration_name: rangeradmin_user_password,
+        configuration_type: SERVICE}
+  tasks:
+    - name: Get all hive related policies as jsons from ranger
+      block:
+        - name: Get hive policy group ID
+          uri:
+            url: "{{ load_balancer_url }}/service/plugins/services"
+          register: response
+        - set_fact:
+            policy_group_id: "{{ response['json'] | json_query(policy_group_query) | first }}"
+          vars:
+            policy_group_name: "{{ ambari_configuration_dictionary['cluster_name'] + '_hive' }}"
+            policy_group_query: "services[?name=='{{ policy_group_name }}'].id"
+
+        - name: Get policy IDs using the previously obtained hive policy group ID
+          uri:
+            url: "{{ load_balancer_url }}/{{ urlpath }}"
+          vars:
+            urlpath: "service/plugins/policies/service/{{ policy_group_id }}"
+          register: hive_policies
+
+        - name: Ranger Groups to be updated
+          set_fact:
+            hue_ranger_groups: [
+              "all - hiveservice",
+              "all - url",
+              "all - database, table, column",
+              "all - database, udf"
+            ]
+            hue_ranger_groups_hdp3: [
+              "all - global"
+            ]
+        - name: Merge Ranger Groups
+          set_fact:
+            hue_ranger_groups: "{{ hue_ranger_groups + hue_ranger_groups_hdp3 }}"
+          when: am2cm_source_version == "HDP3"
+
+        - name: Get hive policies jsons
+          uri:
+            url: "{{ load_balancer_url }}/{{ urlpath }}"
+          vars:
+            hive_policies_id_query: "policies[?name=='{{ item }}'].id"
+            urlpath: "service/plugins/policies/{{ hive_policies['json'] | json_query(hive_policies_id_query) | first }}"
+          loop: "{{ hue_ranger_groups }}"
+          register: policy_jsons
+      module_defaults:
+        uri:
+          user: admin # always admin, see rangeradmin_user_password field description in Cloudera Manager
+          password: "{{ rangeradmin_user_password }}"
+          validate_certs: no
+          force_basic_auth: yes # without forcing basic auth, returns auth error
+
+    - name: Add 'hue' user to hive policies and upload policies back to ranger
+      modify_hive_policy_json:
+        hive_policy_json: "{{ item.json }}"
+        ranger_load_balancer_url: "{{ load_balancer_url }}"
+        ranger_admin_password: "{{ rangeradmin_user_password }}"
+        verify_ssl: False
+      loop: "{{ policy_jsons['results'] }}"
+      loop_control:
+        label: "{{ item.item }}"
+

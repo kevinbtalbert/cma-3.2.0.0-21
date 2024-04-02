@@ -1,0 +1,184 @@
+./cma-server/config/targets/settings-definition.yml:      "target_aws_s3_bucket_access_key":
+./cma-server/config/targets/settings-definition.yml:      "target_aws_s3_bucket_secret_key":
+./cma-server/config/targets/settings-definition.yml:      "target_aws_s3_credential_name":
+./cma-server/config/targets/settings-definition.yml:    - target_aws_s3_credential_name
+./cma-server/config/targets/settings-definition.yml:    - target_aws_s3_bucket_access_key
+./cma-server/config/targets/settings-definition.yml:    - target_aws_s3_bucket_secret_key
+./cma-server/config/transitions/pc/settings-definition.yml:      "target_aws_s3_bucket_access_key":
+./cma-server/config/transitions/pc/settings-definition.yml:        value: ${targetUserSettingVars['target_aws_s3_bucket_access_key']}
+./cma-server/config/transitions/pc/settings-definition.yml:      "target_aws_s3_bucket_secret_key":
+./cma-server/config/transitions/pc/settings-definition.yml:        value: ${targetUserSettingVars['target_aws_s3_bucket_secret_key']}
+./cma-server/config/transitions/pc/settings-definition.yml:      "target_aws_s3_credential_name":
+./cma-server/config/transitions/pc/settings-definition.yml:        value: ${targetUserSettingVars['target_aws_s3_credential_name']}
+./cma-server/config/transitions/pc/settings-definition.yml:      "hdfs_target_aws_s3_bucket_base_path":
+./cma-server/config/transitions/pc/settings-definition.yml:      "hive_target_aws_s3_bucket_base_path":
+./cma-server/config/transitions/pc/settings-definition.yml:      "fs_s3a_buffer_dir":
+./cma-server/config/transitions/pc/settings-definition.yml:        value: "/tmp/s3a"
+./cma-server/config/transitions/pc/settings-definition.yml:          label: "Directory for s3 buffer"
+./cma-server/config/transitions/pc/settings-definition.yml:    - target_aws_s3_credential_name
+./cma-server/config/transitions/pc/settings-definition.yml:    - target_aws_s3_bucket_access_key
+./cma-server/config/transitions/pc/settings-definition.yml:    - target_aws_s3_bucket_secret_key
+./cma-server/config/transitions/pc/settings-definition.yml:    - hdfs_target_aws_s3_bucket_base_path
+./cma-server/config/transitions/pc/settings-definition.yml:    - hive_target_aws_s3_bucket_base_path
+./cma-server/config/transitions/pc/settings-definition.yml:    - fs_s3a_buffer_dir
+./cma-server/config/transitions/pc/settings-definition.yml:      "target_aws_s3_bucket_access_key":
+./cma-server/config/transitions/pc/settings-definition.yml:        value: ${targetUserSettingVars['target_aws_s3_bucket_access_key']}
+./cma-server/config/transitions/pc/settings-definition.yml:      "target_aws_s3_bucket_secret_key":
+./cma-server/config/transitions/pc/settings-definition.yml:        value: ${targetUserSettingVars['target_aws_s3_bucket_secret_key']}
+./cma-server/config/transitions/pc/settings-definition.yml:      "target_aws_s3_credential_name":
+./cma-server/config/transitions/pc/settings-definition.yml:        value: ${targetUserSettingVars['target_aws_s3_credential_name']}
+./cma-server/config/transitions/pc/settings-definition.yml:      "hdfs_target_aws_s3_bucket_base_path":
+./cma-server/config/transitions/pc/settings-definition.yml:      "hive_target_aws_s3_bucket_base_path":
+./cma-server/config/transitions/pc/settings-definition.yml:      "fs_s3a_buffer_dir":
+./cma-server/config/transitions/pc/settings-definition.yml:        value: "/tmp/s3a"
+./cma-server/config/transitions/pc/settings-definition.yml:          label: "Directory for s3 buffer"
+./cma-server/config/transitions/pc/settings-definition.yml:    - target_aws_s3_credential_name
+./cma-server/config/transitions/pc/settings-definition.yml:    - target_aws_s3_bucket_access_key
+./cma-server/config/transitions/pc/settings-definition.yml:    - target_aws_s3_bucket_secret_key
+./cma-server/config/transitions/pc/settings-definition.yml:    - hdfs_target_aws_s3_bucket_base_path
+./cma-server/config/transitions/pc/settings-definition.yml:    - hive_target_aws_s3_bucket_base_path
+./cma-server/config/transitions/pc/settings-definition.yml:    - fs_s3a_buffer_dir
+./cma-server/config/transitions/pc/settings-definition.yml:      "target_aws_s3_bucket_access_key":
+./cma-server/config/transitions/pc/settings-definition.yml:        value: ${targetUserSettingVars['target_aws_s3_bucket_access_key']}
+./cma-server/config/transitions/pc/settings-definition.yml:      "target_aws_s3_bucket_secret_key":
+./cma-server/config/transitions/pc/settings-definition.yml:        value: ${targetUserSettingVars['target_aws_s3_bucket_secret_key']}
+./cma-server/config/transitions/pc/settings-definition.yml:      "target_aws_s3_credential_name":
+./cma-server/config/transitions/pc/settings-definition.yml:        value: ${targetUserSettingVars['target_aws_s3_credential_name']}
+./cma-server/config/transitions/pc/settings-definition.yml:      "hdfs_target_aws_s3_bucket_base_path":
+./cma-server/config/transitions/pc/settings-definition.yml:      "hive_target_aws_s3_bucket_base_path":
+./cma-server/config/transitions/pc/settings-definition.yml:    - target_aws_s3_credential_name
+./cma-server/config/transitions/pc/settings-definition.yml:    - target_aws_s3_bucket_access_key
+./cma-server/config/transitions/pc/settings-definition.yml:    - target_aws_s3_bucket_secret_key
+./cma-server/config/transitions/pc/settings-definition.yml:    - hdfs_target_aws_s3_bucket_base_path
+./cma-server/config/transitions/pc/settings-definition.yml:    - hive_target_aws_s3_bucket_base_path
+./cma-server/config/transitions/pc/sections/pc-transition.yml:      - name: Upload HQL files to s3
+./cma-server/config/transitions/pc/sections/pc-transition.yml:      - name: Upload oozie job definitions and configurations to s3
+./cma-server/config/transitions/pc/sections/pc-transition.yml:      - name: Upload HQL files to s3
+./cma-server/config/transitions/pc/sections/pc-transition.yml:      - name: Upload oozie job definitions and configurations to s3
+./cma-server/config/transitions/pc/sections/pc-transition.yml:      - name: Upload HQL files to s3
+./cma-server/config/transitions/pc/vars-definition.yml:      s3_bucket_access_key: ${transitionUserSettingVars['target_aws_s3_bucket_access_key']}
+./cma-server/config/transitions/pc/vars-definition.yml:      s3_bucket_secret_key: ${transitionUserSettingVars['target_aws_s3_bucket_secret_key']}
+./cma-server/config/transitions/pc/vars-definition.yml:      s3_bucket_base_location: ${transitionUserSettingVars['hdfs_target_aws_s3_bucket_base_path']}
+./cma-server/config/transitions/pc/vars-definition.yml:      s3_bucket_access_key: text
+./cma-server/config/transitions/pc/vars-definition.yml:      s3_bucket_secret_key: password
+./cma-server/config/transitions/pc/vars-definition.yml:      s3_bucket_base_location: text
+./cma-server/config/transitions/pc/vars-definition.yml:      fs_s3a_buffer_dir: ${transitionUserSettingVars['fs_s3a_buffer_dir']}
+./cma-server/config/transitions/pc/vars-definition.yml:      fs_s3a_buffer_dir: text
+./cma-server/config/transitions/pc/vars-definition.yml:      s3_bucket_access_key: ${transitionUserSettingVars['target_aws_s3_bucket_access_key']}
+./cma-server/config/transitions/pc/vars-definition.yml:      s3_bucket_secret_key: ${transitionUserSettingVars['target_aws_s3_bucket_secret_key']}
+./cma-server/config/transitions/pc/vars-definition.yml:      s3_bucket_base_location: ${transitionUserSettingVars['hdfs_target_aws_s3_bucket_base_path']}
+./cma-server/config/transitions/pc/vars-definition.yml:      s3_bucket_access_key: text
+./cma-server/config/transitions/pc/vars-definition.yml:      s3_bucket_secret_key: password
+./cma-server/config/transitions/pc/vars-definition.yml:      s3_bucket_base_location: text
+./cma-server/config/transitions/pc/vars-definition.yml:      fs_s3a_buffer_dir: ${transitionUserSettingVars['fs_s3a_buffer_dir']}
+./cma-server/config/transitions/pc/vars-definition.yml:      fs_s3a_buffer_dir: text
+./cma-server/config/transitions/pc/vars-definition.yml:      s3_bucket_access_key: ${transitionUserSettingVars['target_aws_s3_bucket_access_key']}
+./cma-server/config/transitions/pc/vars-definition.yml:      s3_bucket_secret_key: ${transitionUserSettingVars['target_aws_s3_bucket_secret_key']}
+./cma-server/config/transitions/pc/vars-definition.yml:      s3_bucket_base_location: ${transitionUserSettingVars['hdfs_target_aws_s3_bucket_base_path']}
+./cma-server/config/transitions/pc/vars-definition.yml:      s3_bucket_access_key: text
+./cma-server/config/transitions/pc/vars-definition.yml:      s3_bucket_secret_key: password
+./cma-server/config/transitions/pc/vars-definition.yml:      s3_bucket_base_location: text
+./cma-server/config/transitions/am2cm/settings-definition.yml:        value: https://cloudera-build-us-west-1.vpc.cloudera.com/s3/build/43785444/accumulo-on-cdp/1.10.3_7.1.7.2000.0/csd/ACCUMULO_CDP-1.10.3_7.1.7.2000.0.jar
+./cma-server/config/transitions/am2cm/settings-definition.yml:        value: https://cloudera-build-us-west-1.vpc.cloudera.com/s3/build/43785444/accumulo-on-cdp/1.10.3_7.1.7.2000.0/parcels/
+./cma-server/config/transitions/am2cm/settings-definition.yml:        value: https://cloudera-build-us-west-1.vpc.cloudera.com/s3/build/43785444/accumulo-on-cdp/1.10.3_7.1.7.2000.0/csd/ACCUMULO_CDP-1.10.3_7.1.7.2000.0.jar
+./cma-server/config/transitions/am2cm/settings-definition.yml:        value: https://cloudera-build-us-west-1.vpc.cloudera.com/s3/build/43785444/accumulo-on-cdp/1.10.3_7.1.7.2000.0/parcels/
+./cma-server/config/transitions/pvc/settings-definition.yml:      ozone_s3_gateway_recon_hosts:
+./cma-server/config/transitions/pvc/settings-definition.yml:    - ozone_s3_gateway_recon_hosts
+./cma-server/config/transitions/pvc/vars-definition.yml:      ozone_s3_gateway_recon_hosts: ${ HostUtils:getCommaSeparatedHostnames(transitionUserSettingVars['ozone_s3_gateway_recon_hosts']) }
+./cma-server/config/transitions/pvc/vars-definition.yml:      ozone_s3_gateway_recon_hosts: text
+./cma-server/cma-server.out:2024-03-26 02:23:53.278 DEBUG 23 --- [tp1818449913-18] c.m.c.c.e.JexlExpressionEvaluatorService : Evaluate jxlt expression! ${targetUserSettingVars['target_aws_s3_bucket_access_key']} => ASIAQDVCBQGO677ELZ4F
+./cma-server/cma-server.out:2024-03-26 02:23:53.279 DEBUG 23 --- [tp1818449913-18] c.m.c.c.e.JexlExpressionEvaluatorService : ${targetUserSettingVars['target_aws_s3_bucket_access_key']} => ASIAQDVCBQGO677ELZ4F
+./cma-server/cma-server.out:2024-03-26 02:23:53.281 DEBUG 23 --- [tp1818449913-18] c.m.c.c.e.JexlExpressionEvaluatorService : Evaluate jxlt expression! ${targetUserSettingVars['target_aws_s3_bucket_secret_key']} => QlcMOMn5tUYlyrnp8u8OFNa1pw0hLxxXsemw1lBM
+./cma-server/cma-server.out:2024-03-26 02:23:53.281 DEBUG 23 --- [tp1818449913-18] c.m.c.c.e.JexlExpressionEvaluatorService : ${targetUserSettingVars['target_aws_s3_bucket_secret_key']} => QlcMOMn5tUYlyrnp8u8OFNa1pw0hLxxXsemw1lBM
+./cma-server/cma-server.out:2024-03-26 02:23:53.282 DEBUG 23 --- [tp1818449913-18] c.m.c.c.e.JexlExpressionEvaluatorService : Evaluate jxlt expression! ${targetUserSettingVars['target_aws_s3_credential_name']} => go01-demo-aws-cred
+./cma-server/cma-server.out:2024-03-26 02:23:53.283 DEBUG 23 --- [tp1818449913-18] c.m.c.c.e.JexlExpressionEvaluatorService : ${targetUserSettingVars['target_aws_s3_credential_name']} => go01-demo-aws-cred
+./cma-server/cma-server.out:2024-03-26 02:24:51.833 DEBUG 23 --- [tp1818449913-22] c.m.c.c.e.JexlExpressionEvaluatorService : Evaluate jxlt expression! ${targetUserSettingVars['target_aws_s3_bucket_access_key']} => ASIAQDVCBQGO677ELZ4F
+./cma-server/cma-server.out:2024-03-26 02:24:51.834 DEBUG 23 --- [tp1818449913-22] c.m.c.c.e.JexlExpressionEvaluatorService : ${targetUserSettingVars['target_aws_s3_bucket_access_key']} => ASIAQDVCBQGO677ELZ4F
+./cma-server/cma-server.out:2024-03-26 02:24:51.839 DEBUG 23 --- [tp1818449913-22] c.m.c.c.e.JexlExpressionEvaluatorService : Evaluate jxlt expression! ${targetUserSettingVars['target_aws_s3_bucket_secret_key']} => QlcMOMn5tUYlyrnp8u8OFNa1pw0hLxxXsemw1lBM
+./cma-server/cma-server.out:2024-03-26 02:24:51.842 DEBUG 23 --- [tp1818449913-22] c.m.c.c.e.JexlExpressionEvaluatorService : ${targetUserSettingVars['target_aws_s3_bucket_secret_key']} => QlcMOMn5tUYlyrnp8u8OFNa1pw0hLxxXsemw1lBM
+./cma-server/cma-server.out:2024-03-26 02:24:51.844 DEBUG 23 --- [tp1818449913-22] c.m.c.c.e.JexlExpressionEvaluatorService : Evaluate jxlt expression! ${targetUserSettingVars['target_aws_s3_credential_name']} => go01-demo-aws-cred
+./cma-server/cma-server.out:2024-03-26 02:24:51.844 DEBUG 23 --- [tp1818449913-22] c.m.c.c.e.JexlExpressionEvaluatorService : ${targetUserSettingVars['target_aws_s3_credential_name']} => go01-demo-aws-cred
+./cma-pc-ansible/roles/application_migration/copy_local_to_target_hdfs/tasks/main.yml:    - name: Set s3 properties for hdfs commands
+./cma-pc-ansible/roles/application_migration/copy_local_to_target_hdfs/tasks/main.yml:        hdfs_properties: "-Dfs.s3a.access.key={{ s3_bucket_access_key }} -Dfs.s3a.secret.key={{ s3_bucket_secret_key }}"
+./cma-pc-ansible/roles/application_migration/copy_local_to_target_hdfs/tasks/main.yml:      when: file_system_type == 's3'
+./cma-pc-ansible/roles/application_migration/copy_local_to_target_hdfs/defaults/main.yml:file_system_type: s3
+./cma-pc-ansible/roles/application_migration/copy_local_to_target_hdfs/defaults/main.yml:# hdfs client requires trailing slash to recognize s3 bucket path correctly (in case of direct path to s3 bucket, not to a directory inside a bucket)
+./cma-pc-ansible/roles/application_migration/copy_local_to_target_hdfs/defaults/main.yml:hdfs_prefix: "{{ s3_bucket_base_location | regex_replace('\\/$', '') }}/"
+./cma-pc-ansible/roles/application_migration/configure_target_oozie/tasks/main.yml:  - name: Create s3 buffer directory
+./cma-pc-ansible/roles/application_migration/configure_target_oozie/tasks/main.yml:      path: "{{ fs_s3a_buffer_dir }}"
+./cma-pc-ansible/roles/application_migration/configure_target_oozie/tasks/main.yml:          oozie.service.HadoopAccessorService.fs.s3a: "hadoop.tmp.dir={{ hadoop_tmp_dir }},fs.s3a.buffer.dir={{ fs_s3a_buffer_dir }}"
+./cma-pc-ansible/roles/application_migration/configure_target_oozie/tasks/main.yml:    - fs_s3a_buffer_dir is defined
+./cma-pc-ansible/roles/application_migration/configure_target_oozie/tasks/main.yml:    - fs_s3a_buffer_dir | length > 1
+./cma-pc-ansible/roles/replication_manager/create_replication_policy/vars/main.yml:#target_aws_s3_credential_name: ""
+./cma-pc-ansible/roles/replication_manager/create_replication_policy/vars/main.yml:target_aws_s3_dataset_path: ""
+./cma-pc-ansible/roles/replication_manager/create_replication_policy/vars/main.yml:hive_s3_external_table_base_directory: ""
+./cma-pc-ansible/roles/replication_manager/create_replication_policy/templates/hbase_replication_policy.json.j2:      "cloudCredential": "{{ target_aws_s3_credential_name }}"
+./cma-pc-ansible/roles/replication_manager/create_replication_policy/templates/hive_replication_policy.json.j2:    "hiveExternalTableBaseDirectory": "{{ hive_s3_external_table_base_directory }}",
+./cma-pc-ansible/roles/replication_manager/create_replication_policy/templates/hive_replication_policy.json.j2:    "cloudCredential": "{{ target_aws_s3_credential_name }}",
+./cma-pc-ansible/roles/replication_manager/create_replication_policy/templates/hdfs_replication_policy.json.j2:    "targetDataset": "{{ target_aws_s3_dataset_path }}",
+./cma-pc-ansible/roles/replication_manager/create_replication_policy/templates/hdfs_replication_policy.json.j2:    "cloudCredential": "{{ target_aws_s3_credential_name }}",
+./cma-pc-ansible/roles/replication_manager/classic_clusters/create_aws_credentials/vars/main.yml:target_aws_s3_credential_name: ""
+./cma-pc-ansible/roles/replication_manager/classic_clusters/create_aws_credentials/vars/main.yml:target_aws_s3_bucket_access_key: ""
+./cma-pc-ansible/roles/replication_manager/classic_clusters/create_aws_credentials/vars/main.yml:target_aws_s3_bucket_secret_key: ""
+./cma-pc-ansible/roles/replication_manager/classic_clusters/create_aws_credentials/tasks/main.yml:    --name "{{ target_aws_s3_credential_name }}" \
+./cma-pc-ansible/roles/replication_manager/classic_clusters/create_aws_credentials/tasks/main.yml:    --access-key "{{ target_aws_s3_bucket_access_key }}" \
+./cma-pc-ansible/roles/replication_manager/classic_clusters/create_aws_credentials/tasks/main.yml:    --secret-key "{{ target_aws_s3_bucket_secret_key }}"
+./cma-pc-ansible/roles/replication_manager/classic_clusters/create_aws_credentials/tasks/main.yml:  failed_when: '"Credential exists with name {{ target_aws_s3_credential_name }}" not in adding_aws_credentials.stderr 
+./cma-pc-ansible/roles/replication_manager/classic_clusters/create_aws_credentials/tasks/main.yml:  until: "{{ target_aws_s3_credential_name in get_creds_output.stdout | from_json | json_query('credentials[*].name') }}"
+./cma-pc-ansible/roles/cloudera_manager/setup_external_account/vars/main.yml:aws_account_name: "{{target_aws_s3_credential_name}}"
+./cma-pc-ansible/roles/cloudera_manager/setup_external_account/vars/main.yml:aws_access_key: "{{target_aws_s3_bucket_access_key}}"
+./cma-pc-ansible/roles/cloudera_manager/setup_external_account/vars/main.yml:aws_secret_key: "{{target_aws_s3_bucket_secret_key}}"
+./cma-pc-ansible/playbooks/data_migration/create_hive_policy.yml:    target_aws_s3_credential_name: "{{ policy_definition['s3CredentialName'] }}"
+./cma-pc-ansible/playbooks/data_migration/create_hive_policy.yml:    target_aws_s3_bucket_access_key: "{{ policy_definition['s3BucketAccessKey'] }}"
+./cma-pc-ansible/playbooks/data_migration/create_hive_policy.yml:    target_aws_s3_bucket_secret_key: "{{ policy_definition['s3BucketSecretKey'] }}"
+./cma-pc-ansible/playbooks/data_migration/create_hive_policy.yml:    hive_s3_external_table_base_directory: "{{ policy_definition['s3BucketPath'] }}"
+./cma-pc-ansible/playbooks/data_migration/migrate_hdfs_data.yml:        target_aws_s3_dataset_path: "{{ item['s3BucketPath'] }}"
+./cma-pc-ansible/playbooks/data_migration/migrate_hdfs_data.yml:        target_aws_s3_credential_name: "{{ item['s3CredentialName'] }}"
+./cma-pc-ansible/playbooks/data_migration/migrate_hdfs_data.yml:        target_aws_s3_bucket_access_key: "{{ item['s3BucketAccessKey'] }}"
+./cma-pc-ansible/playbooks/data_migration/migrate_hdfs_data.yml:        target_aws_s3_bucket_secret_key: "{{ item['s3BucketSecretKey'] }}"
+./cma-pc-ansible/playbooks/data_migration/create_hbase_policy.yml:    target_aws_s3_credential_name: "{{ policy_definition['s3CredentialName'] }}"
+./cma-pc-ansible/playbooks/data_migration/create_hbase_policy.yml:    target_aws_s3_bucket_access_key: "{{ policy_definition['s3BucketAccessKey'] }}"
+./cma-pc-ansible/playbooks/data_migration/create_hbase_policy.yml:    target_aws_s3_bucket_secret_key: "{{ policy_definition['s3BucketSecretKey'] }}"
+
+
+
+
+
+FILES TO UPDATE:
+DONE
+./cma-server/config/targets/settings-definition.yml
+DONE
+./cma-server/config/transitions/pc/settings-definition.
+DONE
+./cma-server/config/transitions/pc/vars-definition.yml
+NOTHING TO CHANGE:
+./cma-server/config/transitions/pc/sections/pc-transition.yml
+
+MAY NEED TO REVISIT:
+./cma-pc-ansible/roles/application_migration/copy_local_to_target_hdfs/tasks/main.yml
+https://hadoop.apache.org/docs/current/hadoop-azure/abfs.html#Authentication
+
+MAY NEED TO REMOVE HDFS PREFIX:
+./cma-pc-ansible/roles/application_migration/copy_local_to_target_hdfs/defaults/main.yml
+
+NOTHING TO CHANGE?
+./cma-pc-ansible/roles/replication_manager/create_replication_policy/vars/main.yml
+
+DONE:
+./cma-pc-ansible/roles/replication_manager/create_replication_policy/templates/hbase_replication_policy.json.j2
+./cma-pc-ansible/roles/replication_manager/create_replication_policy/templates/hive_replication_policy.json.j2
+./cma-pc-ansible/roles/replication_manager/create_replication_policy/templates/hdfs_replication_policy.json.j2
+
+DONE:
+https://docs.cloudera.com/replication-manager/cloud/reference/topics/rm-pc-cdpcli-manage-cloud-credentials.html
+./cma-pc-ansible/roles/replication_manager/classic_clusters/create_aws_credentials/vars/main.yml
+DONE:
+./cma-pc-ansible/roles/replication_manager/classic_clusters/create_aws_credentials/tasks/main.yml
+DONE:
+./cma-pc-ansible/roles/cloudera_manager/setup_external_account/vars/main.
+DONE:
+./cma-pc-ansible/playbooks/data_migration/create_hive_policy.
+./cma-pc-ansible/playbooks/data_migration/migrate_hdfs_data.yml
+./cma-pc-ansible/playbooks/data_migration/create_hbase_policy.yml
+
+WILL NEED TO COPY IN cma-tools/ and cma-server.jar

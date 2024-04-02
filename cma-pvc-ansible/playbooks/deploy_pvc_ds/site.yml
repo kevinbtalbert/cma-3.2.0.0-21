@@ -1,0 +1,4 @@
+---
+- import_playbook: deploy_cde.yml
+- import_playbook: deploy_cml.yml
+- import_playbook: deploy_cdw.yml

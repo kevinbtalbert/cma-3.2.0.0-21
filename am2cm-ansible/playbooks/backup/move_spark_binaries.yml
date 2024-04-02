@@ -1,0 +1,34 @@
+---
+- name: Move Spark Binaries
+  tags: move-spark-binaries
+  gather_facts: False
+  hosts: all
+  tasks:
+    - name: Create target directory for Spark binaries
+      file:
+        path: '/usr/bin/sparkbackup'
+        state: directory
+      become: yes
+
+    - name: Stat spark binary files
+      stat:
+        path: "{{ binary_file }}"
+      register: spark_binary_file_status
+      loop:
+        - '/usr/bin/spark-shell'
+        - '/usr/bin/spark-submit'
+        - '/usr/bin/spark-class'
+        - '/usr/bin/pyspark'
+        - '/usr/bin/spark-script-wrapper.sh'
+        - '/usr/bin/spark-sql'
+      loop_control:
+        loop_var: binary_file
+      become: yes
+
+    - name: Move binary files if exists
+      shell: "mv {{ item.binary_file }} /usr/bin/sparkbackup"
+      when:
+        "{{ item.stat.exists }}"
+      loop:
+        "{{ spark_binary_file_status.results }}"
+      become: yes

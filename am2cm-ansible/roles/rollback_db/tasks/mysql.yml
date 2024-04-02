@@ -1,0 +1,8 @@
+- name: "Rollback MySQL"
+  community.mysql.mysql_db:
+    state: import
+    name: "{{ database_name }}"
+    target: "{{ backup_name }}.sql"
+    login_user: "{{ database_username }}"
+    login_password: "{{ database_password }}"
+    login_host: "{{ database_host }}"

@@ -1,0 +1,1 @@
+database_type: "{{ lookup('ansible.builtin.vars', service_name + '_db_flavor') | lower }}"

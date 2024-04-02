@@ -1,0 +1,157 @@
+##########################################################################
+# Timeout settings
+service_specific_timeouts:
+  hdfs:
+    restart_service: 1200 # 20 minutes
+
+default_timeouts:
+  restart_service: 900 # 15 minutes
+  run_role_command: 900
+  run_service_command: 900
+
+uber_default_timeout: 600 # always fall back to this if command_type is not listed in default timeouts; 10 minutes
+
+service_specific_timeouts_keys: "{{ service_specific_timeouts | default({}) | dict2items  | json_query('[].key') }}"
+service_specific_timeouts_values: "{{ service_specific_timeouts | default({}) | dict2items | json_query('[].value') }}"
+
+timeouts: "{{ dict (service_specific_timeouts_keys \
+         | zip(service_specific_timeouts_values \
+         | map('combine', default_timeouts) \
+         | zip(service_specific_timeouts_values) | map('combine'))) }}"
+
+extra_timeout_varnames: "{{ query('ansible.builtin.varnames', '^timeout__.+', errors='warn') }}"
+extra_timeout_service_names: "{{ extra_timeout_varnames | map('regex_replace','timeout__(.*)__(.*)', '\\1') }}"
+extra_timeout_commands: "{{ extra_timeout_varnames | map('regex_replace','timeout__(.*)__(.*)', '\\2') }}"
+extra_timeout_values: "{{ extra_timeout_varnames | map('extract', vars) }}"
+extra_vars_timeouts: "{{ extra_timeout_service_names | zip(extra_timeout_commands| zip(extra_timeout_values)) | map('flatten') }}"
+##########################################################################
+
+transition_data_dir: "."
+transition_log_dir: "."
+
+cma_remote_dir: /usr/cma
+cma_remote_tmp_dir: "{{ cma_remote_dir }}/tmp"
+cma_remote_log_dir: "{{ cma_remote_dir }}/logs"
+cma_local_dir: /tmp/cma
+cma_local_tmp_dir: "{{ cma_local_dir }}/tmp"
+
+ansible_user: root
+ansible_ssh_private_key_file: ""
+ansible_ssh_pass: ""
+
+###### Cloudera Manager #########
+cloudera_manager_admin_username: "admin"
+cloudera_manager_admin_password: "admin"
+cloudera_manager_protocol: "http"
+cloudera_manager_port: 7180
+cluster_name: "Cluster 1"
+
+cloudera_manager_host: "{{ groups['cloudera_manager'][0] }}"
+cloudera_manager_user: "{{ cloudera_manager_admin_username }}"
+cloudera_manager_password: "{{ cloudera_manager_admin_password }}"
+
+
+cm_server_service_name: cloudera-scm-server
+cm_agent_service_name: cloudera-scm-agent
+cloudera_agent_process_path: "/var/run/{{ cm_agent_service_name }}/process"
+cloudera_manager_jdbc_driver_path: "/usr/share/java/mysql-connector-java.jar"
+
+#cdp-cli
+cdp_cli_profile_id: "default"
+cp_endpoint_url: "https://{{ groups['control_plane'][0] }}"
+cp_access_key: ""
+cp_private_key: ""
+configure_cdpcli: true
+
+# pc-kerberos
+pc_keytab_file: "{{ cma_remote_dir }}/cma.keytab"
+
+# cluster-scan
+cluster_scan_dir: "cluster-scan"
+cluster_scan_dir_path: "{{ transition_data_dir }}/{{ cluster_scan_dir }}"
+is_kerberized_cluster: false
+
+
+#cdh-discovery
+discovery_bundle_module: "all"
+hdfs_user: hdfs #member of HDFS supergroup
+
+#replication-policy
+rm_policies_dir: rm-policies
+hdfs_rm_policies_file_path: "{{ transition_data_dir }}/{{ rm_policies_dir }}/hdfs-policies.json"
+hive_rm_policies_file_path: "{{ transition_data_dir }}/{{ rm_policies_dir }}/hive-policies.json"
+hbase_rm_policies_file_path: "{{ transition_data_dir }}/{{ rm_policies_dir }}/hbase-policies.json"
+hive_user: hive
+wait_for_replication_policies: []
+hive_replicate_sentry_policies: false
+
+# hive-sre
+java_home: "/usr/java/jdk1.8.0_141"
+
+hive_driver_path: "/usr/share/java/mysql-connector-java.jar"
+# hive-site/javax.jdo.option.ConnectionURL
+hive_metastore_uri: "jdbc:mysql://aonishuk-cdh6v2-1.aonishuk-cdh6v2.root.hwx.site:3306/hive1?useUnicode=true&amp;characterEncoding=UTF-8"
+# MYSQL | POSTGRES | ORACLE
+hive_metastore_db_type: "MYSQL"
+# hive-site/javax.jdo.option.ConnectionUserName
+hive_metastore_user: "hive13mhnezngm"
+# hive-site/javax.jdo.option.ConnectionPassword
+hive_metastore_password: "hive13mhnezngm"
+
+# Hive3Parser tool
+hive3parser_symlink: "hive3-parser-tool.jar"
+hive3parser_jar_dir: "{{ cma_root_dir }}/cma-tools/hive3parser"
+hive3parser_symlink_path: "{{ hive3parser_jar_dir }}/{{ hive3parser_symlink }}"
+
+# Oozie jobs scan
+oozie_exporter_tool_path: "{{ cma_root_dir }}/cma-tools/oozie-exporter/oozie_exporter"
+oozie_work_dir: "{{ cluster_scan_dir_path }}/oozie/"
+oozie_remote_work_dir: "{{ cma_remote_tmp_dir }}/oozie/"
+oozie_url: "http://node_name:port"
+oozie_user: "oozie"
+# TODO should be configurable via UI
+oozie_export_latest_days: "30"
+
+# Hbase scan
+hbase_scanner_tool_path: "{{ cma_root_dir }}/cma-tools/hbase-scanner/hbase-scanner.py"
+hbase_work_dir: "{{ cluster_scan_dir_path }}/hbase/"
+hbase_remote_work_dir: "{{ cma_remote_tmp_dir }}/hbase/"
+hbase_user: "hbase"
+hbase_service_name: HBASE-1
+
+# Public cloud CM
+pc_cloudera_manager_host: "cma-andrew-dwh-master0.cma-ml-t.svbr-nqvp.int.cldr.work"
+pc_cloudera_manager_protocol: "https"
+pc_cloudera_manager_port: "443"
+pc_cloudera_knox_token: "knox_token"
+pc_cloudera_cluster_name: "cma-andrew-dwh"
+
+jwt_data_lake_knox_token: "knox_token"
+hbase_table_for_acl_replication_to_ranger: ["atlas_janus", "ATLAS_ENTITY_AUDIT_EV"]
+
+##########################################################################
+cm_configuration_dictionary:
+  cloudera_manager_hostname: "{{ cloudera_manager_host }}"
+  cloudera_manager_protocol: "{{ cloudera_manager_protocol }}"
+  cloudera_manager_port: "{{ cloudera_manager_port }}"
+  cloudera_manager_admin_username: "{{ cloudera_manager_admin_username }}"
+  cloudera_manager_admin_password: "{{ cloudera_manager_admin_password }}"
+  cluster_name: '{{ cluster_name }}'
+
+pc_cm_configuration_dictionary:
+  cloudera_manager_hostname: "{{ pc_cloudera_manager_host }}"
+  cloudera_manager_protocol: "{{ pc_cloudera_manager_protocol }}"
+  cloudera_manager_port: "{{ pc_cloudera_manager_port }}"
+  cloudera_manager_admin_username: "Token"
+  cloudera_manager_admin_password: "{{ pc_cloudera_knox_token }}"
+  cluster_name: "{{ pc_cloudera_cluster_name }}"
+  api_postfix: "{{ pc_cloudera_cluster_name }}/cdp-proxy-token/cm-api"
+
+kdc_server_configuration_dictionary:
+  kdc_host: "{{  groups['kdc_server'][0]  }}"
+  kadmin_binary_path: "{{ kerberos_kadmin_binary_path }}"
+
+ssh_configuration_dictionary:
+  ansible_user: "{{ ansible_user }}"
+  ansible_ssh_private_key_file: "{{ ansible_ssh_private_key_file | default(omit) }}"
+  ansible_ssh_pass: "{{ ansible_ssh_pass | default(omit) }}"

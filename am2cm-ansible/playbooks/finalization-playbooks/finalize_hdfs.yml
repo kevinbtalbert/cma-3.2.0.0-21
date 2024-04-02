@@ -1,0 +1,33 @@
+---
+- name: Call 'Finalize Metadata Upgrade' action on HDFS NameNode Role
+  hosts: localhost
+  gather_facts: false
+  tags: finalize-hdfs-upgrade
+  vars:
+    role_type: NAMENODE
+  tasks:
+    - name: Query NameNode Role names
+      get_role_names:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        service_name: hdfs
+        role_type: "{{ role_type }}"
+      register: result
+    - name: Fail if no NameNode role has been found
+      fail:
+        msg:
+          - "Couldn't find any roles with type '{{ role_type }}'"
+      when: result.role_names | length == 0
+    - debug:
+        msg: "Determined NameNode roles: {{ result.role_names }}"
+    - name: "Run Finalize Upgrade command on {{ result.role_names[0] }}"
+      include_role:
+        name: run_role_command
+      vars:
+        service_name: hdfs
+        cm_role_names: "{{ result.role_names[0] }}"
+        command: HdfsFinalizeUpgrade
+    - name: Restart HDFS
+      include_role:
+        name: restart_service
+      vars:
+        service_name: hdfs

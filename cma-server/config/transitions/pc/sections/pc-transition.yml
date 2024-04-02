@@ -1,0 +1,408 @@
+---
+type: PUBLIC_CLOUD_DATA_MIGRATION
+sourceClusterType: CDH6
+version: 1
+steps:
+  - name: Setup
+    type: group
+    steps:
+      - name: Stop Cloudera Management Services and Cluster
+        type: task
+        execution: auto
+        service: cm
+        ansibleTags:
+          - "stop_whole_cluster"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        when: ${ RuntimeUtils:isSourceCMVersionLessThanUpgradeTo(sourceServerVars['version'], VarUtils:getOrDefault(transitionUserSettingVars['source.cluster.manager.version'], '7.6.7'), sourceServerVars['type']) && pluginVars['hasHBaseDataToMigrate'] }
+
+      - name: CM Upgrade
+        type: task
+        execution: auto
+        service: cm
+        ansibleTags:
+          - "cm-upgrade"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        serverActions:
+          - com.cloudera.migration.am2cm.server.transitions.server_actions.UpdateSourceServerVersion
+        when: ${ RuntimeUtils:isSourceCMVersionLessThanUpgradeTo(sourceServerVars['version'], VarUtils:getOrDefault(transitionUserSettingVars['source.cluster.manager.version'], '7.6.7'), sourceServerVars['type']) && pluginVars['hasHBaseDataToMigrate'] }
+
+      - name: Start Cloudera Management Services and Cluster
+        type: task
+        execution: auto
+        service: cm
+        ansibleTags:
+          - "start_whole_cluster"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        when: ${ RuntimeUtils:isSourceCMVersionLessThanUpgradeTo(sourceServerVars['version'], VarUtils:getOrDefault(transitionUserSettingVars['source.cluster.manager.version'], '7.6.7'), sourceServerVars['type']) && pluginVars['hasHBaseDataToMigrate'] }
+
+  - name: Data & Metadata Migration
+    type: group
+    steps:
+      - name: Submit Hdfs Replication Policy
+        type: task
+        execution: auto
+        service: hdfs
+        ansibleTags:
+          - "create-hdfs-replication-policy"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        serverActions:
+          - com.cloudera.migration.cma.plugins.pc.server_actions.HdfsPolicyGenerator
+          - com.cloudera.migration.cma.plugins.pc.server_actions.SubmitHdfsPolicyPostActionTransition
+        when: ${ pluginVars['hasHdfsDataToMigrate'] }
+
+      - name: Submit Hive Replication Policy
+        type: task
+        execution: auto
+        service: hive
+        ansibleTags:
+          - "create-hive-replication-policy"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        serverActions:
+          - com.cloudera.migration.cma.plugins.pc.server_actions.HivePolicyGenerator
+          - com.cloudera.migration.cma.plugins.pc.server_actions.SubmitHivePolicyPostActionTransition
+        when: ${ targetServiceVars['hive'].exist && pluginVars['hasHiveDataToMigrate'] }
+
+      - name: HBase Migration
+        type: group
+        when: ${ targetServiceVars['hbase'].exist && pluginVars['hasHBaseDataToMigrate'] }
+        steps:
+          - name: Prepare Source Cluster
+            type: task
+            execution: auto
+            service: hbase
+            ansibleTags:
+              - "hbase-migration-prereqs"
+            commands:
+              - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+
+          - name: Submit HBase Replication Policy
+            type: task
+            execution: auto
+            service: hbase
+            ansibleTags:
+              - "create-hbase-replication-policy"
+            commands:
+              - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+            serverActions:
+              - com.cloudera.migration.cma.plugins.pc.server_actions.HBasePolicyGenerator
+              - com.cloudera.migration.cma.plugins.pc.server_actions.SubmitHBasePolicyPostActionTransition
+
+          - name: Restart Source HBase Service
+            type: task
+            execution: auto
+            service: hbase
+            ansibleTags:
+              - "restart-source-hbase"
+            commands:
+              - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+
+          - name: Migrate ACLs from Hbase to Ranger
+            type: task
+            when: ${ sourceClusterVars['isKerberized'] }
+            execution: auto
+            ansibleTags:
+              - "migrate-hbase-acls-to-ranger"
+            commands:
+              - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+
+  - name: Yarn Queue Migration
+    type: task
+    execution: auto
+    service: yarn
+    ansibleTags:
+      - "migrate-yarn-queue"
+    commands:
+      - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+    when: ${ targetServiceVars['yarn'].exist && transitionUserSettingVars['yarn.migration.enabled'] }
+
+  - name: Hive SQL Migration
+    type: group
+    when: ${ targetServiceVars['hive'].exist && pluginVars['hasHiveWorkloadToMigrate'] }
+    steps:
+      - name: Upload HQL files to s3
+        type: task
+        when: ${ targetServiceVars['hive'].exist && pluginVars['hasHiveWorkloadToMigrate'] }
+        execution: auto
+        service: hive-sql
+        ansibleTags:
+          - "upload-hql-files"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        serverActions:
+          - com.cloudera.migration.cma.plugins.pc.server_actions.UploadHiveSQLFilePostActionTransition
+
+  - name: Oozie Workload migration
+    type: group
+    when: ${ targetServiceVars['oozie'].exist && pluginVars['hasOozieWorkloadToMigrate'] }
+    steps:
+      - name: Prepare target Oozie service
+        type: task
+        execution: auto
+        service: oozie
+        ansibleTags:
+          - "prepare-target-oozie"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        when: ${ transitionUserSettingVars['oozie_configuring_enabled'] && true }
+
+      - name: Upload oozie job definitions and configurations to s3
+        type: task
+        execution: auto
+        service: oozie
+        ansibleTags:
+          - "upload-oozie-jobs"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        serverActions:
+          - com.cloudera.migration.cma.plugins.pc.server_actions.OozieJobsExportAction
+
+  - name: Finalization
+    type: "group"
+    steps:
+      - name: Wait for the replication(s) to complete
+        type: task
+        execution: auto
+        ansibleTags:
+          - "wait-for-replication-complete"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        when: ${ pluginVars['hasHdfsDataToMigrate'] || (targetServiceVars['hive'].exist && pluginVars['hasHiveDataToMigrate']) || (targetServiceVars['hbase'].exist && pluginVars['hasHBaseDataToMigrate']) }
+---
+type: PUBLIC_CLOUD_DATA_MIGRATION
+sourceClusterType: CDH5
+version: 1
+steps:
+  - name: Setup
+    type: group
+    steps:
+      - name: Stop Cloudera Management Services and Cluster
+        type: task
+        execution: auto
+        service: cm
+        ansibleTags:
+          - "stop_whole_cluster"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        when: ${ RuntimeUtils:isSourceCMVersionLessThanUpgradeTo(sourceServerVars['version'], VarUtils:getOrDefault(transitionUserSettingVars['source.cluster.manager.version'], '7.6.7'), sourceServerVars['type']) }
+
+      - name: CM Upgrade
+        type: task
+        execution: auto
+        service: cm
+        ansibleTags:
+          - "cm-upgrade"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        serverActions:
+          - com.cloudera.migration.am2cm.server.transitions.server_actions.UpdateSourceServerVersion
+        when: ${ RuntimeUtils:isSourceCMVersionLessThanUpgradeTo(sourceServerVars['version'], VarUtils:getOrDefault(transitionUserSettingVars['source.cluster.manager.version'], '7.6.7'), sourceServerVars['type']) }
+
+      - name: Start Cloudera Management Services and Cluster
+        type: task
+        execution: auto
+        service: cm
+        ansibleTags:
+          - "start_whole_cluster"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        when: ${ RuntimeUtils:isSourceCMVersionLessThanUpgradeTo(sourceServerVars['version'], VarUtils:getOrDefault(transitionUserSettingVars['source.cluster.manager.version'], '7.6.7'), sourceServerVars['type']) }
+
+  - name: Data & Metadata Migration
+    type: group
+    steps:
+      - name: Submit Hdfs Replication Policy
+        type: task
+        execution: auto
+        service: hdfs
+        ansibleTags:
+          - "create-hdfs-replication-policy"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        serverActions:
+          - com.cloudera.migration.cma.plugins.pc.server_actions.HdfsPolicyGenerator
+          - com.cloudera.migration.cma.plugins.pc.server_actions.SubmitHdfsPolicyPostActionTransition
+        when: ${ pluginVars['hasHdfsDataToMigrate'] }
+
+      - name: Submit Hive Replication Policy
+        type: task
+        execution: auto
+        service: hive
+        ansibleTags:
+          - "create-hive-replication-policy"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        serverActions:
+          - com.cloudera.migration.cma.plugins.pc.server_actions.HivePolicyGenerator
+          - com.cloudera.migration.cma.plugins.pc.server_actions.SubmitHivePolicyPostActionTransition
+        when: ${ targetServiceVars['hive'].exist && pluginVars['hasHiveDataToMigrate'] }
+
+      - name: HBase Migration
+        type: group
+        when: ${ targetServiceVars['hbase'].exist && pluginVars['hasHBaseDataToMigrate'] }
+        steps:
+          - name: Prepare Source Cluster
+            type: task
+            execution: auto
+            service: hbase
+            ansibleTags:
+              - "hbase-migration-prereqs"
+            commands:
+              - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+
+          - name: Submit HBase Replication Policy
+            type: task
+            execution: auto
+            service: hbase
+            ansibleTags:
+              - "create-hbase-replication-policy"
+            commands:
+              - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+            serverActions:
+              - com.cloudera.migration.cma.plugins.pc.server_actions.HBasePolicyGenerator
+              - com.cloudera.migration.cma.plugins.pc.server_actions.SubmitHBasePolicyPostActionTransition
+
+          - name: Restart Source HBase Service
+            type: task
+            execution: auto
+            service: hbase
+            ansibleTags:
+              - "restart-source-hbase"
+            commands:
+              - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+
+          - name: Migrate ACLs from Hbase to Ranger
+            type: task
+            when: ${ sourceClusterVars['isKerberized'] }
+            execution: auto
+            service: hbase
+            ansibleTags:
+              - "migrate-hbase-acls-to-ranger"
+            commands:
+              - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+
+  - name: Yarn Queue Migration
+    type: task
+    execution: auto
+    service: yarn
+    ansibleTags:
+      - "migrate-yarn-queue"
+    commands:
+      - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+    when: ${ targetServiceVars['yarn'].exist && transitionUserSettingVars['yarn.migration.enabled'] }
+
+  - name: Hive SQL Migration
+    type: group
+    when: ${ targetServiceVars['hive'].exist && pluginVars['hasHiveWorkloadToMigrate'] }
+    steps:
+      - name: Upload HQL files to s3
+        type: task
+        when: ${ targetServiceVars['hive'].exist && pluginVars['hasHiveWorkloadToMigrate'] }
+        execution: auto
+        service: hive-sql
+        ansibleTags:
+          - "replicate-hive-scripts"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+
+  - name: Oozie Workload migration
+    type: group
+    when: ${ targetServiceVars['oozie'].exist && pluginVars['hasOozieWorkloadToMigrate'] }
+    steps:
+      - name: Prepare target Oozie service
+        type: task
+        execution: auto
+        service: oozie
+        ansibleTags:
+          - "prepare-target-oozie"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        when: ${ transitionUserSettingVars['oozie_configuring_enabled'] && true }
+
+      - name: Upload oozie job definitions and configurations to s3
+        type: task
+        execution: auto
+        service: oozie
+        ansibleTags:
+          - "upload-oozie-jobs"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        serverActions:
+          - com.cloudera.migration.cma.plugins.pc.server_actions.OozieJobsExportAction
+
+  - name: Finalization
+    type: "group"
+    steps:
+      - name: Wait for the replication(s) to complete
+        type: task
+        execution: auto
+        ansibleTags:
+          - "wait-for-replication-complete"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        when: ${ pluginVars['hasHdfsDataToMigrate'] || (targetServiceVars['hive'].exist && pluginVars['hasHiveDataToMigrate']) || (targetServiceVars['hbase'].exist && pluginVars['hasHBaseDataToMigrate']) }
+
+---
+type: PUBLIC_CLOUD_DATA_MIGRATION
+sourceClusterType: CDP_PVC_BASE
+version: 1
+steps:
+  - name: Data & Metadata Migration
+    type: group
+    steps:
+      - name: Submit Hdfs Replication Policy
+        type: task
+        execution: auto
+        service: hdfs
+        ansibleTags:
+          - "create-hdfs-replication-policy"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        serverActions:
+          - com.cloudera.migration.cma.plugins.pc.server_actions.HdfsPolicyGenerator
+          - com.cloudera.migration.cma.plugins.pc.server_actions.SubmitHdfsPolicyPostActionTransition
+        when: ${ pluginVars['hasHdfsDataToMigrate'] }
+
+      - name: Submit Hive Replication Policy
+        type: task
+        execution: auto
+        service: hive
+        ansibleTags:
+          - "create-hive-replication-policy"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        serverActions:
+          - com.cloudera.migration.cma.plugins.pc.server_actions.HivePolicyGenerator
+          - com.cloudera.migration.cma.plugins.pc.server_actions.SubmitHivePolicyPostActionTransition
+        when: ${ targetServiceVars['hive'].exist && pluginVars['hasHiveDataToMigrate'] }
+
+
+  - name: Hive SQL Migration
+    type: group
+    when: ${ targetServiceVars['hive'].exist && pluginVars['hasHiveWorkloadToMigrate'] }
+    steps:
+      - name: Upload HQL files to s3
+        type: task
+        when: ${ targetServiceVars['hive'].exist && pluginVars['hasHiveWorkloadToMigrate'] }
+        execution: auto
+        service: hive-sql
+        ansibleTags:
+          - "replicate-hive-scripts"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+
+  - name: Finalization
+    type: "group"
+    steps:
+      - name: Wait for the replication(s) to complete
+        type: task
+        execution: auto
+        ansibleTags:
+          - "wait-for-replication-complete"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        when: ${ pluginVars['hasHdfsDataToMigrate'] || (targetServiceVars['hive'].exist && pluginVars['hasHiveDataToMigrate']) }

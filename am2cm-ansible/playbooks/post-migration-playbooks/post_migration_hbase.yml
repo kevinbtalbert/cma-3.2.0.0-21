@@ -1,0 +1,20 @@
+---
+- name: Hbase post migration steps
+  hosts: localhost
+  tags: hbase-post-migration
+  gather_facts: False
+  vars:
+    service_name: "hbase"
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  tasks:
+    - name: Enable atlas hook
+      update_configuration_in_service:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        service_configuration:
+          hbase_atlas_hook_enable: true
+        service_name: "{{ service_name }}"
+    - name: Restart hbase service
+      include_role:
+        name: restart_service

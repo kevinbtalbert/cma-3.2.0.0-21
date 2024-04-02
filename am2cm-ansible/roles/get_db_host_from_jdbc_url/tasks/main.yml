@@ -1,0 +1,8 @@
+- name: Extract db_host from jdbc url
+  set_fact:
+    db_host: "{{ jdbc_url | regex_search('(jdbc\\:)(postgresql\\:|mysql\\:|oracle\\:thin\\:\\@)(\\/\\/)(.*)(\\/'+ db_name + ')', '\\4') | first | regex_replace('(:\\d+)', '') }}"
+- name: Print facts
+  debug:
+    msg:
+      - "db_host: {{ db_host }}"
+  run_once: True

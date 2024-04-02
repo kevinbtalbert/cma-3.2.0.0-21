@@ -1,0 +1,31 @@
+---
+
+- name: Rollback keytabs
+  hosts: all
+  gather_facts: False
+  tags: kerberos-rollback
+  vars:
+    service_name: kerberos
+  roles:
+    - { role: prepare_to_rollback_service, skip_service_stop: true }
+  tasks:
+    - name: Check if kerberos config file exists
+      stat:
+        path: "{{ service_backup_dir }}/krb5.conf.bak"
+      register: result
+
+    - name: Restore kerberos config file
+      copy:
+        src: "{{ result.stat.path }}"
+        dest: "{{ kerberos_conf_path | d('/etc/krb5.conf')}}"
+        remote_src: yes
+      when: result.stat.exists
+
+    - name: Regenerate keytabs
+      hdp_regenerate_keytabs:
+        ambari_configuration: "{{ambari_configuration_dictionary}}"
+        kdc_admin_principal: "{{ kerberos_admin_user }}/admin@{{ kerberos_realm_name }}"
+        kdc_admin_password: "{{ kerberos_admin_password }}"
+      no_log: True
+      delegate_to: localhost
+      run_once: True

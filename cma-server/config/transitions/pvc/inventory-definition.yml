@@ -1,0 +1,9 @@
+---
+currentVersion:
+  - CDP_PVC_BASE
+inventoryTemplate:
+  file: inventory-template.ini
+  templateVar: predefined_host_groups
+hostGroups:
+  pvc_cluster_master_nodes: TARGET::CLUSTER::MASTER_NODES
+  pvc_cluster_worker_nodes: TARGET::CLUSTER::WORKER_NODES

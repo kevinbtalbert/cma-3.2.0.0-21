@@ -1,0 +1,380 @@
+##########################################################################
+# Timeout settings
+service_specific_timeouts:
+  hdfs:
+    restart_service: 1200 # 20 minutes
+
+default_timeouts:
+  restart_service: 900 # 15 minutes
+  run_role_command: 900
+  run_service_command: 900
+
+uber_default_timeout: 600 # always fall back to this if command_type is not listed in default timeouts; 10 minutes
+
+service_specific_timeouts_keys: "{{ service_specific_timeouts | default({}) | dict2items  | json_query('[].key') }}"
+service_specific_timeouts_values: "{{ service_specific_timeouts | default({}) | dict2items | json_query('[].value') }}"
+
+timeouts: "{{ dict (service_specific_timeouts_keys \
+         | zip(service_specific_timeouts_values \
+         | map('combine', default_timeouts) \
+         | zip(service_specific_timeouts_values) | map('combine'))) }}"
+
+extra_timeout_varnames: "{{ query('ansible.builtin.varnames', '^timeout__.+', errors='warn') }}"
+extra_timeout_service_names: "{{ extra_timeout_varnames | map('regex_replace','timeout__(.*)__(.*)', '\\1') }}"
+extra_timeout_commands: "{{ extra_timeout_varnames | map('regex_replace','timeout__(.*)__(.*)', '\\2') }}"
+extra_timeout_values: "{{ extra_timeout_varnames | map('extract', vars) }}"
+extra_vars_timeouts: "{{ extra_timeout_service_names | zip(extra_timeout_commands| zip(extra_timeout_values)) | map('flatten') }}"
+##########################################################################
+
+transition_log_dir: "."
+
+cma_root_dir: "{{ lookup('ansible.builtin.env', 'AM2CM_ROOT') }}"
+
+cloudera_manager_admin_username: "admin"
+cloudera_manager_admin_password: "admin"
+cloudera_manager_protocol: "http"
+cloudera_manager_port: 7180
+cluster_name: "Cluster 1"
+#cloudera_manager_api_version: "v44" # if you already know the API version, uncomment this line to speed things up (determine_api_version role will not activate in this case)
+hadoop_rpc_protection: authentication
+net_topology_script_file_name: ""
+dfs_ha_proxy_provider: "org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider"
+cloudera_manager_target_version: "7.4.4"
+support_matrix: "https://supportmatrix.cloudera.com/supportmatrices/cldr?condition=PRODUCT=CDP%20Private%20Cloud%20Base"
+
+cloudera_agent_process_path: /var/run/cloudera-scm-agent/process
+global_truststore_path: /var/lib/cloudera-scm-agent/agent-cert/cm-auto-global_truststore.jks
+
+ambari_port: 8080
+ambari_username: "admin"
+ambari_password: "admin"
+ambari_cluster_name: "cl1"
+ambari_protocol: "http"
+
+hdp_version: 3.1.5.0-152
+
+am2cm_script_path: "./am2cm-tool/target/am2cm-tool"
+am2cm_source_version: "HDP3"
+am2cm_target_version: "7.1.7"
+am2cm_deployment_template_file: "dt.json"
+am2cm_skip_pre_upgrade: true
+am2cm_config_path: "{{am2cm_script_path}}/conf"
+am2cm_user_settings_file: "{{am2cm_config_path}}/user-settings.ini"
+am2cm_cluster_topology_file: "{{am2cm_config_path}}/cluster-topology.yml"
+am2cm_ambari_blueprint_file: "{{am2cm_config_path}}/blueprint.json"
+am2cm_cm_blueprint_file: "{{am2cm_config_path}}/cm-blueprint.json"
+am2cm_role_groups_enabled: true
+am2cm_ambari_hdp_cleanup_enabled: false
+hdp_bits_directory: "/usr/hdp"
+
+parcel_cldr_runtime_name: "CDH"
+parcel_cldr_runtime_version: "7.1.7-1.cdh7.1.7.p78.21656418"
+parcel_cldr_runtime_repo: "https://archive.cloudera.com/p/cdh7/7.1.7.78/parcels/"
+
+parcel_gplextras_name: "GPLEXTRAS"
+parcel_gplextras_version: "7.1.7-1.gplextras7.1.7.p0.15945976"
+parcel_gplextras_repo: "https://archive.cloudera.com/p/gplextras7/7.1.7.0/parcels/"
+
+parcel_accumulo_name: "ACCUMULO_ON_CDP"
+parcel_accumulo_version: "1.1.0.p0.36080949"
+parcel_accumulo_repo: "https://archive.cloudera.com/p/accumulo7/1.1.0/parcels/"
+
+hdp_config_upgrade_script_path: "./am2cm-upgrade-tool/target/am2cm-upgrade"
+hdp_config_upgrade_refresh_data: true
+
+am2cm_remote_dir: /usr/am2cm
+am2cm_remote_tmp_dir: "{{ am2cm_remote_dir }}/tmp"
+am2cm_local_dir: /tmp/am2cm
+am2cm_local_tmp_dir: "{{ am2cm_local_dir }}/tmp"
+
+am2cm_solr_client_script_path: "./am2cm-solr-client/target/am2cm-solr-client"
+am2cm_remote_log_dir: "{{ am2cm_remote_dir }}/logs"
+am2cm_solr_client_log_file: "{{ am2cm_remote_log_dir }}/am2cm-solr-client.log"
+
+ansible_user: root
+ansible_ssh_private_key_file: ""
+ansible_ssh_pass: ""
+
+kerberos_is_active: false
+kerberos_use_ad: false
+kerberos_principal_name_mgmt: "cloudera-scm"
+kerberos_realm_name: "EXAMPLE.COM"
+kerberos_ad_domain: "ou=hadoop,DC=hadoop,DC=com"
+kerberos_admin_user: "admin"
+kerberos_admin_password: "admin"
+kerberos_kadmin_binary_path: "/usr/sbin/kadmin.local"
+kerberos_renew_lifetime: "7d"
+kerberos_conf_path: /etc/krb5.conf
+kerberos_keytabs_path: /etc/security/keytabs
+
+ambari_agent_kerberos_cache_path: "/var/lib/ambari-agent/tmp/curl_krb_cache"
+
+cdp_ssl_is_active: "{{ cloudera_manager_protocol == 'https' }}"
+
+supported_db_types:
+  - mysql
+  - mariadb
+  - postgresql
+  - oracle
+
+# only in case if oracle db is used
+oracle_home_path: "/opt/oracle/product/12.2.0"
+
+# Backup service
+backup_root_dir: "{{ am2cm_remote_dir }}/hdp-backup"
+backup_conf_dir: conf.hdp.bak
+conf_dir: conf
+etc_service_dirs:
+  - /etc/hadoop
+  - /etc/atlas
+  - /etc/hive
+  - /etc/hbase
+  - /etc/kafka
+  - /etc/oozie
+  - /etc/ranger/admin
+  - /etc/ranger/kms
+  - /etc/spark2
+  - /etc/zookeeper
+  - /etc/knox
+
+# Ranger related
+ranger_home: "/opt/cloudera/parcels/CDH/lib/ranger-admin"
+ranger_jdbc_dir: "{{ranger_home}}/ews/lib"
+ranger_audit_source_type: "solr"    # a.k.a. audit_store in cm
+ranger_admin_max_heap_size: "1g"
+ranger_create_db_user: true
+ranger_db_flavor: "postgresql"
+ranger_db_name: "ranger"
+ranger_db_root_user: root
+ranger_db_root_user_password: mysql
+ranger_spnego_keytab_path: "/etc/security/keytabs/am2cm_ranger.spnego.keytab"
+ranger_is_ha: false
+ranger_ha_spnego_keytab_path: /etc/security/keytabs/ranger.ha.keytab  # ranger.ha.spnego.kerberos.keytab
+ranger_ha_spnego_keytab_backup_file: "{{ ranger_ha_spnego_keytab_path | basename }}.bak"
+hdp_rangeradmin_user_password: "admin"
+ranger_jdbc_url: "jdbc:<ranger_db_flavor>://<ranger_db_host>/<ranger_db>"
+
+# Ranger-KMS related
+ranger_kms_home: "/opt/cloudera/parcels/CDH/lib/ranger-kms"
+ranger_kms_jdbc_dir: "{{ranger_kms_home}}/ews/webapp/lib"
+ranger_kms_create_db_user: true
+ranger_kms_db_flavor: "postgresql"
+ranger_kms_db_name: "rangerkms"
+ranger_kms_db_root_user: root
+ranger_kms_db_root_user_password: mysql
+ranger_kms_jdbc_url: "jdbc:<rangerkms_db_flavor>://<rangerkms_db_host>/<rangerkms_db>"
+
+# Jdbc
+jdbc_control_node_directory: "{{ lookup('ansible.builtin.env', 'JDBC_DRIVERS_TARGET') | default(cma_root_dir + '/jdbc-drivers', true) }}"
+jdbc_remote_driver_directory: /usr/share/java  # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3-install-mysql-jdbc.html
+
+jdbc_driver_mysql_version: "5.1.46"
+jdbc_driver_mysql_basename: "mysql-connector-java-{{jdbc_driver_mysql_version}}"
+jdbc_driver_mysql_url: "https://cdn.mysql.com//archives/mysql-connector-java-5.1/{{jdbc_driver_mysql_basename}}.tar.gz"
+
+jdbc_driver_postgresql_version: "42.3.4"
+jdbc_driver_postgresql_basename: "postgresql-{{jdbc_driver_postgresql_version}}"
+jdbc_driver_postgresql_url: "https://jdbc.postgresql.org/download/{{jdbc_driver_postgresql_basename}}.jar"
+
+jdbc_driver_oracle_basename: "ojdbc8"
+jdbc_driver_oracle_url: "https://download.oracle.com/otn-pub/otn_software/jdbc/215/{{jdbc_driver_oracle_basename}}.jar"
+
+# Oozie
+oozie_db_flavor: "postgresql"                                                                        # oozie_database in the ambari service configs
+oozie_database_host_url: "jdbc:mysql://<oozie_db_host>/<oozie_db>"        # oozie.service.JPAService.jdbc.url
+oozie_db_name: "oozie"
+oozie_db_root_user: "oozie"
+oozie_db_root_user_password: "oozie"
+oozie_home: "/opt/cloudera/parcels/CDH/lib/oozie"
+oozie_jdbc_dir: "{{oozie_home}}/libext"
+oozie_load_balancer_url: "https://<oozie_lb_host>:11443/oozie"     # oozie.base.url in the ambari service configs
+oozie_load_balancer_default_http_port: "11000"
+oozie_load_balancer_default_https_port: "11443"
+oozie_user_name: oozie
+oozie_is_ha: false
+oozie_ha_keytab_path: /etc/security/keytabs/oozie.ha.keytab  # oozie.ha.authentication.kerberos.keytab
+oozie_ha_keytab_backup_file: "{{ oozie_ha_keytab_path | basename }}.bak"
+
+# Hadoop
+hadoop_home: "/opt/cloudera/parcels/CDH/lib/hadoop"
+old_hadoop_home: "/usr/hdp/current"
+
+# Kafka
+kafka_new_jmx_port: 9395
+kafka_user_name: kafka
+kafka_home: "/opt/cloudera/parcels/CDH/lib/kafka"
+
+# HBase
+hbase_log_dir: /var/log/hbase
+hbase_snapshot_path: /apps/hbase
+hbase_user_name: hbase
+hbase_site_zookeeper_znode_parent: /hbase-secure
+hbase_master_jaas_file: /usr/hdp/current/hbase-master/conf/hbase_master_jaas.conf
+hbase_master_keytab: "/etc/security/keytabs/hbase.service.keytab"
+hbase_master_principal: "hbase/{{ inventory_hostname }}@{{ kerberos_realm_name }}"
+hbase_master_user_name: hbase
+
+# Yarn
+yarn_hbase_master_keytab_file: /etc/security/keytabs/yarn-ats.hbase-master.service.keytab
+yarn_hbase_master_kerberos_principal: yarn-ats-hbase/_HOST@EXAMPLE.COM  # this will be generated from ambari
+yarn_hbase_master_jaas_file: /etc/hadoop/conf/embedded-yarn-ats-hbase/yarn_hbase_master_jaas.conf
+yarn_zookeeper_znode_parent: /atsv2-hbase-secure
+yarn_user_name: yarn
+yarn_ats_user: yarn-ats
+
+# Yarn Queue Manager
+queuemanager_db_port: "5432"
+queuemanager_db_user: "qmadmin"
+queuemanager_db_name: "configstore"
+queuemanager_db_password: "password"
+queuemanager_install_postgres: true
+
+# Mapreduce
+mapreduce_home: "/opt/cloudera/parcels/CDH/lib/hadoop-mapreduce"
+
+# Knox
+knox_gateway_auto_discovery_enabled: true
+knox_gateway_master_secret: "knoxsecret"
+knox_gateway_knox_admin_groups: "admin"
+knox_gateway_knox_admin_users: "admin"
+knox_ui_username: "knoxui"
+knox_ui_password: "knoxui"
+knox_ui_password_salt: "of4o0iEs"
+
+# Hive
+hive_home: "/opt/cloudera/parcels/CDH/lib/hive"
+hive_jdbc_dir: "{{hive_home}}/lib"
+hive_mysql_jdbc_driver: "com.mysql.jdbc.Driver"
+hive_postgresql_jdbc_driver: "org.postgresql.Driver"
+hive_db_name: "hive"
+hive_db_flavor: "postgresql"
+hive_db_root_user: "hive"
+hive_db_root_user_password: "hive"
+hive_metastore_warehouse_dir: /warehouse/tablespace/managed/hive
+hive_snapshot_path: "{{hive_metastore_warehouse_dir}}"
+hive_user_name: "hive"
+hive_service_keytab: /etc/security/keytabs/hive.service.keytab
+hive_metastore_principal: hive/_HOST@EXAMPLE.COM  # this will be generated from ambari
+hive_jdbc_url: "jdbc:mysql://<hive_db_host>/<hive_db>"        # javax.jdo.option.ConnectionURL
+
+# ZooKeeper
+zk_data_dir: "/hadoop/zookeeper"
+zookeeper_backup_file_name: zookeeper.tar.gz
+
+# Atlas
+atlas_user_name: atlas
+atlas_service_keytab: /etc/security/keytabs/atlas.service.keytab
+atlas_service_principal: "{{ atlas_user_name }}/{{ inventory_hostname }}@{{ kerberos_realm_name }}"
+atlas_snapshot_path: /apps/hbase/data/.hbase-snapshot
+atlas_migration_tool_download_dir: "{{ lookup('ansible.builtin.env','ATLAS_MIGRATION_TOOL_DOWNLOAD_DIR') | default(cma_root_dir, true) }}"
+atlas_migration_dir: "{{ backup_root_dir }}/atlas_migration_dir"
+atlas_migration_tool_name: "atlas-migration-exporter-0.8.0.2.6.6.0-332"
+atlas_migration_tool_file_name: "{{ atlas_migration_tool_name }}.tar.gz"
+atlas_migration_tool_url: "https://archive.cloudera.com/am2cm/hdp2/{{ atlas_migration_tool_file_name }}"
+
+# Infra-Solr (HDP)
+infra_solr_zk_connection_string: localhost:2181/infra-solr
+infra_solr_jaas_file: /etc/ambari-infra-solr/conf/infra_solr_jaas.conf
+infra_solr_collections: ranger_audits,vertex_index,edge_index,fulltext_index
+infra_solr_service_name: ambari_infra_solr
+infra_solr_ssl_is_active: false
+
+# Solr (CDP)
+solr_ssl_is_active: "{{ cdp_ssl_is_active }}"
+
+# HDFS
+hdfs_user_name: hdfs
+hdfs_service_keytab: /etc/security/keytabs/hdfs.headless.keytab
+hdfs_service_principal: "{{ hdfs_user_name }}@{{ kerberos_realm_name }}"
+hdfs_namenode_port: 8020
+
+hdfs_home: "/opt/cloudera/parcels/CDH/lib/hadoop-hdfs"
+hdfs_conf_dir: /etc/hadoop/conf
+hdfs_nameservice_id: mycluster                                   # dfs.nameservices
+hdfs_namenode_dir: /hadoop/hdfs/namenode                         # dfs.namenode.name.dir
+hdfs_journalnode_dir: /hadoop/hdfs/journal                       # dfs.journalnode.edits.dir
+hdfs_nn_keytab: /etc/security/keytabs/nn.service.keytab          # dfs.namenode.keytab.file
+hdfs_nn_principal: "nn/{{ inventory_hostname }}@EXAMPLE.COM"     # dfs.namenode.kerberos.principal
+hdfs_dn_keytab: /etc/security/keytabs/dn.service.keytab          # dfs.datanode.keytab.file
+hdfs_dn_principal: "dn/{{ inventory_hostname }}@EXAMPLE.COM"     # dfs.datanode.kerberos.principal
+hdfs_is_ha: false
+hdfs_log_dir_root: /var/log/hadoop                               # hdfs_log_dir_prefix
+hdfs_log_dir: "{{hdfs_log_dir_root}}/{{hdfs_user_name}}"
+hdfs_snn_dir: /hadoop/hdfs/namesecondary                         # dfs.namenode.checkpoint.dir
+
+hdfs_config_backup_gz_file: hdfs_conf_backup.tar.gz
+hdfs_fsck_out_file: fsck.out.log
+hdfs_fsck_out_gz_file: fsck.out.gz
+hdfs_dfsadmin_report_file: dfs-report.log
+hdfs_lslr_out_file: ls-lr.out
+hdfs_lslr_out_gz_file: ls-lr.out.gz
+hdfs_nn_backup_tar_gz_file: "nn_{{ inventory_hostname }}_backup.tar.gz"
+hdfs_jn_backup_tar_gz_file: "jn_{{ inventory_hostname }}_backup.tar.gz"
+
+copy_hdfs_snapshots_to_local: False
+restore_service_snapshots_in_hdfs: False
+
+
+##########################################################################
+cm_configuration_dictionary:
+  cloudera_manager_hostname: "{{ groups['server'][0] }}"
+  cloudera_manager_protocol: "{{ cloudera_manager_protocol }}"
+  cloudera_manager_port: "{{ cloudera_manager_port }}"
+  cloudera_manager_admin_username: "{{ cloudera_manager_admin_username }}"
+  cloudera_manager_admin_password: "{{ cloudera_manager_admin_password }}"
+  cluster_name: '{{ cluster_name }}'
+  cloudera_manager_target_version: "{{ cloudera_manager_target_version }}"
+  kerberos_configuration:
+    use_ad: "{{ kerberos_use_ad }}"
+    kerberos_principal_name: "{{ kerberos_principal_name_mgmt }}"
+    realm_name: "{{ kerberos_realm_name }}"
+    ad_domain: "{{ kerberos_ad_domain }}"
+    kerberos_admin_user: "{{ kerberos_admin_user }}"
+    kerberos_admin_password: "{{ kerberos_admin_password }}"
+
+kdc_server_configuration_dictionary:
+  kdc_host: "{{  groups['kdc_server'][0]  }}"
+  kadmin_binary_path: "{{ kerberos_kadmin_binary_path }}"
+
+ambari_configuration_dictionary:
+  hostname: "{{ groups['ambari_server'][0] }}"
+  port: "{{ ambari_port }}"
+  protocol: "{{ ambari_protocol }}"
+  username: "{{ ambari_username }}"
+  password: "{{ ambari_password }}"
+  cluster_name: "{{ ambari_cluster_name }}"
+
+ssh_configuration_dictionary:
+  ansible_user: "{{ ansible_user }}"
+  ansible_ssh_private_key_file: "{{ ansible_ssh_private_key_file | default(omit) }}"
+  ansible_ssh_pass: "{{ ansible_ssh_pass | default(omit) }}"
+
+am2cm_solr_client_configuration_dictionary:
+  script_path: "{{ am2cm_remote_dir }}/am2cm-solr-client"
+  zookeeper_connect_string: "{{ infra_solr_zk_connection_string }}"
+  is_kerberized_cluster: "{{ kerberos_is_active }}"
+  jaas_file: "{{ infra_solr_jaas_file }}"
+
+# disk space requirements
+space_requirements_server:
+  /: "40 GB"
+  /var: "2 GB"
+  /var/log: "200 GB"
+  /tmp: "20 GB"
+
+space_requirements_clients:
+  /: "30 GB"
+  /var: "2 GB"
+  /var/log: "200 GB"
+  /tmp: "20 GB"
+
+cma_remote_root_dir: /usr/am2cm  # supposed to be always coming from extra_vars
+remote_venv_directory: "{{ cma_remote_root_dir }}/cma_venv"
+downloaded_python_packages_directory: "remote_python_packages"
+python_archive_file: "Python-{{ desired_remote_python_version }}.tgz"  # desired_remote_python_version is based on the version of ansible_playbook_python
+requirements_to_install_after_venv_is_created:
+  - common_remote_requirements.txt
+
+pypi_webserver_port: "{{ lookup('ansible.builtin.env', 'PYPI_WEBSERVER_PORT', default=9003) }}"
+pypi_webserver_protocol: http
+airgapped: "{{ lookup('ansible.builtin.env', 'AIRGAPPED', default=false) | bool }}"

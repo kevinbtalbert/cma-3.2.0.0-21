@@ -1,0 +1,74 @@
+---
+- name: Knox post migration steps 1
+  hosts: localhost
+  tags: knox-post-migration
+  gather_facts: False
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  roles:
+    - {role: run_service_command, service_name: "knox", command: "CreateRangerKnoxPluginAuditDirCommand" }
+  tasks:
+    - name: Update knox gateway role properties
+      include_role:
+        name: update_configuration_in_role_configuration_group
+      vars:
+        role_configuration_group_name: "knox-KNOX_GATEWAY"
+        configuration_name: "{{ item.name }}"
+        configuration_value: "{{ item.value }}"
+        service_name: "knox"
+      loop:
+        - {name: "gateway_auto_discovery_enabled", value: "{{ knox_gateway_auto_discovery_enabled }}"}
+        - {name: "gateway_master_secret", value: "{{ knox_gateway_master_secret }}"}
+        - {name: "gateway_knox_admin_groups", value: "{{ knox_gateway_knox_admin_groups }}"}
+
+- name: Knox post migration steps 2
+  hosts: clients
+  tags: knox-post-migration
+  gather_facts: False
+  roles:
+    - { role: query_configuration_from_service, service_name: knox, configuration_name: process_username,
+        configuration_type: SERVICE }
+  tasks:
+    - name: Add necessary groups
+      group:
+        name: "{{ item }}"
+      loop:
+        - "{{ knox_gateway_knox_admin_groups }}"
+        - "{{ process_username }}"
+        - shadow
+    - name: Change the group and permissions of /etc/shadow
+      file:
+        path: /etc/shadow
+        group: shadow
+        mode: '040'
+      become: yes
+    - name: Add knox to knox & shadow group
+      user:
+        name: "{{ process_username }}"
+        groups: "{{ process_username }},shadow"
+        append: yes
+      become: yes
+    - name: Add knoxui user & add them to the admin group  # NOTE: password should have encrypted value, since it's written straight to /etc/shadow
+      user:
+        name: "{{ knox_ui_username }}"
+        groups: "{{ knox_gateway_knox_admin_groups }}"
+        append: yes
+        password: "{{ knox_ui_password | password_hash('sha512', knox_ui_password_salt) }}"
+      become: yes
+    - name: Delete /var/run/nologin
+      file:
+        path: /var/run/nologin
+        state: absent
+      become: yes
+    - name: Deploy client configuration
+      include_role:
+        name: run_service_command
+      vars:
+        service_name: "knox"
+        command: "deployClientConfig"
+    - name: Restart knox service
+      include_role:
+        name: restart_service
+      vars:
+        service_name: "knox"

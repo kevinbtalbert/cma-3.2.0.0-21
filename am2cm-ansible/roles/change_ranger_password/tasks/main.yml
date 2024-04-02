@@ -1,0 +1,86 @@
+- name: Inputs
+  debug:
+    msg:
+      - "Ranger admin user: {{ ranger_admin_user }}"
+      - "Ranger admin password: {{ ranger_admin_password }}"
+      - "Ranger user to modify: {{ ranger_modify_user }}"
+      - "Ranger old password: {{ ranger_old_password }}"
+      - "Ranger new password: {{ ranger_new_password }}"
+- name: Determine is it required to update ranger password
+  set_fact:
+    update_ranger_password: "{{ ranger_old_password is defined and ranger_old_password != ranger_new_password }}"
+- debug:
+    var: update_ranger_password
+- name: Check current ranger admin password
+  block:
+    # we need to prepare basic auth header manually, otherwise some output date can be escaped
+    - name: Prepare basic auth
+      set_fact:
+        hdp_name_password: "{{ ranger_admin_user }}:{{ ranger_admin_password }}"
+      no_log: true
+    - name: Get current ranger user
+      uri:
+        url: "{{ load_balancer_url }}/service/xusers/users/userName/{{ ranger_modify_user }}"
+        validate_certs: no
+        force_basic_auth: yes
+        headers:
+          Authorization: "Basic {{ hdp_name_password | b64encode }}"
+          Content-Type: application/json
+          Accept: application/json
+        return_content: true
+        status_code: [200, 401]
+      no_log: true
+      register: user_output
+    - name: Determine is it possible to access ranger with hdp password
+      set_fact:
+        ranger_admin_password_is_active: "{{ user_output.status == 200 }}"
+    - debug:
+        msg: "It is possible to access ranger API with the user and password provided as current: {{ ranger_admin_password_is_active }}"
+  when: update_ranger_password
+- name: Update ranger password
+  block:
+    - name: Set response variable
+      set_fact:
+        user_body: "{{ user_output.content | from_json }}"
+      no_log: true
+    - name: Set user id variable
+      set_fact:
+        user_id: "{{ user_body.id }}"
+    - name: Prepare ranger password request
+      ansible.utils.update_fact:
+        updates:
+          - path: user_body.password
+            value: "{{ ranger_new_password }}"
+      no_log: true
+      register: user_body_updated
+    - name: Make update request for ranger password
+      uri:
+        url: "{{ load_balancer_url }}/service/xusers/secure/users/{{ user_id }}"
+        method: PUT
+        body: "{{ user_body_updated.user_body }}"
+        body_format: json
+        validate_certs: no
+        force_basic_auth: yes
+        headers:
+          Authorization: "Basic {{ hdp_name_password | b64encode }}"
+          Content-Type: application/json
+          Accept: application/json
+      no_log: true
+      register: result
+  when: ranger_admin_password_is_active is defined and ranger_admin_password_is_active
+- name: Check the expected ranger password
+  block:
+    # we need to prepare basic auth header manually, otherwise some output date can be escaped
+    - name: Prepare basic auth
+      set_fact:
+        expected_name_password: "{{ ranger_admin_user }}:{{ ranger_new_password }}"
+      no_log: true
+    - name: Check the ranger password
+      uri:
+        url: "{{ load_balancer_url }}/service/xusers/users/userName/{{ ranger_admin_user }}"
+        validate_certs: no
+        force_basic_auth: yes
+        headers:
+          Authorization: "Basic {{ expected_name_password | b64encode }}"
+      no_log: true
+  when: ranger_admin_user == ranger_modify_user

@@ -1,0 +1,4 @@
+{
+  "hostsToRemove" : [ {% for host in hosts_to_remove %}"{{ host }}"{% if not loop.last %},{% endif %}{% endfor %} ],
+  "deleteHosts": "{{ is_delete_hosts }}"
+}

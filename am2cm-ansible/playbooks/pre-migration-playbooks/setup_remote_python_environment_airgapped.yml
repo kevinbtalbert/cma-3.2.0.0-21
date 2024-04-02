@@ -1,0 +1,140 @@
+- name: Detect python versions and any previously installed virtualenvs
+  gather_facts: false
+  hosts: all
+  tags: setup-remote-python-environment
+  tasks:
+    # First, try to skip any hosts that already have custom_python_interpreter_type defined
+    - name: Skip the entire python version detection if custom_python_interpreter_type is already defined
+      block:
+        - name: If custom_python_interpreter_type is python, then add to the create_venv_here group
+          ansible.builtin.group_by:
+            key: create_venv_here
+          when: custom_python_interpreter_type == 'python'
+        - name: End detect where to install play here
+          ansible.builtin.meta: end_host
+      when: custom_python_interpreter_type is defined
+    # Next, try to detect if there's already a cma_venv on the remote (created by another run of CMA, we just haven't cached it here yet)
+    - name: Check whether remote cma venv already exists
+      block:
+        - name: Check remote_venv/bin/python
+          stat:
+            path: "{{ remote_venv_directory }}/bin/python"
+          register: cma_venv_stat
+          become: yes
+        - name: If remote_venv already exists
+          block:
+            # TODO validate against supported python version (2.7, 3.8, 3.9 right now)
+            - name: register existing cma_venv to host_vars
+              include_role:
+                name: create_host_vars_entries
+              vars:
+                entry_list:
+                  - {name: "ansible_python_interpreter",
+                     value: "{{ remote_venv_directory }}/bin/python"}
+                  - {name: "custom_python_interpreter_type",
+                     value: "venv"}
+            - name: Break from existing custom venv detection
+              ansible.builtin.meta: end_host
+          when: cma_venv_stat.stat.exists
+
+    # Finally, get existing python details (if python2 opt for installing python3 ourselves, if python3 use that for venv creation)
+    # NOTE python2 writes version to stderr
+    - name: Get existing python version
+      raw: >
+        python3 -V || python2 -V 2>&1 || python -V 2>&1
+      register: python_version
+      changed_when: false
+    - name: Set fact detected python version
+      set_fact:
+        host_python_version: "{{ python_version.stdout_lines | last | split | last }}"
+    - name: Detected python version on host
+      debug:
+        var: host_python_version
+
+    # TODO validate against supported python version (2.7, 3.8, 3.9 right now)
+
+    - name: Get existing python interpreter path and persist it into host_vars
+      block:
+        - name: Get existing python interpreter path
+          raw: >
+            which python{{ host_python_version | split('.') | first }}
+          register: python_path
+        - debug:
+            msg: "detected existing python interpreter path: {{ python_path.stdout_lines | last }}"
+        - name: Persist detected python path into ansible_python_interpreter variable
+          include_role:
+            name: create_host_vars_entries
+          vars:
+            entry_list:
+              - { name: "ansible_python_interpreter",
+                  value: "{{ python_path.stdout_lines | last }}" }
+              - { name: "custom_python_interpreter_type",
+                  value: "python" }
+    - name: Add all remaining hosts to create_venv_here group
+      ansible.builtin.group_by:
+        key: create_venv_here
+
+- name: Create venv on remote machines
+  hosts: create_venv_here
+  gather_facts: false
+  tags: setup-remote-python-environment
+  roles:
+    - get_control_node_ip_address
+    - get_host_python_version
+  tasks:
+    - name: Create cma_remote_root_dir
+      ansible.builtin.file:
+        path: "{{ cma_remote_root_dir }}"
+        state: directory
+      become: yes
+
+    - name: Create venv via shell
+      shell: |
+        if [ ! -f "{{ remote_venv_directory }}/bin/python" ]; then
+          if [ {{ host_python_version | split('.') | first }} -eq 2 ]; then
+            pip2 install --trusted-host {{ control_node_ip_address }} --index-url {{ pypi_index_url }} virtualenv
+            virtualenv -p {{ ansible_python_interpreter }} {{ remote_venv_directory }}
+          else
+            {{ ansible_python_interpreter }} -m venv {{ remote_venv_directory }}
+          fi
+          echo "remote venv created"
+        fi
+      vars:
+        pypi_index_url: "{{ pypi_webserver_protocol }}://{{ control_node_ip_address }}:{{ pypi_webserver_port }}"
+      register: shell_out
+      become: yes
+      changed_when: '"remote venv created" in shell_out.stdout'
+    - name: Create host_vars entries for freshly created venv
+      include_role:
+        name: create_host_vars_entries
+      vars:
+        entry_list:
+          - {name: "ansible_python_interpreter",
+             value: "{{ remote_venv_directory }}/bin/python"}
+          - {name: "custom_python_interpreter_type",
+             value: "venv"}
+
+- name: Install remote dependencies into virtualenvs on the remote hosts
+  hosts: all
+  tags: setup-remote-python-environment
+  gather_facts: false
+  roles:
+    - get_control_node_ip_address
+    - get_host_python_version
+  tasks:
+    - name: Upload remote requirements as requirements.txt to remote nodes
+      copy:
+        src: "{{ cma_root_dir }}/am2cm-ansible/python_requirements/remote_nodes_{{ python_major_minor_version }}_requirements.txt"
+        dest: "{{ cma_remote_root_dir }}/requirements.txt"
+      vars:
+        python_major_minor_version: "{{ ( host_python_version | split('.') )[0:2] | join('.') }}"
+      become: yes
+
+    - name: Install remote requirements using pip pointed to CMA pypi
+      pip:
+        virtualenv: "{{ remote_venv_directory }}"
+        requirements: "{{ cma_remote_root_dir }}/requirements.txt"
+        extra_args: "--trusted-host {{ control_node_ip_address }} --index-url {{ pypi_index_url }}"
+      vars:
+        pypi_index_url: "{{ pypi_webserver_protocol }}://{{ control_node_ip_address }}:{{ pypi_webserver_port }}"
+      become: yes

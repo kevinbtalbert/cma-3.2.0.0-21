@@ -1,0 +1,5 @@
+target_adls_credential_name: ""
+target_adls_storage_account_name: ""
+target_adls_client_id: ""
+target_adls_client_key: ""
+target_adls_tenant_id: ""

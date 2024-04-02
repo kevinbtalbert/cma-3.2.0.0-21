@@ -1,0 +1,2 @@
+# options: mysql, mariadb, psql, oracle
+customer_database_type: mysql

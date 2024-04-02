@@ -1,0 +1,21 @@
+---
+- name: Download jdbc divers
+  hosts: localhost
+  gather_facts: false
+  tags: download_jdbc_drivers
+  tasks:
+    - name: "Create {{ jdbc_control_node_directory }} directory, if not exists"
+      file:
+        state: directory
+        path: "{{ jdbc_control_node_directory }}"
+    - name: Download JDBC drivers
+      include_role:
+        name: download_jdbc_drivers
+      vars:
+        jdbc_dir: "{{ jdbc_control_node_directory }}"
+        database_type: "{{ item }}"
+        jdbc_driver_url: "{{ lookup('vars', 'jdbc_driver_' + item + '_url') }}"
+      loop:
+        - mysql
+        - postgresql
+        - oracle

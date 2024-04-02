@@ -1,0 +1,21 @@
+- name: Update safety valve
+  block:
+    - name: Do update
+      update_safety_valve:
+        cm_configuration: "{{ cm_configuration | default(cm_configuration_dictionary) }}"
+        service_name: "{{ service_name }}"
+        configuration_type: "{{ configuration_type }}"
+        role_name: "{{ cm_role_name | default(omit) }}"
+        role_display_name: "{{ role_display_name | default(omit) }}"
+        configuration_format: "{{ configuration_format }}"
+        name: "{{ name }}"
+        value: "{{ value }}"
+        state: "{{ state }}"
+        requires_parent_xml_tag: "{{ requires_parent_xml_tag | default(False) }}"
+      register: safety_valve_result
+
+    - name: Print response
+      debug:
+        var: safety_valve_result
+  delegate_to: localhost
+  run_once: True

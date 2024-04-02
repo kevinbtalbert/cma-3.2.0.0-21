@@ -1,0 +1,19 @@
+- name: Query the current value of 'zk_server_java_opts'
+  include_role:
+    name: query_configuration_from_service
+  vars:
+    configuration_name: "zk_server_java_opts"
+
+- name: Remove the '-Dzookeeper.skipACL=yes' string from 'zk_server_java_opts' and update the property
+  include_role:
+    name: update_configuration_in_role_configuration_group
+  vars:
+    role_configuration_group_name: "zookeeper-SERVER"
+    configuration_name: "zk_server_java_opts"
+    configuration_value: "{{ zk_server_java_opts | regex_replace('-Dzookeeper.skipACL=yes', '') }}"
+  register: update_configuration_result
+
+- name: Restart Zookeeper in order for the service to pick up new configurations; skip if value wasn't updated
+  include_role:
+    name: restart_service
+  when: update_configuration_result.changed

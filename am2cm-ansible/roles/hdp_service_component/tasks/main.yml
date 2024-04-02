@@ -1,0 +1,49 @@
+---
+
+- block:
+  - name: "Stopping {{ component_name }} of {{ service_name }} in Ambari"
+    stop_hdp_service_component:
+      ambari_configuration: "{{ ambari_configuration_dictionary }}"
+      service_name: "{{ service_name }}"
+      component_name: "{{ component_name }}"
+      wait_for_complete: "{{ wait_for_complete | default(omit) }}"
+    register: stop_result
+
+  - set_fact:
+      "{{ component_name }}_stop_tracking_url": "{{ stop_result['tracking_url'] }}"
+    delegate_facts: true
+
+  - name: Print response
+    debug:
+      var: stop_result
+
+  when: (action == 'stop') or (action == 'restart')
+  run_once: true
+  delegate_to: localhost
+
+- name: "Wait {{waiting_time}} sec"
+  wait_for:
+    timeout: "{{ waiting_time }}"
+  when: action == 'restart'
+  delegate_to: localhost
+  run_once: true
+
+- block:
+  - name: "Starting {{ component_name }} of {{ service_name }} in Ambari"
+    start_hdp_service_component:
+      ambari_configuration: "{{ ambari_configuration_dictionary }}"
+      service_name: "{{ service_name }}"
+      component_name: "{{ component_name }}"
+      wait_for_complete: "{{ wait_for_complete | default(omit) }}"
+    register: start_result
+
+  - set_fact:
+      "{{ component_name }}_start_tracking_url": "{{ start_result['tracking_url'] }}"
+    delegate_facts: true
+
+  - name: Print response
+    debug:
+      var: start_result
+  when: (action == 'start') or (action == 'restart')
+  run_once: true
+  delegate_to: localhost

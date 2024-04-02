@@ -1,0 +1,14 @@
+---
+- name: check max renewable life on kerberos server node
+  hosts: kdc_server
+  tags: check-krb-renew-lifetime
+  gather_facts: false
+  roles:
+    - { role: check_kerberos_renew_lifetime, shell_command: "grep 'max_renewable_life' /var/kerberos/krb5kdc/kdc.conf" }
+
+- name: check kerberos renew lifetime on all nodes
+  hosts: all
+  tags: check-krb-renew-lifetime
+  gather_facts: false
+  roles:
+    - { role: check_kerberos_renew_lifetime, shell_command: "grep 'renew_lifetime' /etc/krb5.conf" }

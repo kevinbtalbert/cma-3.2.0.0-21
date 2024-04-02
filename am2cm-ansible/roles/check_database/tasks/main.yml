@@ -1,0 +1,3 @@
+- name: Get DB version
+  include_tasks:
+    file: "{{ customer_database_type }}.yml"

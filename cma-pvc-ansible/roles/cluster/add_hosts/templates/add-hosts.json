@@ -1,0 +1,9 @@
+{
+  "hostNames" : [ {% for host in groups['pvc_cluster'] %}"{{ host }}"{% if not loop.last %},{% endif %}{% endfor %} ],
+  "sshPort" : 22,
+  "userName" : "{{ ansible_user }}",
+  "password": "{{ ansible_ssh_pass }}",
+  "javaInstallStrategy" : "NONE",
+  "unlimitedJCE" : false,
+  "cmRepoUrl": "{{ cm_repo_url }}"
+}

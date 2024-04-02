@@ -1,0 +1,19 @@
+{
+  "items" : [
+    {
+      "name" : "{{ add_worker_template_name }}",
+      "clusterRef" : {
+        "clusterName" : "{{ pvc_cluster_name }}",
+        "displayName" : "{{ pvc_cluster_displayname }}"
+      },
+      "roleConfigGroupRefs" : [
+        {
+          "roleConfigGroupName" : "{{ ecs_agent_role_config_name }}"
+        },
+        {
+          "roleConfigGroupName" : "{{ docker_server_role_config_name }}"
+        }
+      ]
+    }
+  ]
+}

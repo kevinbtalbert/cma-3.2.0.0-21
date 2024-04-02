@@ -1,0 +1,67 @@
+commandClasses:
+  - id: DATA_SCAN
+    name: Data Scan
+  - id: WORKFLOW_SCAN
+    name: Workflow Scan
+
+commandTypes:
+  - name: Hdfs data scan
+    type: HDFS_DATA_SCAN
+    commandClass: DATA_SCAN
+    sourceTypes:
+      - CDH5
+      - CDH6
+      - CDP_PVC_BASE
+
+  - name: Hive table scan
+    type: HIVE_TABLE_SCAN
+    commandClass: DATA_SCAN
+    sourceTypes:
+      - CDH5
+      - CDH6
+      - CDP_PVC_BASE
+
+  - name: Hive table check
+    type: HIVE_SRE_SCAN
+    commandClass: DATA_SCAN
+    sourceTypes:
+      - CDH5
+      - CDH6
+      - CDP_PVC_BASE
+    shortDescription:
+      'Analyzing the hive tables with the HIVE SRE tool'
+    description:
+      'Analyzing the hive tables with the HIVE SRE tool'
+
+  - name: HBase table scan
+    type: HBASE_TABLE_SCAN
+    commandClass: DATA_SCAN
+    sourceTypes:
+      - CDH5
+      - CDH6
+      - CDP_PVC_BASE
+
+  - name: Hive workflow scan
+    type: HIVE_WF_SCAN
+    commandClass: WORKFLOW_SCAN
+    sourceTypes:
+      - CDH5
+      - CDH6
+      - CDP_PVC_BASE
+
+  - name: Oozie workflow scan
+    type: OOZIE_WF_SCAN
+    commandClass: WORKFLOW_SCAN
+    sourceTypes:
+      - CDH5
+      - CDH6
+      - CDP_PVC_BASE
+
+commandDefinitions:
+  - commands/data-scan-cdh6.yml
+  - commands/data-scan-cdh5.yml
+  - commands/data-scan-cdp-pvc-base.yml
+
+  - commands/workflow-scan-cdh6.yml
+  - commands/workflow-scan-cdh5.yml
+  - commands/workflow-scan-cdp-pvc-base.yml

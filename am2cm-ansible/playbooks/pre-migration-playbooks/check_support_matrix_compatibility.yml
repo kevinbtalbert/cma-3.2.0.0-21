@@ -1,0 +1,64 @@
+---
+- name: Retrieve support matrix
+  hosts: all
+  tags: check-support-matrix
+  gather_facts: false
+  tasks:
+    - block:
+        - name: Get target version
+          set_fact:
+            target_version: "{{ am2cm_target_version | regex_search('.[1-9]000$') | ternary( am2cm_target_version | regex_replace( '.[1-9]000$' , ' SP' + (am2cm_target_version | split('.') | last)[0] ) , am2cm_target_version) }}"
+        - name: Display target version
+          debug:
+            msg: "{{ target_version }}"
+        - name: Get support matrix
+          uri:
+            url: "{{ support_matrix }}-{{ target_version | urlencode }}"
+          register: support_matrix_local
+      delegate_to: "{{ groups['server'][0] }}"
+      run_once: true
+    - set_fact:
+        support_matrix: "{{ support_matrix_local }}"
+
+- name: Check if OS is compatible
+  hosts: all
+  tags: check-support-matrix
+  gather_facts: true
+  vars:
+    os: "{{ ansible_facts['distribution'] }}-{{ ansible_facts['distribution_version'] }}"
+  tasks:
+    - name: Display OS
+      debug:
+        msg: "{{ os }}"
+    - set_fact:
+        result: true
+      when: (item.description.lower() == os.lower())
+      with_items: "{{ support_matrix['json']['operatingSystems'] }}"
+    - assert:
+        that: result | default(false) is true
+        fail_msg: "Unsupported OS"
+        success_msg: "Supported OS"
+
+- name: Check if Java version is compatible
+  hosts: all
+  tags: check-support-matrix
+  gather_facts: false
+  tasks:
+    - name: Get Java version
+      command: "java -version"
+      register: java_ver
+    - name: Display Java version
+      debug:
+        msg: "{{ java_ver['stderr_lines'][0] }}"
+    - name: Check Java version
+      check_java:
+        java_version: "{{ java_ver['stderr_lines'][0] }}"
+        java_environment: "{{ java_ver['stderr_lines'][1] }}"
+        support_matrix: "{{ support_matrix['json'] }}"
+
+- name: Check if DB is compatible
+  hosts: database
+  tags: check-support-matrix
+  gather_facts: false
+  roles:
+    - check_database

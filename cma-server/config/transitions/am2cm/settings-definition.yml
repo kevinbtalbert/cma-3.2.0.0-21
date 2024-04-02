@@ -1,0 +1,601 @@
+---
+type: INPLACE_ONE_STAGE_UPGRADE
+sourceClusterType: HDP3
+targetClusterType: CDP_PVC_BASE
+version: 1
+uiFieldTypes:
+  text:
+    type: text
+    size: 200
+  password:
+    type: password
+    size: 200
+  combo:
+    type: combo
+    size: 200
+  checkbox:
+    type: checkbox
+    size: 200
+  url-text:
+    type: text
+    size: 410
+  edit-text:
+    type: edit-text
+    size: 200
+  disabled-text:
+    type: text
+    size: 200
+    editable: false
+  target-full-version-text:
+    type: edit-text
+    size: 300
+  csd-path-text:
+    type: text
+    size: 500
+  accumulo-full-version-text:
+    type: edit-text
+    size: 250
+  service-toggle:
+    type: service-toggle
+    size: 200
+
+userSettings:
+  - settings:
+      "cluster.name":
+        value: ${targetClusterVars['id']}
+        uiField:
+          label: "Cluster name"
+          type: disabled-text
+      "cluster.displayname":
+        value: ${targetClusterVars['id']}
+        uiField:
+          label: "Cluster display name"
+          type: text
+      "ambari.cluster.name":
+        value: ${sourceClusterVars['id']}
+        uiField:
+          label: "Ambari cluster name"
+          type: disabled-text
+      "cluster.originating_source":
+        value: "AM2CM version 2.6"
+        uiField:
+          label: "Originating Source"
+          type: disabled-text
+      "cluster.version":
+        value: ${targetVersionVars['default']['version']}
+        uiField:
+          label: "Target version"
+          type: combo
+      "cluster.fullversion":
+        value: ${targetVersionVars['default']['fullVersion']}
+        uiField:
+          label: "Target full version"
+          type: target-full-version-text
+      "cluster.gplversion":
+        value: ${targetVersionVars['default']['gplVersion']}
+        uiField:
+          label: "Target GPL version"
+          type: target-full-version-text
+      "cm.rolegroups.enable":
+        value: true
+        uiField:
+          label: "Enable Role Groups"
+          type: checkbox
+      "ambari.hdp.cleanup":
+        value: false
+        uiField:
+          label: "Clean up HDP bits after transition finalization"
+          type: checkbox
+      "paywall_user":
+        enabled: ${ sourceServiceVars['accumulo'].exist }
+        value: ""
+        uiField:
+          label: "Paywall user"
+          type: text
+      "paywall_password":
+        enabled: ${ sourceServiceVars['accumulo'].exist }
+        value: ""
+        uiField:
+          label: "Paywall password"
+          type: text
+
+
+  - serviceName: HIVE
+    when: ${ sourceServiceVars['hive'].exist }
+    settings:
+      "SERVICE_HIVE_hive_jdbc_url_override":
+        value: ${ sourceClusterConfigVars['HIVE::hive-site::javax.jdo.option.ConnectionURL'] }
+        uiField:
+          label: "Hive Jdbc url"
+          type: url-text
+
+      "SERVICE_HIVE_hive_metastore_database_password":
+        uiField:
+          label: "Hive db password"
+          type: password
+
+
+  - serviceName: OOZIE
+    when: ${ sourceServiceVars['oozie'].exist }
+    settings:
+      "SERVICE_OOZIE_oozie_service_JPAService_jdbc_url":
+        value: ${ sourceClusterConfigVars['OOZIE::oozie-site::oozie.service.JPAService.jdbc.url'] }
+        uiField:
+          label: "Oozie Jdbc url"
+          type: url-text
+
+      "SERVICE_OOZIE_oozie_database_password":
+        uiField:
+          label: "Oozie db password"
+          type: password
+
+  - serviceName: RANGER
+    when: ${ sourceServiceVars['ranger'].exist }
+    settings:
+      "SERVICE_RANGER_ranger_jdbc_url_override":
+        value: ${ sourceClusterConfigVars['RANGER::ranger-admin-site::ranger.jpa.jdbc.url'] }
+        uiField:
+          label: "Ranger JDBC url"
+          type: url-text
+      "SERVICE_RANGER_dba_password":
+        uiField:
+          label: "Ranger DBA user password"
+          type: password
+      "SERVICE_RANGER_ranger_database_password":
+        uiField:
+          label: "Ranger db password"
+          type: password
+      "SERVICE_RANGER_rangeradmin_user_password":
+        uiField:
+          label: "RangerAdmin password"
+          type: password
+      "SERVICE_RANGER_rangerusersync_user_password":
+        uiField:
+          label: "RangerUserSync password"
+          type: password
+      "SERVICE_RANGER_ranger_usersync_ldap_ldapbindpassword":
+        uiField:
+          label: "RangerUserSync LDAP bind password"
+          type: password
+      "SERVICE_RANGER_rangertagsync_user_password":
+        uiField:
+          label: "RangerTagSync password"
+          type: password
+      "SERVICE_RANGER_rangerkeyadmin_user_password":
+        uiField:
+          label: "RangerKeyAdmin password"
+          type: password
+
+  - serviceName: RANGER_KMS
+    when: ${ sourceServiceVars['ranger_kms'].exist }
+    settings:
+      "SERVICE_RANGER_KMS_rangerkms_jdbc_url_override":
+        value: ${ sourceClusterConfigVars['RANGER_KMS::dbks-site::ranger.ks.jpa.jdbc.url'] }
+        uiField:
+          label: "Ranger KMS JDBC url"
+          type: url-text
+      "SERVICE_RANGER_KMS_dba_password":
+        uiField:
+          label: "Ranger KMS DBA user password"
+          type: password
+      "SERVICE_RANGER_KMS_ranger_kms_database_password":
+        uiField:
+          label: "RangerKMS db password"
+          type: password
+      "SERVICE_RANGER_KMS_ranger_kms_master_key_password":
+        uiField:
+          label: "RangerKMS master key password"
+          type: password
+
+  - serviceName: KNOX
+    when: ${ sourceServiceVars['knox'].exist }
+    settings:
+      "SERVICE_KNOX_gateway_master_secret":
+        uiField:
+          label: "Knox gateway master secret"
+          type: password
+
+  - serviceName: KERBEROS
+    when: ${ sourceServiceVars['kerberos'].exist }
+    settings:
+      "kerberos_admin_user":
+        uiField:
+          label: "Kerberos admin user"
+          type: text
+      "kerberos_admin_password":
+        uiField:
+          label: "Kerberos admin password"
+          type: password
+      "kerberos_kadmin_binary_path":
+        value: /usr/sbin/kadmin.local
+        uiField:
+          label: "Path to 'kadmin' binary on KDC host"
+          type: text
+
+  - serviceName: ACCUMULO
+    when: ${ sourceServiceVars['accumulo'].exist }
+    settings:
+      "SERVICE_ACCUMULO_ON_CDP_deploy_accumulo":
+        value: ${ sourceServiceVars['accumulo'].exist }
+        uiField:
+          label: "Deploy accumulo"
+          type: service-toggle
+      "cluster.accumulo_version":
+        value: 1.10.3
+        uiField:
+          label: "Target Accumulo version"
+          type: combo
+      "accumulo_csd_path":
+        value: https://cloudera-build-us-west-1.vpc.cloudera.com/s3/build/43785444/accumulo-on-cdp/1.10.3_7.1.7.2000.0/csd/ACCUMULO_CDP-1.10.3_7.1.7.2000.0.jar
+        uiField:
+          label: "Accumulo CSD path"
+          type: csd-path-text
+      "accumulo_parcel_path":
+        value: https://cloudera-build-us-west-1.vpc.cloudera.com/s3/build/43785444/accumulo-on-cdp/1.10.3_7.1.7.2000.0/parcels/
+        uiField:
+          label: "Accumulo parcel path"
+          type: text
+      "cluster.accumulo_full_version":
+        value: 1.10.3_7.1.7.2000.0.p0.43785444
+        uiField:
+          label: "Target Accumulo full version"
+          type: accumulo-full-version-text
+      "SERVICE_ACCUMULO_ON_CDP_accumulo_root_password":
+        uiField:
+          label: "Accumulo root password"
+          type: password
+      "SERVICE_ACCUMULO_ON_CDP_accumulo_instance_secret":
+        uiField:
+          label: "Accumulo instance secret"
+          type: password
+
+uiFieldGroups:
+  1:
+    - cluster.name
+    - cluster.displayname
+    - source.cluster.name
+    - cluster.originating_source
+  2:
+    - cluster.version
+    - cluster.fullversion
+    - cluster.gplversion
+  3:
+    - cm.rolegroups.enable
+  4:
+    - ambari.hdp.cleanup
+  5:
+    - SERVICE_HIVE_hive_jdbc_url_override
+    - SERVICE_HIVE_hive_metastore_database_password
+  6:
+    - SERVICE_OOZIE_oozie_service_JPAService_jdbc_url
+    - SERVICE_OOZIE_oozie_database_password
+  7:
+    - SERVICE_RANGER_dba_password
+    - SERVICE_RANGER_ranger_database_password
+    - SERVICE_RANGER_rangeradmin_user_password
+    - SERVICE_RANGER_rangerusersync_user_password
+    - SERVICE_RANGER_ranger_usersync_ldap_ldapbindpassword
+    - SERVICE_RANGER_rangertagsync_user_password
+    - SERVICE_RANGER_rangerkeyadmin_user_password
+  8:
+    - SERVICE_RANGER_KMS_dba_password
+    - SERVICE_RANGER_KMS_ranger_kms_database_password
+    - SERVICE_RANGER_KMS_ranger_kms_master_key_password
+  9:
+    - SERVICE_KNOX_gateway_master_secret
+  10:
+    - kerberos_admin_user
+    - kerberos_admin_password
+    - kerberos_kadmin_binary_path
+  11:
+    - SERVICE_ACCUMULO_ON_CDP_deploy_accumulo
+    - cluster.accumulo_version
+    - accumulo_csd_path
+    - accumulo_parcel_path
+    - cluster.accumulo_full_version
+    - SERVICE_ACCUMULO_ON_CDP_accumulo_root_password
+    - SERVICE_ACCUMULO_ON_CDP_accumulo_instance_secret
+
+
+---
+type: INPLACE_ONE_STAGE_UPGRADE
+sourceClusterType: HDP2
+targetClusterType: CDP_PVC_BASE
+version: 1
+uiFieldTypes:
+  text:
+    type: text
+    size: 200
+  password:
+    type: password
+    size: 200
+  combo:
+    type: combo
+    size: 200
+  checkbox:
+    type: checkbox
+    size: 200
+  url-text:
+    type: text
+    size: 410
+  edit-text:
+    type: edit-text
+    size: 200
+  disabled-text:
+    type: text
+    size: 200
+    editable: false
+  target-full-version-text:
+    type: edit-text
+    size: 300
+  csd-path-text:
+    type: text
+    size: 500
+  accumulo-full-version-text:
+    type: edit-text
+    size: 250
+  service-toggle:
+    type: service-toggle
+    size: 200
+
+userSettings:
+  - settings:
+      "cluster.name":
+        value: ${targetClusterVars['id']}
+        uiField:
+          label: "Cluster name"
+          type: disabled-text
+      "cluster.displayname":
+        value: ${targetClusterVars['id']}
+        uiField:
+          label: "Cluster display name"
+          type: text
+      "ambari.cluster.name":
+        value: ${sourceClusterVars['id']}
+        uiField:
+          label: "Ambari cluster name"
+          type: disabled-text
+      "cluster.originating_source":
+        value: "AM2CM version 2.6"
+        uiField:
+          label: "Originating Source"
+          type: disabled-text
+      "cluster.version":
+        value: ${targetVersionVars['default']['version']}
+        uiField:
+          label: "Target version"
+          type: combo
+      "cluster.fullversion":
+        value: ${targetVersionVars['default']['fullVersion']}
+        uiField:
+          label: "Target full version"
+          type: target-full-version-text
+      "cluster.gplversion":
+        value: ${targetVersionVars['default']['gplVersion']}
+        uiField:
+          label: "Target GPL version"
+          type: target-full-version-text
+      "cm.rolegroups.enable":
+        value: true
+        uiField:
+          label: "Enable Role Groups"
+          type: checkbox
+      "paywall_user":
+        enabled: ${ sourceServiceVars['accumulo'].exist }
+        value: ""
+        uiField:
+          label: "Paywall user"
+          type: text
+      "paywall_password":
+        enabled: ${ sourceServiceVars['accumulo'].exist }
+        value: ""
+        uiField:
+          label: "Paywall password"
+          type: text
+      "ambari.hdp.cleanup":
+        value: false
+        uiField:
+          label: "Clean up HDP bits after transition finalization"
+          type: checkbox
+
+  - serviceName: HIVE
+    when: ${ sourceServiceVars['hive'].exist }
+    settings:
+      "SERVICE_HIVE_hive_jdbc_url_override":
+        value: ${ sourceClusterConfigVars['HIVE::hive-site::javax.jdo.option.ConnectionURL'] }
+        uiField:
+          label: "Hive Jdbc url"
+          type: url-text
+
+      "SERVICE_HIVE_hive_metastore_database_password":
+        uiField:
+          label: "Hive db password"
+          type: password
+
+
+  - serviceName: OOZIE
+    when: ${ sourceServiceVars['oozie'].exist }
+    settings:
+      "SERVICE_OOZIE_oozie_service_JPAService_jdbc_url":
+        value: ${ sourceClusterConfigVars['OOZIE::oozie-site::oozie.service.JPAService.jdbc.url'] }
+        uiField:
+          label: "Oozie Jdbc url"
+          type: url-text
+
+      "SERVICE_OOZIE_oozie_database_password":
+        uiField:
+          label: "Oozie db password"
+          type: password
+
+  - serviceName: RANGER
+    when: ${ sourceServiceVars['ranger'].exist }
+    settings:
+      "SERVICE_RANGER_ranger_jdbc_url_override":
+        value: ${ sourceClusterConfigVars['RANGER::ranger-admin-site::ranger.jpa.jdbc.url'] }
+        uiField:
+          label: "Ranger JDBC url"
+          type: url-text
+      "SERVICE_RANGER_dba_password":
+        uiField:
+          label: "Ranger DBA user password"
+          type: password
+      "SERVICE_RANGER_ranger_database_password":
+        uiField:
+          label: "Ranger db password"
+          type: password
+      "current_rangeradmin_password":
+        uiField:
+          label: "Current RangerAdmin password"
+          type: password
+      "SERVICE_RANGER_rangeradmin_user_password":
+        uiField:
+          label: "RangerAdmin password"
+          type: password
+      "SERVICE_RANGER_rangerusersync_user_password":
+        uiField:
+          label: "RangerUserSync password"
+          type: password
+      "SERVICE_RANGER_ranger_usersync_ldap_ldapbindpassword":
+        uiField:
+          label: "RangerUserSync LDAP bind password"
+          type: password
+      "SERVICE_RANGER_rangertagsync_user_password":
+        uiField:
+          label: "RangerTagSync password"
+          type: password
+      "SERVICE_RANGER_rangerkeyadmin_user_password":
+        uiField:
+          label: "RangerKeyAdmin password"
+          type: password
+
+  - serviceName: RANGER_KMS
+    when: ${ sourceServiceVars['ranger_kms'].exist }
+    settings:
+      "SERVICE_RANGER_KMS_rangerkms_jdbc_url_override":
+        value: ${ sourceClusterConfigVars['RANGER_KMS::dbks-site::ranger.ks.jpa.jdbc.url'] }
+        uiField:
+          label: "Ranger KMS JDBC url"
+          type: url-text
+      "SERVICE_RANGER_KMS_dba_password":
+        uiField:
+          label: "Ranger KMS DBA user password"
+          type: password
+      "SERVICE_RANGER_KMS_ranger_kms_database_password":
+        uiField:
+          label: "RangerKMS db password"
+          type: password
+      "SERVICE_RANGER_KMS_ranger_kms_master_key_password":
+        uiField:
+          label: "RangerKMS master key password"
+          type: password
+
+  - serviceName: KNOX
+    when: ${ sourceServiceVars['knox'].exist }
+    settings:
+      "SERVICE_KNOX_gateway_master_secret":
+        uiField:
+          label: "Knox gateway master secret"
+          type: password
+
+  - serviceName: KERBEROS
+    when: ${ sourceServiceVars['kerberos'].exist }
+    settings:
+      "kerberos_admin_user":
+        uiField:
+          label: "Kerberos admin user"
+          type: text
+      "kerberos_admin_password":
+        uiField:
+          label: "Kerberos admin password"
+          type: password
+      "kerberos_kadmin_binary_path":
+        value: /usr/sbin/kadmin.local
+        uiField:
+          label: "Path to 'kadmin' binary on KDC host"
+          type: text
+
+  - serviceName: ACCUMULO
+    when: ${ sourceServiceVars['accumulo'].exist }
+    settings:
+      "SERVICE_ACCUMULO_ON_CDP_deploy_accumulo":
+        value: ${ sourceServiceVars['accumulo'].exist }
+        uiField:
+          label: "Deploy accumulo"
+          type: service-toggle
+      "cluster.accumulo_version":
+        value: 1.10.3
+        uiField:
+          label: "Target Accumulo version"
+          type: combo
+      "accumulo_csd_path":
+        value: https://cloudera-build-us-west-1.vpc.cloudera.com/s3/build/43785444/accumulo-on-cdp/1.10.3_7.1.7.2000.0/csd/ACCUMULO_CDP-1.10.3_7.1.7.2000.0.jar
+        uiField:
+          label: "Accumulo CSD path"
+          type: csd-path-text
+      "accumulo_parcel_path":
+        value: https://cloudera-build-us-west-1.vpc.cloudera.com/s3/build/43785444/accumulo-on-cdp/1.10.3_7.1.7.2000.0/parcels/
+        uiField:
+          label: "Accumulo parcel path"
+          type: text
+      "cluster.accumulo_full_version":
+        value: 1.10.3_7.1.7.2000.0.p0.43785444
+        uiField:
+          label: "Target Accumulo full version"
+          type: accumulo-full-version-text
+      "SERVICE_ACCUMULO_ON_CDP_accumulo_root_password":
+        uiField:
+          label: "Accumulo root password"
+          type: password
+      "SERVICE_ACCUMULO_ON_CDP_accumulo_instance_secret":
+        uiField:
+          label: "Accumulo instance secret"
+          type: password
+
+uiFieldGroups:
+  1:
+    - cluster.name
+    - cluster.displayname
+    - source.cluster.name
+    - cluster.originating_source
+  2:
+    - cluster.version
+    - cluster.fullversion
+    - cluster.gplversion
+  3:
+    - cm.rolegroups.enable
+  4:
+    - ambari.hdp.cleanup
+  5:
+    - SERVICE_HIVE_hive_jdbc_url_override
+    - SERVICE_HIVE_hive_metastore_database_password
+  6:
+    - SERVICE_OOZIE_oozie_service_JPAService_jdbc_url
+    - SERVICE_OOZIE_oozie_database_password
+  7:
+    - SERVICE_RANGER_dba_password
+    - SERVICE_RANGER_ranger_database_password
+    - current_rangeradmin_password
+    - SERVICE_RANGER_rangeradmin_user_password
+    - SERVICE_RANGER_rangerusersync_user_password
+    - SERVICE_RANGER_ranger_usersync_ldap_ldapbindpassword
+    - SERVICE_RANGER_rangertagsync_user_password
+    - SERVICE_RANGER_rangerkeyadmin_user_password
+  8:
+    - SERVICE_RANGER_KMS_rangerkms_jdbc_url_override
+    - SERVICE_RANGER_KMS_dba_password
+    - SERVICE_RANGER_KMS_ranger_kms_database_password
+    - SERVICE_RANGER_KMS_ranger_kms_master_key_password
+  9:
+    - SERVICE_KNOX_gateway_master_secret
+  10:
+    - kerberos_admin_user
+    - kerberos_admin_password
+    - kerberos_kadmin_binary_path
+  11:
+    - SERVICE_ACCUMULO_ON_CDP_deploy_accumulo
+    - cluster.accumulo_version
+    - accumulo_csd_path
+    - accumulo_parcel_path
+    - cluster.accumulo_full_version
+    - SERVICE_ACCUMULO_ON_CDP_accumulo_root_password
+    - SERVICE_ACCUMULO_ON_CDP_accumulo_instance_secret

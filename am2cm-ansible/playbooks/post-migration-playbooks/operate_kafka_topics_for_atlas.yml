@@ -1,0 +1,106 @@
+---
+- name: Get kafka broker host
+  hosts: localhost
+  tags: atlas-post-migration
+  gather_facts: false
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  roles:
+    - { role: get_hostnames_where_role_group_is_located, role_group_filter: KAFKA_BROKER }
+
+- name: Create kafka topics for atlas
+  hosts: KAFKA_BROKER[0]
+  gather_facts: False
+  tags: atlas-post-migration
+  roles:
+    - { role: query_configuration_from_service, service_name: kafka, configuration_name: kerberos_princ_name,
+        configuration_type: SERVICE}
+    - { role: query_configuration_from_service, service_name: kafka, configuration_name: ssl_enabled,
+        configuration_type: ROLE, role_name_filter: "kafka-KAFKA_BROKER" }
+    - { role: query_configuration_from_service, service_name: kafka, configuration_name: ssl_port,
+        configuration_type: ROLE, role_name_filter: "kafka-KAFKA_BROKER" }
+    - { role: query_configuration_from_service, service_name: kafka, configuration_name: port,
+        configuration_type: ROLE, role_name_filter: "kafka-KAFKA_BROKER" }
+    - { role: get_hostnames_where_role_group_is_located, role_group_filter: "kafka" }
+  vars:
+    kafka_command_config_fle: "/tmp/kafka_command.config"
+  tasks:
+    - name: Resolve principal naname
+      set_fact:
+        kafka_principal: "{{ kerberos_princ_name }}/{{ inventory_hostname }}@{{ kerberos_realm_name }}"
+
+    - name: Download Kafka service keytab
+      vars:
+        principal_name: "{{ kafka_principal }}"
+      include_role:
+        name: get_cm_service_keytab
+
+    - name: Get kafka broker port
+      set_fact:
+        kafka_broker_port: "{{ ssl_port if ssl_enabled else port }}"
+
+    - name: Create command config file
+      copy:
+        content: ""
+        dest: "{{ kafka_command_config_fle }}"
+        group: "hadoop"
+        owner: "{{ kafka_user_name }}"
+        mode: 0400
+
+    - name: Add kafka SSL parameters
+      block:
+        - name: Add security protocol
+          lineinfile:
+            path: "{{ kafka_command_config_fle }}"
+            line: "security.protocol=SASL_SSL"
+        - name: Add truststore location
+          lineinfile:
+            path: "{{ kafka_command_config_fle }}"
+            line: "ssl.truststore.location={{ global_truststore_path }}"
+        - name: Get global_truststore_password if not defined
+          import_role:
+            name: get_global_truststore_password
+          delegate_to: localhost
+        - name: Add truststore password
+          lineinfile:
+            path: "{{ kafka_command_config_fle }}"
+            line: "ssl.truststore.password={{ global_truststore_password }}"
+      when: ssl_enabled
+
+    - name: Add kafka kerberos parameters
+      block:
+        - name: Add kafka user
+          lineinfile:
+            path: "{{ kafka_command_config_fle }}"
+            line: "sasl.kerberos.service.name={{ kerberos_princ_name }}"
+        - name: Add kafka JAAS
+          lineinfile:
+            path: "{{ kafka_command_config_fle }}"
+            line: |
+              sasl.jaas.config=com.sun.security.auth.module.Krb5LoginModule required \
+                  useKeyTab=true \
+                  storeKey=true \
+                  keyTab="{{ cm_service_keytab_filename }}" \
+                  principal="{{ kafka_principal }}";
+      when: kerberos_is_active
+
+    - name: Run kafka topics creation script
+      loop:
+        - topic_name: ATLAS_HOOK
+          extra_params: "--config cleanup.policy=delete --config retention.ms=2678400000"
+        - topic_name: ATLAS_ENTITIES
+          extra_params: ""
+        - topic_name: ATLAS_SPARK_HOOK
+          extra_params: ""
+      include_role:
+        name: create_kafka_topic
+      vars:
+        kafka_brokers: "{{ groups['kafka'] | join(':' + kafka_broker_port + ',') + ':' + kafka_broker_port }}"
+        topic_to_create: "{{ item.topic_name }}"
+        extra_params: "{{ item.extra_params }}"
+        command_config: "{{ kafka_command_config_fle }}"
+    - name: Remove kafka config file
+      file:
+        path: "{{ kafka_command_config_fle }}"
+        state: absent

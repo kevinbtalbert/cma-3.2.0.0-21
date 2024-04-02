@@ -1,0 +1,64 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+
+- name: Create Cloudera Data Engineering
+  hosts: cloudera_manager[0]
+  tags: create-cde-service
+  gather_facts: false
+  tasks:
+    - name: create CDEs
+      include_role:
+        name: cde/create_cde
+
+
+- name: Create Virtual Clusters in CDE
+  hosts: cloudera_manager[0]
+  tags: create-cde-vc
+  gather_facts: false
+  tasks:
+    - name: create CDE VCs
+      include_role:
+        name: cde/create_cde_vc
+      with_items: "{{ virtual_clusters }}"
+      vars:
+        virtual_cluster: "{{ item }}"
+
+
+- name: Sign CDE Certs
+  hosts: localhost
+  tags: sign-cde-vc-certs
+  gather_facts: false
+  tasks:
+    - name: sign certificates
+      include_role:
+        name: cde/sign_cde_certs
+      with_items: "{{ virtual_clusters }}"
+      vars:
+        virtual_cluster: "{{ item }}"
+      when: cde | default(false)
+      ignore_errors: yes
+
+- name: Upload CDE certs
+  hosts: cloudera_manager[0]
+  tags: upload-cde-vc-certs
+  gather_facts: false
+  tasks:
+    - name: upload certificates
+      include_role:
+        name: cde/upload_cde_certs
+      with_items: "{{ virtual_clusters }}"
+      vars:
+        virtual_cluster: "{{ item }}"
+      when: cde | default(false)
+      ignore_errors: yes

@@ -1,0 +1,65 @@
+# Copyright (c) 2023, Cloudera, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+
+- block:
+    - name: Find keytabs
+      find:
+        paths: "{{ cloudera_agent_process_path }}"
+        recurse: yes
+        patterns: "{{ keytab_name }}"
+      register: found_files
+
+    - name: Get most recent keytab
+      set_fact:
+        keytab: "{{ found_files.files | sort(attribute='mtime', reverse=True) | map(attribute='path') | first }}"
+  when: keytab is undefined
+
+- block:
+    - name: Fetch the principal from the keytab under user
+      shell: "klist -kt {{ keytab }} | grep -v HTTP | awk 'NR==4 {print $4}'"
+      register: klist_output
+      become: yes
+      become_user: "{{ kinit_user }}"
+
+    - name: Set the principal variable
+      set_fact:
+        principal: "{{ klist_output.stdout_lines[0] }}"
+      when: klist_output.changed
+  when: kinit_user is defined
+
+- debug:
+    var: klist_output
+
+- block:
+    - name: Fetch the principal from the keytab
+      shell: "klist -kt {{ keytab }} | grep -v HTTP | awk 'NR==4 {print $4}'"
+      register: klist_output
+
+    - name: Set the principal variable
+      set_fact:
+        principal: "{{ klist_output.stdout_lines[0] }}"
+      when: klist_output.changed
+  when: kinit_user is not defined
+
+- name: Execute kinit under user
+  command: kinit -kt "{{ keytab }}" "{{ principal }}"
+  become: true
+  become_user: "{{ kinit_user }}"
+  when: kinit_user is defined
+
+- name: Execute kinit
+  command: kinit -kt "{{ keytab }}" "{{ principal }}"
+  when: kinit_user is not defined

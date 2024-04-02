@@ -1,0 +1,12 @@
+- import_playbook: download_cluster_discovery_bundle.yml
+- import_playbook: run_hive_sre_prechecks.yml
+- import_playbook: hbase_scan.yml
+- import_playbook: ../../../cma-pvc-ansible/playbooks/prepare_base_cluster/upgrade_cloudera_manager.yml
+- import_playbook: ../../../cma-pvc-ansible/playbooks/start/start.yml
+- import_playbook: ../../../cma-pvc-ansible/playbooks/stop/stop.yml
+- import_playbook: migrate_hdfs_data.yml
+- import_playbook: migrate_hive_data.yml
+- import_playbook: migrate_yarn_queues.yml
+- import_playbook: migrate_hbase_data.yml
+- import_playbook: migrate_hbase_acls_to_ranger.yml
+- import_playbook: wait_for_replication_policies_to_finish.yml

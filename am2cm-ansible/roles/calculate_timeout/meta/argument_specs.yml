@@ -1,0 +1,18 @@
+argument_specs:
+  main:
+    options:
+      service_name:
+        type: str
+        required: true
+      command_type:
+        type: str
+        required: true
+        description: "Supported command types that are listed in the default_timeouts variable"
+      command_name:
+        type: str
+        required: false
+        description: "Specific command, e.g. SetupPluginServices, HdfsFinalizeUpgrade"
+      custom_timeout:
+        type: int
+        required: false
+        description: "Return this number if supplied instead of calculating anything; timeunit is seconds"

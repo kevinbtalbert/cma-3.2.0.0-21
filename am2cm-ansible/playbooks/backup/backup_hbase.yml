@@ -1,0 +1,12 @@
+---
+- name: Backup HBase
+  hosts: backup_hbase[0]
+  gather_facts: False
+  tags: hbase-backup
+  vars:
+    service_name: hbase
+    copy_to_local: "{{ copy_hdfs_snapshots_to_local }}"
+  roles:
+    # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3_backup_hbase.html
+    - prepare_to_backup_service
+    - create_service_snapshot

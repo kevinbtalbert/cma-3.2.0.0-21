@@ -1,0 +1,11 @@
+{
+  "ignoredConfigTypes": {
+    "exactNames": ["infra-solr-client-log4j", "ssl-client", "kerberos-env", "krb5-conf"],
+    "partialNames": ["-logsearch-conf", "ams-"]
+  },
+  "ignoredConfigs": {
+    "configsByType": {
+      "core-site": ["hadoop.security.auth_to_local"]
+    }
+  }
+}

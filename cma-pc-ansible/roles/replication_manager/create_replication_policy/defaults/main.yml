@@ -1,0 +1,25 @@
+source_cluster_data_center: "cma-test-dc-1"
+
+submit_with_user: false
+source_user: hdfs
+user_name: hdfs
+
+hive_database_name: ""
+hive_sentry_permissions: "EXCLUDE"
+
+target_environment_name: "dmx-cma-aws-hive-repl-test2"
+target_cluster_name: "dmx-cma-aws-dl"
+target_cluster_identifier: "{{ target_environment_name }}${{ target_cluster_name }}"
+
+hive_database_and_tables: [
+  {
+    hive_database_name: "{{ hive_database_name }}",
+    included_tables_regex: ".*",
+    excluded_tables_regex: ""
+  }
+]
+
+queue_name: default
+hbase_tables: [
+]
+

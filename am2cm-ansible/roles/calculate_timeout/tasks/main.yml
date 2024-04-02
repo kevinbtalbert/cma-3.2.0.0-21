@@ -1,0 +1,33 @@
+- name: Merge extra vars onto timeouts & overwrite timeouts
+  block:
+    - name: Merge extra vars
+      merge_extra_timeout_vars:
+        original_timeouts: "{{ timeouts }}"
+        extra_vars_timeouts: "{{ extra_vars_timeouts }}"
+      register: timeout_merge_result
+      delegate_to: localhost
+      run_once: True
+    - name: Overwrite current timeouts variable
+      set_fact:
+        timeouts: "{{ timeout_merge_result.message }}"
+
+- name: Calculate timeout if custom_timeout is not defined
+  set_fact: # if no value found after all lookups, returns uber_default_timeout
+    timeout: "{{ lookup_by_command_name }}"
+  vars:
+    # If (custom) service_timeouts exists check there, otherwise in default_timeouts
+    timeout_dict: "{{ timeouts[service_name] | default(default_timeouts) }}"
+    # Try command_type lookup first, if no result then uber_default_timeout as final fallback
+    lookup_by_command_type: "{{ timeout_dict[command_type] | default(uber_default_timeout) }}"
+    # Try command_name lookup, if no result then use as fallback
+    lookup_by_command_name: "{{ timeout_dict[command_name | default('')] | default(lookup_by_command_type) }}"
+  when: custom_timeout is not defined
+
+- name: Calculate timeout if custom_timeout is defined
+  set_fact:
+    timeout: "{{ custom_timeout }}"
+  when: custom_timeout is defined
+
+- name: Print timeout seconds
+  debug:
+    var: timeout

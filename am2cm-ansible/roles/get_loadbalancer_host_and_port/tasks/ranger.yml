@@ -1,0 +1,16 @@
+- name: Get Loadbalancer URL
+  include_role:
+    name: query_configuration_from_service
+  vars:
+    configuration_name: load_balancer_url
+    configuration_type: SERVICE
+- name: Extract load_balancer_host and load_balancer_port from url
+  set_fact:
+    load_balancer_host: "{{ load_balancer_url | split('://') | last | split(':') | first }}"
+    load_balancer_port: "{{ load_balancer_url | split('://') | last | split(':') | last }}"
+- name: Print facts
+  debug:
+    msg:
+      - "Ranger loadbalancer host: {{ load_balancer_host }}"
+      - "Ranger loadbalancer port: {{ load_balancer_port }}"
+  run_once: True

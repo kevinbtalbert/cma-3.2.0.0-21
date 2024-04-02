@@ -1,0 +1,4 @@
+dependencies:
+  - role: determine_api_version
+    vars:
+      api: "{{ cloudera_manager_api_version }}"

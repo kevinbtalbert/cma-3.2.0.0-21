@@ -1,0 +1,83 @@
+# Copyright (c) 2023, Cloudera, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+- name: Create result dir for hive3parser tool
+  file:
+    path: "{{ hive3parser_result_dir }}"
+    mode: 0700
+    state: directory
+
+- name: Create history dir for hive3parser tool
+  file:
+    path: "{{ hive3parser_history_dir }}"
+    mode: 0700
+    state: directory
+
+- name: Find all files to process
+  find:
+    paths: "{{ hive3parser_input_dir }}"
+    recurse: true
+  register: files_to_analyze
+
+- name: Extract filenames
+  set_fact:
+    filepaths_to_analyze: "{{ files_to_analyze.files | selectattr('path', 'defined') | map(attribute='path') | map('quote') }}"
+
+- name: Print files to process
+  debug:
+    msg: "{{ filepaths_to_analyze }}"
+
+- name: Check there are files to analyze
+  fail:
+    msg: "No input files to analyze. This could happen if input paths are invalid or doesn't exist."
+  when: filepaths_to_analyze | length == 0
+
+- name: Process collected files
+  block:
+    - name: Check hive3parser symlink exists
+      stat:
+        path: "{{ hive3parser_symlink_path }}"
+      register: hive3parser_symlink_stat
+
+    - name: Create hive3parser symlink
+      block:
+        - name: Find hive3parser jar candidates
+          find:
+            paths: "{{ hive3parser_jar_dir }}"
+            patterns: "hive3-parser-tool-*.jar"
+            file_type: file
+          register: hive3parser_jars
+
+        - name: Check only a single hive3parser jar does exist
+          fail:
+            msg: "Only a single hive3parser jar should be in '{{ hive3parser_jar_dir }}'"
+          when: hive3parser_jars.files | length > 1
+
+        - name: No hive3parser jar exists
+          fail:
+            msg: "No hive3parser jar exists by required path '{{ hive3parser_jar_dir }}'. Please upload the hive3parser jar file by the appropriate path."
+          when: hive3parser_jars.files | length == 0
+
+        - name: Create symlink for hive3parser jar
+          shell: "ln -s {{ hive3parser_jars.files[0].path }} {{ hive3parser_symlink_path }}"
+      when: not hive3parser_symlink_stat.stat.exists
+
+    - name: Run hive3parser tool
+      command:
+        cmd: >
+          java -jar {{ hive3parser_symlink_path }} -t HIVE -f {{ filepaths_to_analyze | join (' ') }} 
+          -c {{ hive3parser_result_dir }}/{{ result_file_name }} -p -r {{ hive3parser_result_dir }}
+        chdir: "{{ hive3parser_tool_dir }}"
+  when: filepaths_to_analyze | length > 0

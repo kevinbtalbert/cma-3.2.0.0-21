@@ -1,0 +1,19 @@
+inventory: /cma-3.2.0.0-21/data/sources/33_OneNodeCluster/14/inventory.ini
+extra-vars: /cma-3.2.0.0-21/data/sources/33_OneNodeCluster/14/vars.json
+tags: download-discovery-bundle
+additional-extra-vars: -e discovery_bundle_module=hive_metastore -e cluster_scan_dir=cluster-scan
+
+PLAY [Download Cluster Discovery Bundle] ***************************************
+
+TASK [cluster_discovery/download_discovery_bundle : Print discovery module] ****
+ok: [cdp.52.4.109.73.nip.io] => 
+  discovery_bundle_module: hive_metastore
+
+TASK [cluster_discovery/download_discovery_bundle : Create cma_remote_tmp_dir] ***
+fatal: [cdp.52.4.109.73.nip.io]: UNREACHABLE! => changed=false 
+  msg: 'Failed to connect to the host via ssh: root@cdp.52.4.109.73.nip.io: Permission denied (publickey,gssapi-keyex,gssapi-with-mic,password).'
+  unreachable: true
+
+PLAY RECAP *********************************************************************
+cdp.52.4.109.73.nip.io     : ok=1    changed=0    unreachable=1    failed=0    skipped=0    rescued=0    ignored=0   
+

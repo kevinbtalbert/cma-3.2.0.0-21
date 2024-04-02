@@ -1,0 +1,25 @@
+- block:
+    - name: Get global_truststore_password if not defined
+      import_role:
+        name: get_global_truststore_password
+      delegate_to: localhost
+      when: global_truststore_password is not defined
+
+    - name: Import loadbalancer certificate as trusted into global cm-auto-global_truststore.jks
+      community.general.java_cert:
+        cert_url: "{{ load_balancer_host }}"
+        cert_port: "{{ load_balancer_port }}"
+        trust_cacert: True
+        cert_alias: "lbtrustalias_{{ service_name }}"
+        state: present
+        keystore_path: /var/lib/cloudera-scm-agent/agent-cert/cm-auto-global_truststore.jks
+        keystore_pass: "{{ global_truststore_password }}"
+      environment:
+        https_proxy: ""
+      become: yes
+    - name: Print imported cert name
+      debug:
+        msg: "Import certificate with name 'lbtrustalias_{{ service_name }}'
+        into /var/lib/cloudera-scm-agent/agent-cert/cm-auto-global_truststore.jks"
+      run_once: True
+  when: cloudera_manager_protocol == "https"

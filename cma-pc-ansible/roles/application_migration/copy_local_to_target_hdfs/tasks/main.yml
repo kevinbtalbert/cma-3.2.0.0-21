@@ -1,0 +1,123 @@
+# Copyright (c) 2023, Cloudera, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+---
+
+- block:
+    - name: Fail if input data is not provided
+      fail:
+        msg: "Please make sure that 'dir_to_upload' is defined and is not empty!"
+      when: dir_to_upload is defined and dir_to_upload | length == 0
+
+    - name: Clean archive temporary dir
+      file:
+        path: "{{ archive_path_local | dirname }}"
+        state: absent
+
+    - name: Create archive directory if not exists
+      file:
+        path: "{{ archive_path_local | dirname }}"
+        state: directory
+
+    # 1. compress all existing local file
+    - name: Compress local files
+      ansible.builtin.archive:
+        path: "{{ dir_to_upload }}/*"
+        dest: "{{ archive_path_local }}"
+        format: gz
+        force_archive: true
+        mode: 0644
+      register: archived_files
+
+    - debug:
+        var: archived_files
+
+    - name: Check if archiving was successful
+      fail:
+        msg: "No files were archived. Check the directory path or file permissions."
+      when: archived_files.archived | default([]) | length == 0
+
+  delegate_to: localhost
+
+- set_fact:
+    local_archived_file_path: "{{ archived_files.dest }}"
+    remote_archived_file_path: "{{ remote_tmp_dir }}/{{ archived_files.dest | basename }}"
+
+- block:
+    # create remote temp folder
+    - name: Clean remote temporary dir
+      file:
+        path: "{{ remote_tmp_dir }}"
+        state: absent
+
+    - name: Create remote temporary dir if not exists
+      file:
+        path: "{{ remote_tmp_dir }}"
+        state: directory
+
+    # copy compressed file from local to remote temp folder
+    - name: Copying local file to remote temp dir
+      copy:
+        src: "{{ local_archived_file_path }}"
+        dest: "{{ remote_archived_file_path }}"
+      register: copy_res
+
+    - name: Create remote dir for decompressed files
+      file:
+        path: "{{ remote_tmp_dir }}"
+        state: directory
+
+
+    # decompress file
+    - name: Decompress the archive on the remote machine
+      unarchive:
+        src: "{{ remote_archived_file_path }}"
+        dest: "{{ remote_tmp_dir }}"
+        remote_src: yes
+
+    - name: Delete compressed file
+      file:
+        path: "{{ remote_archived_file_path }}"
+        state: absent
+
+    - block:
+        - name: Create result local directory
+          file:
+            path: "{{ remote_destination_path }}"
+            state: directory
+
+        - name: Copy decompressed files to result local directory
+          shell: "cp -r {{ remote_tmp_dir }}/* {{ remote_destination_path }}"
+      when: remote_destination_path is defined
+
+    - name: Set adls properties for hdfs commands
+      set_fact:
+        hdfs_properties: "-Dfs.adl.oauth2.access.token.provider.type=ClientCredential -Dfs.adl.oauth2.refresh.url={{ adls_tenant_id }} -Dfs.adl.oauth2.client.id={{ adls_client_id }} -Dfs.adl.oauth2.credential={{ adls_client_key }}"
+      when: file_system_type == 'adls'
+
+    - name: Set s3 properties for hdfs commands
+      set_fact:
+        hdfs_properties: "-Dfs.s3a.access.key={{ s3_bucket_access_key }} -Dfs.s3a.secret.key={{ s3_bucket_secret_key }}"
+      when: file_system_type == 's3'
+
+    # create HDFS destination dir
+    - name: Create destination dir
+      command:
+        cmd: "hdfs dfs -mkdir -p {{ hdfs_prefix }}"
+
+    # copy files from temp folder to hdfs
+    - name: Copy file to HDFS
+      shell: "hdfs dfs {{ hdfs_properties }} -copyFromLocal -f {{ remote_tmp_dir }}/* {{ hdfs_prefix }}"
+      register: hdfs_copy_res
+
+  become: yes

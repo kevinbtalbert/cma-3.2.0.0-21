@@ -1,0 +1,36 @@
+- name: CM Parcel distribution
+  tags: cm-parcel-distribution
+  hosts: localhost
+  gather_facts: False
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  tasks:
+    - name: Download, Distribute and Activate Cloudera Runtime
+      parcel_handler:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        parcel_info:
+          parcel_product_name: "{{ parcel_cldr_runtime_name }}"
+          parcel_version: "{{ parcel_cldr_runtime_version }}"
+          parcel_repo: "{{ parcel_cldr_runtime_repo }}"
+      tags: cm-parcel-distribution, parcel-runtime-distribution
+
+    - name: Download, Distribute and Activate Accumulo Parcel
+      parcel_handler:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        parcel_info:
+          parcel_product_name: "{{ parcel_accumulo_name }}"
+          parcel_version: "{{ parcel_accumulo_version }}"
+          parcel_repo: "{{ parcel_accumulo_repo }}"
+      tags: cm-parcel-distribution, parcel-accumulo-distribution
+      when: deploy_accumulo|default(false)|bool == true
+
+    - name: Download, Distribute and Activate GPL packages
+      parcel_handler:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        parcel_info:
+          parcel_product_name: "{{ parcel_gplextras_name }}"
+          parcel_version: "{{ parcel_gplextras_version }}"
+          parcel_repo: "{{ parcel_gplextras_repo }}"
+      tags: cm-parcel-distribution, parcel-gplextras-distribution
+      when: distribute_gplextras_parcel|default(false)|bool == true

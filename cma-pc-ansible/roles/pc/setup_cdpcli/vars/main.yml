@@ -1,0 +1,4 @@
+cdp_profile: "{{ cdp_cli_profile_id }}"
+cdp_endpoint_url: "{{ cp_endpoint_url }}"
+cdp_access_key_id: "{{ cp_access_key }}"
+cdp_private_key: "{{ cp_private_key }}"

@@ -1,0 +1,8 @@
+- name: "Backup PostgreSQL"
+  community.postgresql.postgresql_db:
+    state: dump
+    name: "{{ database_name }}"
+    target: "{{ backup_name }}.sql"
+    login_user: "{{ database_username }}"
+    login_password: "{{ database_password }}"
+    login_host: "{{ database_host }}"

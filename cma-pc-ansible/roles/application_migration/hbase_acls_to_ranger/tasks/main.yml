@@ -1,0 +1,76 @@
+# Copyright (c) 2023, Cloudera, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+- name: Hdfs kinit
+  include_role:
+    name: cluster_discovery/cm_kinit
+  vars:
+    keytab_name: hbase.keytab
+  when: is_kerberized_cluster
+
+- set_fact:
+    hbase_acls_remote_file: "{{ cma_remote_tmp_dir }}/hbase_acls_{{ lookup('pipe', 'date +%Y-%m-%d_%H:%M:%S.%3N') }}.txt"
+    hbase_acls_local_file: "{{ cma_local_tmp_dir }}/hbase_acls_{{ lookup('pipe', 'date +%Y-%m-%d_%H:%M:%S.%3N') }}.txt"
+    ranger_policy_local_file: "{{ cma_local_tmp_dir }}/ranger_policies_{{ lookup('pipe', 'date +%Y-%m-%d_%H:%M:%S.%3N') }}.json"
+    hbase_scan_command: "echo \"scan 'hbase:acl', {FILTER => \\\"({% for table in hbase_table_for_acl_replication_to_ranger %}PrefixFilter('{{ table }}'){% if not loop.last %} OR {% endif %}{% endfor %})\\\"}\""
+
+- name: Execute HBase command
+  shell: "{{ hbase_scan_command }} | hbase shell -n | grep column= > \"{{ hbase_acls_remote_file }}\""
+
+- name: Download Hbase ACLs file
+  fetch:
+    src: "{{ hbase_acls_remote_file }}"
+    dest: "{{ hbase_acls_local_file }}"
+    flat: yes
+
+- block:
+    - name: Convert Hbase ACLs to Ranger policies
+      h2r:
+        input_hbase_acls_file: "{{ hbase_acls_local_file }}"
+        output_ranger_policy_file: "{{ ranger_policy_local_file }}"
+
+    - name: Describe cluster
+      command: cdp --profile {{ cdp_cli_profile_id }} datahub \
+        describe-cluster --cluster "{{ pc_cloudera_cluster_name }}"
+      register: cluster_info
+
+    - name: Set fact for datalakeCrn
+      set_fact:
+        data_lake_cluster_name: "{{ cluster_info.stdout | from_json | json_query('cluster.datalakeCrn') }}"
+
+    - name: Describe cluster
+      command: cdp --profile {{ cdp_cli_profile_id }} datahub \
+        describe-cluster --cluster "{{ pc_cloudera_cluster_name }}"
+      register: cluster_info
+
+    - name: Set fact for datalakeCrn
+      set_fact:
+        data_lake_crn: "{{ cluster_info.stdout | from_json | json_query('cluster.datalakeCrn') }}"
+
+    - name: Get Ranger Url
+      command: cdp --profile {{ cdp_cli_profile_id }} datalake \
+        describe-datalake --datalake-name "{{ data_lake_crn }}"
+      register: datalake_describe_output
+
+    - name: Set fact for Ranger Url
+      set_fact:
+        ranger_admin_url: "{{ datalake_describe_output.stdout | from_json | json_query('datalake.endpoints.endpoints[?serviceName==`RANGER_ADMIN` && mode==`SSO_PROVIDER_FROM_UMS`].serviceUrl') | first }}"
+
+    - name: Import Ranger Policies to PC
+      import_ranger_policies:
+        ranger_admin_url: "{{ ranger_admin_url }}"
+        jwt_data_lake_knox_token: "{{ jwt_data_lake_knox_token }}"
+        ranger_policy_json_file: "{{ ranger_policy_local_file }}"
+  delegate_to: localhost

@@ -1,0 +1,22 @@
+---
+-  name: Check disk space and mount considerations for CM server node
+   hosts: server
+   tags: check-disk-space
+   gather_facts: true
+   tasks:
+     - name: check disk space and mount considerations
+       delegate_to: localhost
+       check_disk_space:
+         mounts: "{{ ansible_facts['mounts'] }}"
+         space_requirements: "{{ dict(space_requirements_server.keys() | zip(space_requirements_server.values() | map('human_to_bytes'))) }}"
+
+-  name: Check disk space and mount considerations for client nodes
+   hosts: clients_only
+   tags: check-disk-space
+   gather_facts: true
+   tasks:
+     - name: check disk space and mount considerations
+       delegate_to: localhost
+       check_disk_space:
+         mounts: "{{ ansible_facts['mounts'] }}"
+         space_requirements: "{{ dict(space_requirements_clients.keys() | zip(space_requirements_clients.values() | map('human_to_bytes'))) }}"

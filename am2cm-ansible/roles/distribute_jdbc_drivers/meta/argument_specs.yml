@@ -1,0 +1,7 @@
+argument_specs:
+  main:
+    options:
+      jdbc_remote_driver_directory:
+        type: str
+        required: false
+        description: Path on remote to copy jdbc drivers to.

@@ -1,0 +1,3 @@
+---
+cdpclienv: ~/cdpclienv
+cdpcli_executable: "{{ cdpclienv }}/bin/cdp"

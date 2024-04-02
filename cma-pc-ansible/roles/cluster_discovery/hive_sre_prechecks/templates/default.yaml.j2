@@ -1,0 +1,21 @@
+# Required to connect to Metastore RDBMS.  RDBMS driver needs to be included in the classpath
+metastore_direct:
+  uri: "{{ hive_metastore_uri }}"
+  type: "{{ hive_metastore_db_type|upper }}"
+  # Needed for Oracle Connections to pick the right schema for hive.
+  # initSql: "ALTER SESSION SET CURRENT_SCHEMA=<hive_schema>"
+  connectionProperties:
+    user: "{{ hive_metastore_user }}"
+    password: "{{ hive_metastore_password }}"
+  connectionPool:
+    min: "3"
+    max: "5"
+# Control the number of threads to run scans with.  Should not exceed host core count.
+# Increase parallelism will increase HDFS namenode pressure.  Advise monitoring namenode
+# RPC latency while running this process.
+parallelism: "4"
+queries:
+  db_tbl_count:
+    parameters:
+      dbs:
+        override: "%"

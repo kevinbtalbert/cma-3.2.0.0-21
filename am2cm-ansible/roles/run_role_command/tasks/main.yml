@@ -1,0 +1,18 @@
+- name: Run role command
+  block:
+    - name: Service name, role(s) and the command that will be ran
+      debug:
+          msg: "Service: {{ service_name }}, Roles: {{ cm_role_names }}, Command: {{ command }}"
+    - name: Run command API request
+      run_role_command:
+        service_name: "{{ service_name }}"
+        role_names: "{{ cm_role_names }}"
+        command: "{{ command }}"
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        timeout_seconds: "{{ timeout }}"
+      register: run_role_command_result
+    - name: Print response
+      debug:
+        var: run_role_command_result
+  run_once: True
+  delegate_to: localhost

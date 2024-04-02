@@ -1,0 +1,39 @@
+argument_specs:
+  main:
+    options:
+      service_name:
+        type: str
+        required: true
+      valve_name:
+        type: str
+        required: true
+        description: "Name of the safety valve to get"
+      valve_value:
+        type: str
+        required: true
+        description: "Name of the property inside safety valve to get"
+      configuration_type:
+        type: str
+        required: false
+        default: SERVICE
+        choices:
+          - SERVICE
+          - ROLE
+        description: "Safety valves can be SERVICE or ROLE level safety valves."
+      cm_role_name:
+        type: str
+        required: false
+        description: "If configuration_type is 'ROLE', cm_role_name is needed."
+      configuration_format:
+        type: str
+        required: false
+        default: XML
+        choices:
+          - XML
+          - PROPERTY_FILE
+        description:
+          - "Safety valves in Cloudera Manager are stored as either in XML format like this:"
+          - "<property> <name>KEY</name> <value>VALUE</value> </property>"
+          - "Or in a property file format like this:"
+          - "name=value"
+          - "This format should be checked beforehand in Cloudera Manager when getting an unknown safety-valve"

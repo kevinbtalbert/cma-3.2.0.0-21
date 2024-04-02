@@ -1,0 +1,9 @@
+- import_playbook: add_pvc_cluster_nodes.yml
+- import_playbook: setup_dns.yml
+- import_playbook: install_cluster.yml
+- import_playbook: configure_cluster.yml
+- import_playbook: configure_ldap.yml
+- import_playbook: create_environment.yml
+- import_playbook: setup_kubectl.yml
+- import_playbook: setup_cdpcli.yml
+

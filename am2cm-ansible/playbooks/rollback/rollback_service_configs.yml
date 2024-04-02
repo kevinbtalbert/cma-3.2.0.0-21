@@ -1,0 +1,30 @@
+---
+- name: Rollback service config dirs
+  hosts: all
+  tags: etc-config-rollback
+  gather_facts: False
+  tasks:
+
+    - name: Check conf backups
+      stat:
+        path: "{{ etc_service_dir }}/{{ backup_conf_dir }}"
+      register: etc_service_backup_confs_status
+      loop: "{{ etc_service_dirs }}"
+      loop_control:
+        loop_var: etc_service_dir
+
+    - debug:
+        var: etc_service_backup_confs_status
+
+    - name: Delete conf folder
+      file:
+        state: absent
+        path: "{{ item.etc_service_dir }}/{{ conf_dir }}"
+      when: item.stat.exists
+      loop: "{{ etc_service_backup_confs_status.results }}"
+
+    - name: Rollback service config symlinks
+      command: "cp -d {{ item.stat.path }} {{ item.etc_service_dir }}/{{ conf_dir }}"
+      when: item.stat.exists
+      loop: "{{ etc_service_backup_confs_status.results }}"
+

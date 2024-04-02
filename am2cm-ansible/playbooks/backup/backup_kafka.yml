@@ -1,0 +1,53 @@
+---
+- name: Backup Kafka (get version)
+  hosts: backup_kafka[0]
+  gather_facts: False
+  tags: kafka-backup, get-kafka-version
+  vars:
+    service_name: kafka
+  roles:
+    - prepare_to_backup_service
+  tasks:
+    - name: Get current Kafka version
+      when: am2cm_source_version != "HDP2"
+      block:
+        - name: Get current Kafka version
+          command: "/usr/hdp/current/kafka-broker/bin/kafka-topics.sh --version | cut -d '.' -f 1-3"
+          register: current_kafka_version
+        - name: Set current Kafka version
+          set_fact:
+            current_kafka_version: "{{ current_kafka_version.stdout }}"
+    - name: Get current Kafka Version HDP2
+      when: am2cm_source_version == "HDP2"
+      block:
+        - name: Get current Kafka version
+          find:
+            paths: /usr/hdp/current/kafka-broker/libs/
+            patterns: 'kafka_*'
+          register: find_output
+        - name: Set current Kafka version
+          set_fact:
+            current_kafka_version: "{{ (find_output['files'][0]['path'] | regex_search('kafka_.+?-(\\d+\\.\\d+.\\d+)', '\\1'))[0] }}"
+
+- name: Backup Kafka (set value)
+  hosts: ambari_server
+  gather_facts: False
+  tags: kafka-backup, set-kafka-config-values
+  tasks:
+    - name: Backup Kafka block
+      block:
+        - name: Set config values
+          command: >-
+            python2 /var/lib/ambari-server/resources/scripts/configs.py
+            -u {{ ambari_username }} -p {{ ambari_password }}
+            -s {{ ambari_protocol }} -l {{ inventory_hostname }} -t {{ ambari_port }} -n {{ ambari_cluster_name }}
+            -c 'kafka-broker'
+            -a set
+            -k '{{ item }}'
+            -v '{{ hostvars[groups['backup_kafka'][0]]['current_kafka_version'].split('.')[0:3] | join('.') }}'
+          loop:
+            - "inter.broker.protocol.version"
+            - "log.message.format.version"
+      when:
+        - (groups['backup_kafka']|default([])) | length > 0
+        - hostvars[groups['backup_kafka'][0]]['current_kafka_version'] is defined

@@ -1,0 +1,83 @@
+# Copyright (c) 2023, Cloudera, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+- name: Clear remote working dir
+  file:
+    path: "{{ oozie_remote_work_dir }}"
+    state: absent
+
+- name: Create remote working dir
+  file:
+    path: "{{ oozie_remote_work_dir }}"
+    state: directory
+    owner: "{{ oozie_user }}"
+
+- name: Copy oozie exporter tool to CM node
+  copy:
+    src: "{{ oozie_exporter_tool_path }}"
+    dest: "{{ oozie_remote_work_dir }}"
+    owner: "{{ oozie_user }}"
+    mode: 0755
+
+- name: Run kinit for Oozie
+  include_role:
+    name: cluster_discovery/cm_kinit
+  vars:
+    keytab_name: oozie.keytab
+    kinit_user: "{{ oozie_user }}"
+  when: is_kerberized_cluster
+
+- name: Define run parameters
+  set_fact:
+    ssl_key: "{{ '-s' if oozie_url is regex('^https.*') else '' }}"
+    kerberos_key: "{{ '-k' if is_kerberized_cluster else '' }}"
+    days_parameter: "{{ '-d ' + oozie_export_latest_days if oozie_export_latest_days | length > 0 else '' }}"
+
+- name: Print paths
+  debug:
+    msg:
+      - "Remote working dir: {{ oozie_remote_work_dir }}"
+      - "Oozie exporter tool path: {{ oozie_exporter_tool_path }}"
+
+- name: Run oozie_exporter tool
+  command:
+    cmd: "./oozie_exporter {{ oozie_url }} {{ oozie_remote_work_dir }} -w -c -b --debug {{ ssl_key }} {{ kerberos_key }} {{ days_parameter }}"
+    chdir: "{{ oozie_remote_work_dir }}"
+  become: true
+  become_user: "{{ oozie_user }}"
+  register: oozie_exporter_result
+
+- name: Print out
+  debug:
+    msg: "{{ oozie_exporter_result.stdout }}"
+
+- name: Find generated files
+  find:
+    paths: "{{ oozie_remote_work_dir }}"
+    patterns: "*.csv"
+  register: result_files
+
+- name: Get generated files
+  fetch:
+    src: "{{ item.path }}"
+    dest: "{{ oozie_work_dir }}"
+    flat: true
+  loop: "{{ result_files.files }}"
+
+- name: Get log files
+  fetch:
+    src: "{{ oozie_remote_work_dir }}/oozie_exporter.log"
+    dest: "{{ transition_log_dir }}/"
+    flat: true

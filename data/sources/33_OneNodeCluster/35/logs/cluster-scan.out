@@ -1,0 +1,47 @@
+inventory: /cma-3.2.0.0-21/data/sources/33_OneNodeCluster/35/inventory.ini
+extra-vars: /cma-3.2.0.0-21/data/sources/33_OneNodeCluster/35/vars.json
+tags: hive-sre-pre-check
+additional-extra-vars: -e discovery_bundle_module=hdfs_report,hive_metastore -e cluster_scan_dir=cluster-scan
+
+PLAY [Download Cluster Discovery Bundle] ***************************************
+
+PLAY [DB Pre-check with Hive SRE] **********************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [cdp.52.4.109.73.nip.io]
+
+TASK [get_java_home_of_current_host : Try to get java home from CM API] ********
+fatal: [cdp.52.4.109.73.nip.io -> localhost]: FAILED! => changed=false 
+  message: Couldn't get either configuration value or default for configuration java_home on host cdp.52.4.109.73.nip.io
+  msg: Couldn't get configuration name from host
+  original_message: '{"cm_configuration": {"cloudera_manager_hostname": "cdp.52.4.109.73.nip.io", "cloudera_manager_protocol": "http", "cloudera_manager_port": 7180, "cloudera_manager_admin_username": "admin", "cloudera_manager_admin_password": "Supersecret1", "cluster_name": "OneNodeCluster"}, "host_name": "cdp.52.4.109.73.nip.io", "configuration_name": "java_home"}'
+
+TASK [get_java_home_of_current_host : Check if cloudera_config_default_path file exists] ***
+ok: [cdp.52.4.109.73.nip.io]
+
+TASK [get_java_home_of_current_host : Set cloudera_config_path variable] *******
+ok: [cdp.52.4.109.73.nip.io]
+
+TASK [get_java_home_of_current_host : Try to get java home from host shell] ****
+ok: [cdp.52.4.109.73.nip.io]
+
+TASK [get_java_home_of_current_host : Extract console_out result to java_home] ***
+ok: [cdp.52.4.109.73.nip.io]
+
+TASK [get_java_home_of_current_host : Print java_home] *************************
+ok: [cdp.52.4.109.73.nip.io] => 
+  msg: /usr/lib/jvm/java-11-openjdk-11.0.22.0.7-1.el7_9.x86_64
+
+TASK [cluster_discovery/hive_sre_prechecks : Download hive-sre-dist.tar.gz] ****
+fatal: [cdp.52.4.109.73.nip.io]: FAILED! => changed=false 
+  checksum_dest: null
+  checksum_src: d83c7a1a9d3083d8641ed99aa81395615f564e1f
+  dest: /opt/hive-sre-dist.tar.gz
+  elapsed: 0
+  msg: Destination /opt is not writable
+  src: /home/centos/.ansible/tmp/ansible-tmp-1711487731.4040568-3169-189890020817960/tmpdYqluN
+  url: https://github.com/cloudera-labs/hive-sre/releases/download/2.5.1.5/hive-sre-dist.tar.gz
+
+PLAY RECAP *********************************************************************
+cdp.52.4.109.73.nip.io     : ok=6    changed=0    unreachable=0    failed=1    skipped=0    rescued=1    ignored=0   
+

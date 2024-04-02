@@ -1,0 +1,113 @@
+# Copyright (c) 2023, Cloudera, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+
+- name: Get hosts details
+  cm_api:
+    endpoint:  "/clusters/{{ pvc_cluster_name }}/hosts"
+    method: GET
+    timeout: "{{ cluster_restart_timeout | default(3000) }}"
+  register: host_details
+
+- name: DEBUG - Get hosts
+  debug:
+    msg: "{{ host_details }}"
+  when: debug | default(false)
+
+- name: Filter hosts without roles
+  set_fact:
+    hosts: "{{ hosts | default([]) + host_details.json | community.general.json_query(query) }}"
+  vars:
+    query: "items[?hostname == '{{ item }}' && !roleRefs  ].{hostId: hostId, hostname: hostname}"
+  with_items: "{{ groups['pvc_cluster_worker_nodes'] }}"
+
+- block:
+    # check hostTemplate
+    - name: "Check if {{ add_worker_template_name }} hostTemplate exists"
+      cm_api:
+        endpoint: "/clusters/{{ pvc_cluster_name }}/hostTemplates/{{ add_worker_template_name }}"
+        method: GET
+        status_code: [200,404]
+      register: host_template_check
+
+    - name: DEBUG - Check hostTemplate
+      debug:
+        msg: "{{ host_template_check }}"
+      when: debug | default(false)
+
+    # create hostTemplate
+    - name: "Add {{ add_worker_template_name }} hostTemplate"
+      cm_api:
+        endpoint: "/clusters/{{ pvc_cluster_name }}/hostTemplates"
+        method: POST
+        body: "{{ lookup('template', 'pvc-worker.json') }}"
+        status_code: [200,201]
+      register: add_host_template
+      when: host_template_check.status == 404
+
+    - name: DEBUG - Add hostTemplate
+      debug:
+        msg: "{{ add_host_template }}"
+      when: debug | default(false)
+
+    - name: DEBUG - hosts.json
+      debug:
+        msg: "{{ lookup('template', 'hosts.json') }}"
+      when: debug | default(false)
+
+    # apply hostTemplate
+    - name: "Apply {{ add_worker_template_name }} hostTemplate"
+      cm_api:
+        endpoint: "/clusters/{{ pvc_cluster_name }}/hostTemplates/{{ add_worker_template_name }}/commands/applyHostTemplate?startRoles=true"
+        method: POST
+        body: "{{ lookup('template', 'hosts.json') }}"
+      register: apply_host_template
+
+    - name: DEBUG - Apply hostTemplate
+      debug:
+        msg: "{{ apply_host_template }}"
+      when: debug | default(false)
+
+    # restart ECS server
+    - name: Get roles
+      cm_api:
+        endpoint: "/clusters/{{ pvc_cluster_name }}/services/{{ ecs_service_name }}/roles"
+        method: GET
+        timeout: "{{ cluster_restart_timeout | default(3000) }}"
+      register: role_details
+
+    - name: DEBUG - Get roles
+      debug:
+        msg: "{{ role_details }}"
+      when: debug | default(false)
+
+    - name: Filter ECS-Server roles
+      set_fact:
+        roles: "{{ roles | default([]) + role_details.json | community.general.json_query(query) }}"
+      vars:
+        query: "items[?type == 'ECS_SERVER' ].name"
+
+    - name: DEBUG - roles.json
+      debug:
+        msg: "{{ lookup('template', 'roles.json') }}"
+      when: debug | default(false)
+
+    - name: Restart ECS-Server
+      cm_api:
+        endpoint: "/clusters/{{ pvc_cluster_name }}/services/{{ ecs_service_name }}/roleCommands/restart"
+        method: POST
+        body: "{{ lookup('template', 'roles.json') }}"
+
+  when: hosts | length > 0

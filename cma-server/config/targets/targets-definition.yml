@@ -1,0 +1,75 @@
+targetTypes:
+  - type: CDP_PVC_BASE
+    name: Cloudera Data Platform - Private Cloud Base
+    svgIcon: cm_logo
+    configureSsh: true
+    configureCluster:
+      - option: NEW_CLUSTER
+        name: New Cluster
+        specifyHosts: false
+        specifySource: true
+    configureServer:
+      - option: EXISTING_SERVER
+        name: Existing Cloudera Manager
+    server:
+      name: Cloudera Manager
+      svgIcon: cm_logo
+      serverFieldLabel: Cloudera Manager URL
+
+  - type: CDP_PC
+    name: Cloudera Data Platform - Public Cloud
+    svgIcon: cdp_pc
+    configureSsh: true
+    configureCluster:
+      - option: EXISTING_CLUSTER
+        name: Existing cluster
+    configureServer:
+        - option: EXISTING_SERVER
+          name: Existing Control Plane
+          selectInstance: true
+    server:
+      name: Control Plane
+      svgIcon: cm_logo
+      serverFieldLabel: Control Plane URL
+      userFieldLabel: Access key
+      passwordFieldLabel: Private key
+      instances:
+        - name: Management Console (us-west-1)
+          apiUrl: https://api.us-west-1.cdp.cloudera.com
+          loginUrl: https://console.cdp.cloudera.com
+        - name: Management Console (eu-1)
+          apiUrl: https://api.eu-1.cdp.cloudera.com
+          loginUrl: https://console.eu-1.cdp.cloudera.com
+        - name: Management Console (ap-1)
+          apiUrl: https://api.ap-1.cdp.cloudera.com
+          loginUrl: https://console.ap-1.cdp.cloudera.com
+
+  - type: CDP_PVC
+    name: Cloudera Data Platform - Private Cloud DS
+    svgIcon: cdp_pvc
+    configureSsh: true
+    configureCluster:
+      - option: NEW_CLUSTER
+        name: New Cluster
+        specifyHosts: true
+    configureServer:
+      - option: NEW_SERVER
+        name: New Control Plane
+    server:
+      name: Control Plane
+      svgIcon: control_plane
+      serverFieldLabel: Control Plane Hostname
+      repoBaseUrl: https://archive.cloudera.com/p
+    hosts:
+      name: PVC DS
+      description: Enter hosts that will be used as main and worker nodes. To specify the hosts you can use comma separated list or host pattern e.g. example.host[1-6].com
+
+############## SOURCE ANSIBLE ##############
+
+targetDefinitions:
+  - targetType: CDP_PVC_BASE
+    settings: settings-definition.yml
+  - targetType: CDP_PC
+    settings: settings-definition.yml
+  - targetType: CDP_PVC
+    settings: settings-definition.yml

@@ -1,0 +1,2 @@
+- import_playbook: prepare_hbase.yml
+- import_playbook: stop_all_hdp_services.yml

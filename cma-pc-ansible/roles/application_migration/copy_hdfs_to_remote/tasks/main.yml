@@ -1,0 +1,71 @@
+# Copyright (c) 2023, Cloudera, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+# we need to remove last element in the path as it will be created during copying of file/directory
+- name: Get remote target parent dir
+  set_fact:
+    parent_path_file: "{{ hive3parser_hdfs_remote }}/{{ hdfs_path['prefix_dir'] }}/{{ hdfs_path['path'] | dirname }}"
+    parent_path_dir: "{{ hive3parser_hdfs_remote_directories }}/{{ hdfs_path['prefix_dir'] }}/{{ hdfs_path['path'] | dirname }}"
+    parent_path_tmp: "{{ hive3parser_hdfs_remote_tmp }}/{{ hdfs_path['prefix_dir'] }}/{{ hdfs_path['path'] | dirname }}"
+
+# Have to combine all steps to a single script to minimize execution time
+# Steps are the following:
+# - move separated files to {{ parent_path_file }} directory
+# - mode directories to {{ parent_path_dir }} directory
+- name: Move HDFS input files to proper place
+  shell: |
+    # Check HDFS path exists
+    sudo -u {{ process_username }} hdfs dfs -test -e {{ hdfs_path['input'] }}
+    
+    if [[ $? -ne 0 ]]; then
+      echo HDFS path does not exist: {{ hdfs_path['input'] }}
+      exit 1
+    fi
+    
+    # Create tmp directory to copy HDFS input files to
+    mkdir -p {{ parent_path_tmp }}
+    chmod 0755 {{ parent_path_tmp }}
+    chown {{ process_username }} {{ parent_path_tmp }}
+    
+    # Copy HDFS input files to tmp directory
+    sudo -u {{ process_username }} hdfs dfs -copyToLocal {{ hdfs_path['input'] }} {{ parent_path_tmp }}
+    
+    # Move copied files to the appropriate directory
+    if [[ -d {{ parent_path_tmp }}/{{ hdfs_path['input'] | basename }} ]]; then
+      mkdir -p {{ parent_path_dir }}
+      cp -r {{ parent_path_tmp }}/{{ hdfs_path['input'] | basename }} {{ parent_path_dir }}
+      echo Copied {{ hdfs_path['input'] }} to {{ parent_path_dir }}
+    elif [[ -f {{ parent_path_tmp }}/{{ hdfs_path['input'] | basename }} ]]; then
+      mkdir -p {{ parent_path_file }}
+      cp -r {{ parent_path_tmp }}/{{ hdfs_path['input'] | basename }} {{ parent_path_file }}
+      echo Copied {{ hdfs_path['input'] }} to {{ parent_path_file }}
+    else
+      echo No path exists: {{ parent_path_tmp }}/{{ hdfs_path['input'] | basename }}
+      exit 1
+    fi
+    
+    # Remove tmp directory
+    rm -rf {{ hive3parser_hdfs_remote_tmp }}
+  register: files_move_result
+  changed_when: files_move_result.rc == 0
+  failed_when:
+    - files_move_result.rc > 0
+    - '"HDFS path does not exist" not in files_move_result.stdout'
+
+- name: Print move result
+  debug:
+    msg:
+      - "Files move out: {{ files_move_result.stdout }}"
+      - "Files move err: {{ files_move_result.stderr }}"

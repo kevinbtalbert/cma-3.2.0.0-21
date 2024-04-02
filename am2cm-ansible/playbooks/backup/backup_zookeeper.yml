@@ -1,0 +1,17 @@
+---
+- name: Backup Zookeeper
+  hosts: backup_zookeeper
+  gather_facts: False
+  tags: zookeeper-backup
+  vars:
+    service_name: zookeeper
+  roles:
+    - prepare_to_backup_service
+  tasks:
+    # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3_backup_zookeeper.html
+    - name: "Backup Zookeeper data files"
+      archive:
+        path: "{{ zk_data_dir }}"
+        dest: "{{ service_backup_dir }}/{{ zookeeper_backup_file_name }}"
+
+

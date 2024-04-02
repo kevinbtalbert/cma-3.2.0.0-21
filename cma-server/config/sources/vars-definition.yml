@@ -1,0 +1,111 @@
+---
+currentVersion:
+  - CDH6
+  - CDH5
+  - CDP_PVC_BASE
+
+uiFieldTypes:
+  text:
+    type: text
+    size: 200
+    editable: true
+  password:
+    type: password
+    size: 200
+    editable: true
+  checkbox:
+    type: checkbox
+    size: 200
+    editable: true
+  url-text:
+    type: text
+    size: 430
+    editable: true
+  textlist:
+    type: textlist
+    size: 430
+
+extraVars:
+  - vars:
+      cma_root_dir: ${sourceVars['cma.root.dir']}
+      transition_log_dir: ${sourceVars['source.log.dir']}
+      transition_data_dir: ${sourceVars['source.data.dir']}
+      ansible_user: ${sourceServerVars['sshUser']}
+      cloudera_manager_admin_username: ${sourceServerVars['username']}
+      cloudera_manager_admin_password: ${sourceServerVars['password']}
+      cloudera_manager_port: ${sourceServerVars['port']}
+      cloudera_manager_protocol: ${sourceServerVars['protocol']}
+      cluster_name: ${sourceClusterVars['id']}
+    uiFields:
+      ansible_user: text
+      ansible_ssh_private_key_file: text
+      transition_log_dir: text
+
+  - serviceName: cluster-scanner
+    vars:
+      hdfs_service_name: ${sourceServiceVars['hdfs'].name}
+      hive_service_name: ${sourceServiceVars['hive'].name}
+      cluster_scan_dir: ${sourceVars['cluster_scan_dir']}
+      is_kerberized_cluster: ${sourceClusterVars['isKerberized']}
+      hive_metastore_uri: ${sourceVars['hive_metastore_uri']}
+      hive_metastore_db_type: ${sourceClusterConfigVars['HIVE::hive_metastore_database_type']}
+      hive_metastore_user: ${sourceClusterConfigVars['HIVE::hive_metastore_database_user']}
+      hive_metastore_password: ${sourceClusterConfigVars['HIVE::hive_metastore_database_password']}
+      cdh_discovery_tool_path: ${sourceVars['cdh_discovery_tool_path']}
+
+
+  - serviceName: cluster-workload-scanner
+    vars:
+      hive_exists: ${sourceServiceVars['hive'].exist}
+      hive3parser_inputs: ${sourceCommandUserSettingVars['hive3parser_inputs']}
+      hive3parser_jar_dir: ${sourceVars['hive3parser_jar_dir']}
+
+  - serviceName: oozie
+    vars:
+      oozie_exporter_tool_path: ${sourceVars['oozie_exporter_tool_path']}
+      oozie_url: ${sourceVars['oozie_url']}
+      oozie_export_latest_days: ${sourceCommandUserSettingVars['oozie_export_latest_days']}
+    when: ${ sourceServiceVars['oozie'].exist }
+
+  - serviceName: hbase
+    vars:
+      hbase_scanner_tool_path: ${sourceVars['hbase_scanner_tool_path']}
+    when: ${ sourceServiceVars['hbase'].exist }
+
+---
+
+currentVersion:
+  - HDP2
+  - HDP3
+
+uiFieldTypes:
+  text:
+    type: text
+    size: 200
+    editable: true
+  password:
+    type: password
+    size: 200
+    editable: true
+  checkbox:
+    type: checkbox
+    size: 200
+    editable: true
+  url-text:
+    type: text
+    size: 430
+    editable: true
+
+extraVars:
+  - vars:
+      ambari_username: ${ sourceServerVars['username'] }
+      ambari_password: ${ sourceServerVars['password'] }
+      ambari_port: ${ sourceServerVars['port'] }
+      ambari_protocol: ${ sourceServerVars['protocol'] }
+      ambari_cluster_name: ${ sourceClusterVars['id'] }
+    defaults:
+      ambari_username: admin
+      ambari_password: admin
+    uiFields:
+      ambari_username: text
+      ambari_password: password

@@ -1,0 +1,118 @@
+---
+- name: Upgrade HDP configurations
+  hosts: 'localhost'
+  tags: hdp-config-upgrade
+  gather_facts: False
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  tasks:
+    - name: Perform the hdp configuration upgrade using the hdp-config-upgrade tool
+      hdp_config_upgrade:
+        ambari_configuration: "{{ ambari_configuration_dictionary }}"
+        hdp_config_upgrade_configuration:
+          script_path: "{{ hdp_config_upgrade_script_path }}"
+          source_version: "{{ am2cm_source_version }}"
+          blueprint_file: "{{ am2cm_ambari_blueprint_file }}"
+          refresh_data: "{{ hdp_config_upgrade_refresh_data }}"
+      register: result
+    - debug:
+        var: result.stdout_lines
+
+- name: Kafka broker id migration tasks
+  import_playbook: kafka_broker_ids.yml
+
+- name: Transitioning HDP cluster to CDP cluster using the AM2CM tool
+  hosts: 'localhost'
+  gather_facts: False
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  tasks:
+    - name: Perform the cluster scan
+      cluster_scanner:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        cluster_scanner_configuration:
+          script_path: "{{ am2cm_script_path }}"
+          cluster_topology_file: "{{ am2cm_cluster_topology_file }}"
+      register: result
+      tags:
+        - scan-cluster
+        - am2cm-saas
+    - debug:
+        var: result.stdout_lines
+      tags:
+        - scan-cluster
+        - am2cm-saas
+
+    - name: Perform the configuration transition using the am2cm-tool
+      am2cm_tool:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        ambari_configuration: "{{ ambari_configuration_dictionary }}"
+        am2cm_configuration:
+          script_path: "{{ am2cm_script_path }}"
+          source_version: "{{ am2cm_source_version }}"
+          deployment_template_file: "{{ am2cm_deployment_template_file }}"
+          skip_pre_upgrade: "{{ am2cm_skip_pre_upgrade }}"
+          user_setting_file: "{{ am2cm_user_settings_file }}"
+          config_path: "{{ am2cm_config_path }}"
+          role_groups_enabled: "{{ am2cm_role_groups_enabled }}"
+      register: result
+      tags:
+        - am2cm
+
+    - name: Perform the configuration transition using the am2cm-tool
+      am2cm_tool:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        am2cm_configuration:
+          script_path: "{{ am2cm_script_path }}"
+          source_version: "{{ am2cm_source_version }}"
+          deployment_template_file: "{{ am2cm_deployment_template_file }}"
+          skip_pre_upgrade: "{{ am2cm_skip_pre_upgrade }}"
+          user_setting_file: "{{ am2cm_user_settings_file }}"
+          config_path: "{{ am2cm_config_path }}"
+          ambari_blueprint_file: "{{ am2cm_ambari_blueprint_file }}"
+          role_groups_enabled: "{{ am2cm_role_groups_enabled }}"
+      register: result
+      tags:
+        - am2cm-one-stage
+
+    - name: Perform the configuration transition using the am2cm-saas tool
+      am2cm_saas:
+        am2cm_saas_configuration:
+          script_path: "{{ am2cm_script_path }}"
+          source_version: "{{ am2cm_source_version }}"
+          target_version: "{{ am2cm_target_version }}"
+          ambari_blueprint_file: "{{ am2cm_ambari_blueprint_file }}"
+          cm_blueprint_file: "{{ am2cm_cm_blueprint_file }}"
+          user_setting_file: "{{ am2cm_user_settings_file }}"
+          config_path: "{{ am2cm_config_path }}"
+      register: result
+      tags:
+        - am2cm-saas
+    - debug:
+        var: result.stdout_lines
+      tags:
+        - am2cm
+        - am2cm-saas
+        - am2cm-one-stage
+
+- name: Upload the configurations to the CDP cluster
+  hosts: 'localhost'
+  tags:
+    - config-upload
+  gather_facts: False
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log' }}"
+  tasks:
+    - name: Perform the configuration upload using the config-upload tool
+      config_upload:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        config_upload_configuration:
+          script_path: "{{ am2cm_script_path }}"
+          cluster_topology_file: "{{ am2cm_cluster_topology_file }}"
+      register: result
+    - debug:
+        var: result.stdout_lines
+

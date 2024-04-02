@@ -1,0 +1,93 @@
+# https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp/topics/amb-kafka-broker.html
+- name: Gather kafka broker hosts from ambari
+  hosts: localhost
+  tags: am2cm-one-stage
+  gather_facts: false
+  vars:
+    ambari_base_url: "{{ ambari_configuration_dictionary['protocol'] }}://\
+    {{ ambari_configuration_dictionary['hostname'] }}:{{ ambari_configuration_dictionary['port'] }}"
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  tasks:
+    - name: API request to get hosts which have the kafka service installed
+      uri:
+        url: "{{ ambari_base_url + '/' + path }}"
+        user: "{{ ambari_configuration_dictionary['username'] }}"
+        password: "{{ ambari_configuration_dictionary['password'] }}"
+        validate_certs: no
+        force_basic_auth: yes
+        headers:
+          Content-Type: application/json
+      vars:
+        path: "api/v1/clusters/{{ ambari_configuration_dictionary['cluster_name'] }}\
+        /hosts?fields=host_components/HostRoles/service_name&minimal_response=true&sortBy=Hosts/host_name.asc"
+      register: response
+    - name: Add hosts to kafka_brokers group
+      add_host:
+        hostname: "{{ item }}"
+        group: kafka_brokers
+      loop: "{{ response['json'] |\
+       json_query('items[?host_components[?HostRoles.component_name==`KAFKA_BROKER`]].Hosts.host_name') }}"
+
+- name: Get kafka logdir & Get files containing broker ids from kafka broker hosts
+  hosts: kafka_brokers
+  tags: am2cm-one-stage
+  gather_facts: false
+  vars:
+    ambari_base_url: "{{ ambari_configuration_dictionary['protocol'] }}://\
+    {{ ambari_configuration_dictionary['hostname'] }}:{{ ambari_configuration_dictionary['port'] }}"
+  tasks:
+    - name: Assemble kafka_log_dir fact
+      block:
+        - name: Get Kafka configuration from ambari config via API call
+          uri:
+            url: "{{ ambari_base_url + '/' + path }}"
+            user: "{{ ambari_configuration_dictionary['username'] }}"
+            password: "{{ ambari_configuration_dictionary['password'] }}"
+            validate_certs: no
+            force_basic_auth: yes
+            headers:
+              Content-Type: application/json
+          vars:
+            path: "api/v1/clusters/{{ ambari_configuration_dictionary['cluster_name'] }}/configurations/\
+              service_config_versions?service_name=KAFKA&is_current=true"
+          register: config_response
+        - name: Query kafka log.dirs from response into kafka_log_dir fact
+          set_fact:
+            kafka_log_dir: "{{ config_response.json |\
+              json_query('items[].configurations[].properties.\"log.dirs\"') | first | split(',') | first }}"
+          delegate_facts: true
+        - name: Fail when kafka_log_dir isn't set
+          fail:
+            msg: "log.dirs property in kafka service is empty in ambari!"
+          when: hostvars['localhost']['kafka_log_dir'] | length == 0
+        - name: Print kafka_log_dir fact
+          debug:
+            var: hostvars['localhost']['kafka_log_dir']
+      delegate_to: localhost
+      run_once: true
+    - name: Get meta.properties from broker hosts
+      fetch:
+        src: "{{ hostvars['localhost']['kafka_log_dir'] }}/meta.properties"
+        dest: /tmp/fetched_meta_properties
+
+- name: Write the ids from the fetched files into kafka-broker-ids.ini
+  hosts: localhost
+  tags: am2cm-one-stage
+  gather_facts: false
+  tasks:
+    - block:
+        - name: Create a list that contains 'hostname broker_id'
+          set_fact:
+            list_for_template: "{{ list_for_template|default([]) + [item+' '+broker_id] }}"
+          loop: "{{ groups['kafka_brokers'] }}"
+          vars:
+            broker_id: "{{ lookup('ansible.builtin.ini', 'broker.id',\
+            file='/tmp/fetched_meta_properties/' + item + hostvars.localhost.kafka_log_dir + '/'\
+            'meta.properties', type='properties') }}"
+        - name: Create the ini file by templating out the list variable
+          template:
+            src: "kafka-broker-ids.j2"
+            dest: "{{ am2cm_config_path }}/kafka-broker-ids.ini"
+      when: groups['kafka_brokers'] is defined and (groups['kafka_brokers']|length > 0)

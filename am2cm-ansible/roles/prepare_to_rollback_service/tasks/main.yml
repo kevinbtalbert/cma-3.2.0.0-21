@@ -1,0 +1,13 @@
+- name: "Set backup directory for {{ service_name }} service"
+  set_fact:
+    service_backup_dir: "{{ backup_root_dir }}/{{ service_name }}"
+
+- name: "Check if the backup directory of {{ service_name }} service exists"
+  stat:
+    path: "{{ service_backup_dir }}/"
+  register: service_backup_dir_info
+
+- name: Print info about backup dir
+  debug:
+    var: service_backup_dir_info.stat.exists
+

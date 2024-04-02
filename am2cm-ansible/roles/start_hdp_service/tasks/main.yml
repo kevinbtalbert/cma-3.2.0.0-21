@@ -1,0 +1,13 @@
+- name: Start HDP service
+  block:
+    - name: "Starting {{ service_name }} in Ambari"
+      start_hdp_service:
+        ambari_configuration: "{{ ambari_configuration_dictionary }}"
+        service_name: "{{ service_name }}"
+      register: start_service_result
+
+    - name: Print response
+      debug:
+        var: start_service_result
+  run_once: True
+  delegate_to: localhost

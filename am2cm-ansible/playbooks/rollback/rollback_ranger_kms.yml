@@ -1,0 +1,18 @@
+---
+- name: Rollback Ranger KMS
+  hosts: backup_ranger_kms
+  gather_facts: False
+  tags: ranger-kms-rollback
+  vars:
+    service_name: ranger_kms
+  roles:
+    - prepare_to_rollback_service
+  tasks:
+    # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3_rollback_hdp3_ranger_kms_db_7.1.7.html
+    - name: "Rollback ranger kms db"
+      include_role:
+        name: rollback_db
+
+    - name: Start Ranger KMS in Ambari
+      include_role:
+        name: start_hdp_service

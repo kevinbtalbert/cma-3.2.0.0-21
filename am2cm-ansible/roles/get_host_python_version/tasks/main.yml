@@ -1,0 +1,15 @@
+- name: Get python version from ansible_python_interpreter variable  # for the hosts whose ansible_python_interpreter has already been defined before running this playbook
+  block:
+    # NOTE python2 writes version to stderr
+    - name: Get version using the ansible_python_interpreter
+      shell: >
+        {{ ansible_python_interpreter }} -V 2>&1
+      register: python_version_shell_output
+      changed_when: false
+    - name: Set the value for host_python_version
+      set_fact:
+        host_python_version: "{{ python_version_shell_output.stdout_lines | last | split | last }}"
+  when: host_python_version is not defined
+- name: Print python version of host
+  debug:
+    msg: "Host python version: {{ host_python_version }}"

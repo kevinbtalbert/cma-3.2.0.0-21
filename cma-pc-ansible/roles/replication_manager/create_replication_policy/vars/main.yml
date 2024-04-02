@@ -1,0 +1,13 @@
+# Common data
+replication_policy_name: ""
+replication_policy_description: ""
+source_cluster_crn: ""
+#target_aws_s3_credential_name: ""
+source_cluster_identifier: "{{ source_cluster_id }}"
+
+# HDFS specific data
+source_hdfs_path: ""
+target_aws_s3_dataset_path: ""
+
+# HIVE specific data
+hive_s3_external_table_base_directory: ""

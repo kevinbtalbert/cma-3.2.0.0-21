@@ -1,0 +1,126 @@
+---
+- name: Atlas post migration initialization steps
+  hosts: localhost
+  tags: atlas-post-migration
+  gather_facts: False
+  vars:
+    service_name: "atlas"
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  tasks:
+    - name: Get atlas server supported operations
+      query_role_commands:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        service_name: "{{ service_name }}"
+        role_name_filter: "ATLAS_SERVER"
+      register: atlas_supported_operations
+    - name: Print atlas server role supported operations
+      debug:
+        msg: "Atlas server role supported operations: {{ atlas_supported_operations.message }}"
+    - name: Run Atlas service commands
+      atlas_plugin_setup:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        create_hbase_tables: "{{ (am2cm_source_version == 'HDP2')|bool }}"
+        create_kafka_topics: >
+          {{ (am2cm_source_version == 'HDP2' and 
+          'CreateKafkaTopicsForAtlas' in atlas_supported_operations.message)|bool }}
+
+- name: Create kafka topics for atlas
+  import_playbook: operate_kafka_topics_for_atlas.yml
+  when:
+    - am2cm_source_version == "HDP2"
+    - '"CreateKafkaTopicsForAtlas" not in hostvars["localhost"]["atlas_supported_operations"].message'
+
+- name: Atlas post migration steps
+  hosts: localhost
+  tags: atlas-post-migration
+  gather_facts: False
+  vars:
+    service_name: "atlas"
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  tasks:
+    - name: Atlas migration
+      block:
+        - name: "Set working dir for atlas migration tool"
+          set_fact:
+            atlas_migration_dir: "{{ backup_root_dir }}/atlas_migration_dir"
+        - name: Configure atlas to migration mode
+          include_role:
+            name: update_safety_valve
+          vars:
+            configuration_type: ROLE
+            configuration_format: PROPERTY_FILE
+            cm_role_name: atlas-ATLAS_SERVER
+            name: conf/atlas-application.properties_role_safety_valve
+            value:
+              atlas.migration.data.filename: "{{ atlas_migration_dir }}"
+            state: present
+        - name: Start up atlas service
+          include_role:
+            name: restart_service
+      when: am2cm_source_version == 'HDP2'
+
+- name: Get Atlas hosts
+  tags: atlas-post-migration
+  gather_facts: False
+  hosts: all
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  roles:
+    - {role: get_hostnames_where_role_group_is_located, role_group_filter: "ATLAS_SERVER"}
+
+- name: Atlas migration process
+  hosts: ATLAS_SERVER[0]
+  tags: atlas-post-migration
+  gather_facts: False
+  tasks:
+    - name: Wait till migration complete
+      wait_for:
+        path: "/var/log/atlas/application.log"
+        search_regex: "Done! loadLegacyGraphSON"
+      when: am2cm_source_version == 'HDP2'
+
+- name: Atlas finalize migration steps
+  hosts: localhost
+  tags: atlas-post-migration
+  gather_facts: False
+  vars:
+    service_name: "atlas"
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  tasks:
+    - name: Disable migration mode for atlas
+      include_role:
+        name: update_safety_valve
+      vars:
+        configuration_type: ROLE
+        configuration_format: PROPERTY_FILE
+        cm_role_name: atlas-ATLAS_SERVER
+        name: conf/atlas-application.properties_role_safety_valve
+        value:
+          - atlas.migration.data.filename
+        state: absent
+      when: am2cm_source_version == 'HDP2'
+    - name: Restart atlas service
+      include_role:
+        name: restart_service
+    - name: Remove atlas.migration.mode.hdp.to.cdp property
+      include_role:
+        name: update_safety_valve
+      vars:
+        configuration_type: ROLE
+        configuration_format: PROPERTY_FILE
+        cm_role_name: atlas-ATLAS_SERVER
+        name: conf/atlas-application.properties_role_safety_valve
+        value:
+          - atlas.migration.mode.hdp.to.cdp
+        state: absent
+    - name: Restart Atlas if atlas.migration.mode.hdp.to.cdp property has been removed
+      include_role:
+        name: restart_service
+      when: safety_valve_result.changed

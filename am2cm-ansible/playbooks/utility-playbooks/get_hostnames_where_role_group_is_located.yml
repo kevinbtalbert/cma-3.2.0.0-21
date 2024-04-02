@@ -1,0 +1,7 @@
+---
+- hosts: all
+  gather_facts: False
+  vars:
+    role_group_filter: kafka
+  roles:
+    - get_hostnames_where_role_group_is_located

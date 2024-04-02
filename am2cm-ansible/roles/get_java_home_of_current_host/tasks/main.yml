@@ -1,0 +1,39 @@
+- name: Get java home
+  vars:
+    cloudera_config_default_path: /opt/cloudera/cm-agent/service/common/cloudera-config.sh
+    cloudera_config_cdh5_path: /usr/lib64/cmf/service/common/cloudera-config.sh
+  block:
+    - name: Try to get java home from CM API
+      read_config_from_host:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        host_name: "{{ inventory_hostname }}"
+        configuration_name: "java_home"
+      register: cm_api_result
+      delegate_to: localhost
+    - name: Extract cm_api_result to java_home
+      set_fact:
+        java_home: "{{ cm_api_result.message }}"
+  rescue:
+    - name: Check if cloudera_config_default_path file exists
+      stat:
+        path: "{{ cloudera_config_default_path }}"
+      register: config_default_file
+
+    - name: Set cloudera_config_path variable
+      set_fact:
+        cloudera_config_path: "{{ config_default_file.stat.exists | ternary(cloudera_config_default_path, cloudera_config_cdh5_path) }}"
+
+    - name: Try to get java home from host shell
+      shell: |
+        source {{ cloudera_config_path }}
+        set +x
+        locate_java_home
+      register: console_out
+      changed_when: False
+      become: yes
+    - name: Extract console_out result to java_home
+      set_fact:
+        java_home: "{{ console_out.stdout | regex_replace('.*=(.*)','\\1') }}"
+- name: Print java_home
+  debug:
+    msg: "{{ java_home }}"

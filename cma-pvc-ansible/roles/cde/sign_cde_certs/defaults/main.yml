@@ -1,0 +1,4 @@
+---
+use_root_ca: false
+
+cde_certs_dir: "~/cluster-{{ cluster_name }}/pvc-certs"

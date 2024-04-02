@@ -1,0 +1,21 @@
+- name: Generate Kerberos Credential in Cloudera Manger
+  block:
+    - name: Create request body for generating kerberos credential
+      set_fact:
+        request_body: '{"items": ["{{ principal_name }}"]}'
+
+    - name: Generate Kerberos Credential
+      uri:
+        url: "{{ cloudera_manager_protocol }}://{{ groups['server'][0] }}:{{ cloudera_manager_port }}/api/{{ cloudera_manager_api_version }}/cm/commands/generateCredentialsAdhoc"
+        headers:
+          Content-Type: "application/json"
+        body_format: "json"
+        status_code: 200, 201
+        method: POST
+        user: "{{ cloudera_manager_admin_username }}"
+        password: "{{ cloudera_manager_admin_password }}"
+        return_content: yes
+        validate_certs: no
+        body: "{{ request_body }}"
+      run_once: True
+  delegate_to: localhost

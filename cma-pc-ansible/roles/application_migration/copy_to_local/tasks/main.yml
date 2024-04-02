@@ -1,0 +1,69 @@
+# Copyright (c) 2023, Cloudera, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+- name: Collect files to copy
+  block:
+    - name: Check source is a file
+      stat:
+        path: "{{ source_path }}"
+      register: stat_result
+
+    - name: Path doesn't exist
+      debug:
+        msg: "Path {{ source_path }} doesn't exist on {{ remote_host }}"
+      when: not stat_result.stat.exists
+
+    - name: Set a single file to copy
+      set_fact:
+        filepaths_to_copy:
+          - "{{ source_path }}"
+      when: stat_result.stat.exists and not stat_result.stat.isdir
+
+    - name: Get files from directory
+      block:
+        - name: Find all files to copy
+          find:
+            paths: "{{ source_path }}"
+            recurse: true
+            patterns: "{{ patterns }}"
+          register: files_to_copy
+
+        - name: Extract filenames
+          set_fact:
+            filepaths_to_copy: "{{ files_to_copy.files | selectattr('path', 'defined') | map(attribute='path') }}"
+      when: stat_result.stat.isdir is defined and stat_result.stat.isdir
+  delegate_to: "{{ remote_host }}"
+
+- name: Process files
+  block:
+    - name: Set subdir to remove
+      set_fact:
+        subdir_to_remove: "{{ subdir_to_remove | default('') }}"
+
+    - name: Print files to copy
+      debug:
+        msg: "{{ filepaths_to_copy }}"
+      delegate_to: "{{ remote_host }}"
+
+    - name: Copy files
+      fetch:
+        src: "{{ filepath }}"
+        dest: "{{ dest_path }}/{{ source_subdir }}/{{ filepath | replace(subdir_to_remove, '') }}"
+        flat: true
+      loop: "{{ filepaths_to_copy }}"
+      loop_control:
+        loop_var: filepath
+      delegate_to: "{{ remote_host }}"
+  when: stat_result.stat.exists and filepaths_to_copy | length > 0

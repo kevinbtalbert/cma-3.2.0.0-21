@@ -1,0 +1,38 @@
+{
+  "clusterCrn": "{{ source_cluster_crn }}",
+  "policyName": "{{ replication_policy_name }}",
+  "policyDefinition": {
+    "name": "{{ replication_policy_name }}",
+    "type": "HIVE",
+    "sourceCluster": "{{ source_cluster_identifier }}",
+    "targetCluster": "{{ target_cluster_identifier }}",
+    "sourceDataset": {
+      "hiveArguments": {
+        "sentryPermissions": "{{ hive_sentry_permissions }}",
+        "databasesAndTables": [
+          {% for item in hive_database_and_tables %}
+          {
+            "database": "{{ item.hive_database_name }}",
+            "tablesIncludeRegex": "{{ item.included_tables_regex }}",
+            "tablesExcludeRegex": "{{ item.excluded_tables_regex }}"
+          }
+          {% if not loop.last %},{% endif %}
+          {% endfor %}
+         ]
+      }
+    },
+    "hiveExternalTableBaseDirectory": "{{ hive_s3_external_table_base_directory }}",
+    "frequencyInSec": {{ frequency_in_sec }},
+    {% if start_time %}
+    "startTime": "{{ start_time }}",
+    {% endif %}
+    "cloudCredential": "{{ target_adls_credential_name }}",
+    "description": "{{ replication_policy_description }}"
+    {% if submit_with_user %}
+    ,"cmPolicySubmitUser": {
+        "sourceUser": "{{ source_user }}"
+    }
+    {% endif %}
+  }
+}
+

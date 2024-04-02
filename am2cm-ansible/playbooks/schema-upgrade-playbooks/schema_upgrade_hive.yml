@@ -1,0 +1,56 @@
+---
+- name: Hive schema upgrade step 1
+  hosts: localhost
+  tags: hive-schema-upgrade
+  gather_facts: False
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  roles:
+    - {role: get_hostnames_where_role_group_is_located, role_group_filter: HIVEMETASTORE}
+    - {role: run_service_command, service_name: "hive", command: "deployClientConfig"}
+
+- name: Hive schema upgrade step 2
+  hosts: HIVEMETASTORE[0]
+  tags: hive-schema-upgrade
+  gather_facts: False
+  vars:
+    service_name: hive
+  roles:
+    - { role: distribute_jdbc_drivers, jdbc_remote_driver_directory: "{{ hive_jdbc_dir }}" }
+  tasks:
+    - name: Query hive database related configurations from Cloudera Manager
+      include_role:
+        name: query_configuration_from_service
+      vars:
+        configuration_type: SERVICE
+        configuration_name: "hive_metastore_database_{{ item }}"
+      loop: [type, name, host, port, user, password]
+
+      # dbType needs a hack, since Hive schematool only recognizes 'postgres' as an input for DB type
+    - name: Assemble facts for upgrading the hive schema
+      set_fact:
+        hive_schema_upgrade_command: >-
+          {{ hive_home }}/bin/schematool -upgradeSchema
+          -dbType {{ (hive_metastore_database_type == 'postgresql') | ternary('postgres', hive_metastore_database_type) }}
+          -driver {{ hive_jdbc_driver }}
+          -url {{ hive_jdbc_url }}
+          -userName {{ hive_metastore_database_user }}
+          -passWord {{ hive_metastore_database_password }}
+      vars:
+        hive_jdbc_url:
+          "jdbc:{{ hive_metastore_database_type }}://\
+          {{ hive_metastore_database_host | urlencode }}:{{ hive_metastore_database_port }}\
+          /{{ hive_metastore_database_name | urlencode }}"
+        hive_jdbc_driver: "{{ lookup('vars', 'hive_' + hive_metastore_database_type + '_jdbc_driver') }}"
+    - name: Print upgrade command
+      debug:
+        var: hive_schema_upgrade_command
+
+    - name: Run schema upgrade tool
+      shell: >
+        {{ hive_schema_upgrade_command }}
+      register: hive_schema_upgrade_command_output
+      environment:
+        HIVE_CONF_DIR: "{{ hive_home }}/conf"
+      changed_when: "'Finished upgrading MetaStore schema' in hive_schema_upgrade_command_output.stdout"

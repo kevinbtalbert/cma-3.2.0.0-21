@@ -1,0 +1,27 @@
+---
+name: Rollback
+type: INPLACE_ONE_STAGE_UPGRADE
+sourceClusterType: HDP3
+version: 1
+steps:
+  - name: Rollback CDP PvC Base to HDP3
+    type: group
+    doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3-one-stage/topics/amb3-one-stage-rollback.html"
+    steps:
+      - name: Rollback CM to Ambari
+        type: task
+        execution: auto
+        ansibleTags:
+          - ambari-rollback
+          - etc-config-rollback
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/playbooks/rollback/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3-one-stage/topics/amb3-one-stage-manual-rollback.html"
+      - name: Rollback Kerberos
+        type: task
+        execution: auto
+        ansibleTags:
+          - kerberos-rollback
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/playbooks/rollback/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3-one-stage/topics/amb3-one-stage-kerberos-rollback.html"

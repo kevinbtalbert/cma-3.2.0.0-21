@@ -1,0 +1,35 @@
+---
+name: CDH to CDP PC
+transitionType: PUBLIC_CLOUD_DATA_MIGRATION
+sourceClusterType: CDH6
+targetClusterType: CDP_PC
+inventory: inventory-definition.yml
+vars: vars-definition.yml
+settings: settings-definition.yml
+sections:
+  check: sections/pc-check.yml
+  transition: sections/pc-transition.yml
+
+---
+name: CDH to CDP PC
+transitionType: PUBLIC_CLOUD_DATA_MIGRATION
+sourceClusterType: CDH5
+targetClusterType: CDP_PC
+inventory: inventory-definition.yml
+vars: vars-definition.yml
+settings: settings-definition.yml
+sections:
+  check: sections/pc-check.yml
+  transition: sections/pc-transition.yml
+
+---
+name: CDP PvC Base to CDP PC
+transitionType: PUBLIC_CLOUD_DATA_MIGRATION
+sourceClusterType: CDP_PVC_BASE
+targetClusterType: CDP_PC
+inventory: inventory-definition.yml
+vars: vars-definition.yml
+settings: settings-definition.yml
+sections:
+  check: sections/pc-check.yml
+  transition: sections/pc-transition.yml

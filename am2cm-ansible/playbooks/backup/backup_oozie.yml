@@ -1,0 +1,49 @@
+---
+- name: Backup Oozie HA keytab
+  hosts: all
+  gather_facts: False
+  tags: oozie-backup
+  vars:
+    service_name: oozie
+  roles:
+    - prepare_to_backup_service
+  tasks:
+    - block:
+        - name: Check if Oozie HA keytab exists
+          stat:
+            path: "{{ oozie_ha_keytab_path }}"
+          register: oozie_ha_keytab
+
+        - name: Copy Oozie HA keytab
+          copy:
+            src: "{{ oozie_ha_keytab_path }}"
+            dest: "{{ service_backup_dir }}/{{ oozie_ha_keytab_backup_file }}"
+            remote_src: yes
+          become: yes
+          become_user: oozie
+          when: oozie_ha_keytab.stat.exists
+      when: oozie_is_ha
+
+- name: Get oozie db host form jdbc url
+  tags: oozie-backup
+  hosts: localhost
+  gather_facts: False
+  roles:
+    - { role: get_db_host_from_jdbc_url, jdbc_url: "{{ oozie_database_host_url }}", db_name: "{{ oozie_db_name }}" }
+  tasks:
+    - name: Create backup_oozie host group
+      add_host:
+        name: "{{ db_host }}"
+        groups: backup_oozie
+
+- name: Backup Oozie db
+  hosts: backup_oozie_db
+  gather_facts: False
+  tags: oozie-backup
+  vars:
+    service_name: oozie
+  roles:
+    - role: backup_db
+      vars:
+        db_host: "{{ inventory_hostname }}"
+        database_type: "{{ oozie_database_host_url | regex_search('jdbc:([a-z]+):.*', '\\1') | first }}"

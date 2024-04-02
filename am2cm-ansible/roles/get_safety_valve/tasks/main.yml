@@ -1,0 +1,32 @@
+- name: Get safety valve
+  block:
+    - name: Do get
+      get_safety_valve:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        service_name: "{{ service_name }}"
+        configuration_type: "{{ configuration_type }}"
+        role_name: "{{ cm_role_name }}"
+        configuration_format: "{{ configuration_format }}"
+        valve_name: "{{ valve_name }}"
+        valve_value: "{{ valve_value }}"
+      register: safety_valve_result
+
+    - name: Print response
+      debug:
+        var: safety_valve_result
+
+    - name: Escaping output variable name
+      set_fact:
+        output_variable_name: "{{ valve_value | regex_replace('[^a-zA-Z0-9_]','_') }}"
+
+    - name: Assigning value to output variable
+      set_fact:
+        "{{ output_variable_name }}": "{{ safety_valve_result.message }}"
+
+    - name: Print created fact
+      debug:
+        msg:
+          - "Name of the service that the configuration was queried from: '{{ service_name }}'"
+          - "Fact named '{{ output_variable_name }}' is now available and it's value is '{{ vars[output_variable_name] }}'"
+  delegate_to: localhost
+  run_once: True

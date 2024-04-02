@@ -1,0 +1,15 @@
+- import_playbook: rollback_ambari.yml
+- import_playbook: rollback_service_configs.yml
+- import_playbook: rollback_kerberos.yml
+- import_playbook: rollback_zookeeper.yml
+- import_playbook: rollback_infra_solr.yml
+- import_playbook: rollback_ranger.yml
+- import_playbook: rollback_ranger_kms.yml
+- import_playbook: rollback_hdfs.yml
+- import_playbook: rollback_yarn.yml
+- import_playbook: rollback_hbase.yml
+- import_playbook: rollback_kafka.yml
+- import_playbook: rollback_atlas.yml
+- import_playbook: rollback_hive.yml
+- import_playbook: rollback_oozie.yml
+- import_playbook: clear_ambari_kerberos_cache.yml

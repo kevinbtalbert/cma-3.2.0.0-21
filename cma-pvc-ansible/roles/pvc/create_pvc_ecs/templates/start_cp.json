@@ -1,0 +1,6 @@
+{
+  "remoteRepoUrl": "{{ pvc_repo_url }}",
+  "containerizedClusterName": "{{ pvc_cluster_name }}",
+  "datalakeClusterName": "{{ cluster_name }}",
+  "valuesYaml": "{{ ecs_values_yaml }}"
+}

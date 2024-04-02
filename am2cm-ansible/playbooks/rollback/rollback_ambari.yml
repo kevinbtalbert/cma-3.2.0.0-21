@@ -1,0 +1,44 @@
+---
+
+- name: Rollback to Ambari
+  hosts: all
+  gather_facts: False
+  tags: ambari-rollback
+  tasks:
+    - name: Stop all running service in CM
+      stop_all_services:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+      delegate_to: localhost
+      run_once: true
+
+    - block:
+        - name: Get Ambari Server status
+          command: ambari-server status
+          register: ambari_server_status
+        - debug:
+            msg: Ambari Server is already running
+          when: "'Ambari Server running' in ambari_server_status.stdout_lines"
+        - block:
+            - name: Start Ambari server
+              command: ambari-server start
+            - name: Wait for ambari server to finish starting
+              wait_for:
+                port: "{{ ambari_port }}"
+                delay: 10
+          when: "'Ambari Server running' not in ambari_server_status.stdout_lines"
+      delegate_to: "{{ groups['ambari_server'][0] }}"
+      run_once: true
+
+    - block:
+        - name: Get Ambari Agent status
+          command: ambari-agent status
+          register: ambari_agent_status
+        - debug:
+            msg: Ambari Agent is already running
+          when: "'ambari-agent running.' in ambari_agent_status.stdout"
+        - name: Start Ambari agent
+          command: ambari-agent start
+          when: "'ambari-agent running.' not in ambari_agent_status.stdout"
+
+    - name: Run hdp-select
+      command: hdp-select set all {{ hdp_version }}

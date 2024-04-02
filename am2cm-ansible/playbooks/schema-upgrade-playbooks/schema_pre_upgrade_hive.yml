@@ -1,0 +1,112 @@
+---
+- name: Hive schema pre-upgrade dependencies check
+  hosts: localhost
+  tags: hive-schema-pre-upgrade
+  gather_facts: false
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  roles:
+    - {role: get_hostnames_where_role_group_is_located, role_group_filter: HIVEMETASTORE}
+    - {role: run_service_command, service_name: "hive", command: "deployClientConfig"}
+
+- name: Hive warehouse directories creation
+  hosts: localhost
+  tags: hive-schema-pre-upgrade
+  gather_facts: false
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  roles:
+    - { role: query_configuration_from_service, service_name: hive, configuration_name: hive_warehouse_directory,
+        configuration_type: SERVICE}
+  tasks:
+    - name: Get hive-site properties for hdp
+      command: >-
+        python /var/lib/ambari-server/resources/scripts/configs.py
+        -u {{ ambari_username }} -p {{ ambari_password }}
+        -s {{ ambari_protocol }} -l {{ inventory_hostname }} -t {{ ambari_port }} -n {{ ambari_cluster_name }}
+        -c 'hive-site'
+        -a 'get'
+      delegate_to: "{{ groups['ambari_server'][0] }}"
+      register: hive_site_properties
+
+    - name: Print hdp hive-site properties
+      debug:
+        msg: "{{ hive_site_properties }}"
+
+    - name: Get hive warehouse directory for hdp
+      set_fact:
+        hdp_hive_warehouse_directory: "{{ (hive_site_properties.stdout_lines[2:] | join('\n') | from_json)['properties']['hive.metastore.warehouse.dir'] }}"
+
+    - name: Print hive warehouse dir path for hdp
+      debug:
+        var: hdp_hive_warehouse_directory
+
+    - name: Run Hive command to create warehouse directory
+      include_role:
+        name: run_service_command
+      vars:
+        service_name: hive
+        command: "CreateHiveWarehouseDir"
+      when: hive_warehouse_directory != hdp_hive_warehouse_directory
+
+    # it is run always because hdp2 doesn't support external warehouse directory
+    - name: Run Hive command to create external warehouse directory
+      include_role:
+        name: run_service_command
+      vars:
+        service_name: hive
+        command: "CreateHiveWarehouseExternalDir"
+
+- name: Hive schema pre-upgrade tables compaction
+  hosts: HIVEMETASTORE[0]
+  tags: hive-schema-pre-upgrade
+  gather_facts: false
+  vars:
+    service_name: hive
+  roles:
+    - { role: distribute_jdbc_drivers, jdbc_remote_driver_directory: "{{ hive_jdbc_dir }}" }
+    - get_java_home_of_current_host
+  tasks:    
+    - name: Resolve principal naname
+      set_fact:
+        hive_princ: "{{ hive_metastore_principal | regex_replace('_HOST', inventory_hostname) }}"
+
+    - name: Download Hive service keytab
+      vars:
+        principal_name: "{{ hive_princ }}"
+      include_role: 
+        name: get_cm_service_keytab
+
+    - name: Run kinit if necessary
+      include_role:
+        name: kinit
+      vars:   
+        keytab: "{{ cm_service_keytab_filename }}"
+        principal: "{{ hive_princ }}"
+        skip_kinit: false
+        service_name: hive
+        become_user: "{{ hive_user_name }}"
+
+    - name: Assemble facts for upgrading the hive schema
+      set_fact:
+        hive_schema_pre_upgrade_command: >-
+          {{ java_home }}/bin/java -Djavax.security.auth.useSubjectCredsOnly=false
+          org.apache.hadoop.hive.upgrade.acid.PreUpgradeTool -execute
+
+    - name: Print variables
+      debug:
+        msg: |
+          hive_schema_pre_upgrade_command: {{ hive_schema_pre_upgrade_command }}
+          hive_princ: {{ hive_princ }}
+
+    - name: Run schema upgrade tool
+      shell: >
+        {{ hive_schema_pre_upgrade_command }}
+      register: hive_schema_pre_upgrade_command_output
+      environment:
+        HIVE_CONF_DIR: "{{ hive_home }}/conf"
+        JAVA_HOME: "{{ java_home }}"
+        CLASSPATH: "{{ old_hadoop_home }}/hive-metastore/lib/*:{{ old_hadoop_home }}/hadoop-client/*:{{ old_hadoop_home }}/hadoop-mapreduce-client/*:{{ old_hadoop_home }}/hadoop-hdfs-client/*:{{ hadoop_home }}/etc/hadoop/*:{{ hive_home }}/lib/hive-pre-upgrade.jar:{{ hive_home }}/conf"
+      changed_when: "'Finished upgrading MetaStore schema' in hive_schema_pre_upgrade_command_output.stdout"

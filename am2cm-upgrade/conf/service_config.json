@@ -1,0 +1,6 @@
+{
+  "ignoredServiceNames": ["GPFS", "SMARTSENSE"],
+  "renamedServices": {
+    "AMBARI_INFRA": "AMBARI_INFRA_SOLR"
+  }
+}

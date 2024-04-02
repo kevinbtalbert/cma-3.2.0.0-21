@@ -1,0 +1,62 @@
+---
+- name: Check if mariabdb version is compatible with Cloudera Manager
+  hosts: database
+  tags: check-mariadb-version
+  gather_facts: False
+  vars:
+    incompatible_versions:
+      - 10.2.26
+#      - 11.3.2 # example value
+#      - 11.3.4-13.9.8 # example range
+
+  tasks:
+    - name: List incompatible MariaDB versions
+      debug:
+        var: incompatible_versions
+
+    - name: Get mysql DB version
+      mysql_info:
+        login_user: "{{ database_username }}"
+        login_password: "{{ database_secret }}"
+        filter: version
+      register: mysql_info_output
+
+    - name: Your DB environment
+      debug:
+        var: mysql_info_output
+
+    - name: create version numbers only list
+      set_fact:
+        only_single_versions: "{{ only_single_versions|default([]) + item | split('-') }}"
+      with_items: "{{ incompatible_versions }}"
+      when: item | split('-') | length == 1
+
+    - name: create ranges dictionaries
+      set_fact:
+        only_ranges: "{{ only_ranges|default([]) + [ dict( ['begin', 'end'] | zip(item | split('-') ) ) ] }}"
+      with_items: "{{ incompatible_versions }}"
+      when: item | split('-') | length == 2
+
+    - name: Transform output of DB env info
+      set_fact:
+        db_version: "{{
+        [ mysql_info_output['version']['major'],
+          mysql_info_output['version']['minor'],
+          mysql_info_output['version']['release'] ] | map('string') | join('.') }}"
+
+    - name: Fail if version is among list of incompatible versions
+      fail:
+        msg: "Failed, since DB version == {{ item }}"
+      with_items: "{{ only_single_versions }}"
+      when: only_single_versions is defined and db_version is version(item, operator='==', strict=True)
+
+    - name: Fail if version is in incompatible ranges
+      fail:
+        msg: "Failed, since DB version is in {{ item }}"
+      with_items: "{{ only_ranges }}"
+      when: only_ranges is defined and db_version is version(item['begin'], operator='>=', strict=True) and
+        db_version is version(item['end'], operator='<=', strict=True)
+
+    - name: Success scenario
+      debug:
+        msg: "Success, your database's version is compatible!"

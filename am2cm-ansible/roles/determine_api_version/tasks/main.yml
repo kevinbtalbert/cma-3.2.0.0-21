@@ -1,0 +1,20 @@
+- name: Determine API version
+  block:
+    - name: Obtain cloudera API version from Server Node
+      uri:
+        url: "{{ cloudera_manager_protocol }}://{{ (groups['server'] | default(groups['cloudera_manager']))[0] }}:{{ cloudera_manager_port }}/api/version"
+        user: "{{ cloudera_manager_admin_username }}"
+        password: "{{ cloudera_manager_admin_password }}"
+        return_content: yes
+        validate_certs: no
+      register: response
+      run_once: True
+      delegate_to: localhost
+    - name: Print response
+      debug:
+        var: response['content']
+      run_once: True
+    - name: Register response in cloudera_manager_api_version variable
+      set_fact:
+        cloudera_manager_api_version: "{{ response['content'] }}"
+  when: cloudera_manager_api_version is not defined

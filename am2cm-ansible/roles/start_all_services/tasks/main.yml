@@ -1,0 +1,11 @@
+- name: Start all services
+  block:
+    - name: Send start all services API request to CM server
+      start_all_services:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+      register: start_all_services_result
+    - name: Print response
+      debug:
+        var: start_all_services_result
+  run_once: True
+  delegate_to: localhost

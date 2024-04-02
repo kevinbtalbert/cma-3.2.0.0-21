@@ -1,0 +1,12 @@
+---
+- name: Deploy client configurations for all services & refresh roles
+  tags: deploy-client-configurations-post-migration
+  hosts: localhost
+  gather_facts: False
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  tasks:
+    - name: Deploy client configurations for all services & refresh roles
+      deploy_client_configs_and_refresh_roles:
+        cm_configuration: "{{ cm_configuration_dictionary }}"

@@ -1,0 +1,24 @@
+- name: API request to obtain hdp services
+  vars:
+    ambari_base_url: "{{ ambari_configuration_dictionary['protocol'] }}://\
+    {{ ambari_configuration_dictionary['hostname'] }}:{{ ambari_configuration_dictionary['port'] }}"
+    path: "api/v1/clusters/{{ ambari_configuration_dictionary['cluster_name'] }}/services"
+  uri:
+    url: "{{ ambari_base_url + '/' + path }}"
+    user: "{{ ambari_configuration_dictionary['username'] }}"
+    password: "{{ ambari_configuration_dictionary['password'] }}"
+    validate_certs: no
+    force_basic_auth: yes
+  register: response
+
+- name: Fetch existing services
+  set_fact:
+    hdp_services: "{{ response['json'] | json_query('items[].ServiceInfo.service_name') }}"
+
+- name: Print hdp service to be checked for
+  debug:
+    msg="Looking for service {{ hdp_service_to_check }}"
+
+- name: Check hdp service exists
+  set_fact:
+    hdp_service_exists: "{{ hdp_service_to_check in hdp_services }}"

@@ -1,0 +1,59 @@
+---
+- name: HDFS post AM2CM migration
+  hosts: localhost
+  gather_facts: false
+  tags: hdfs-post-migration
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  tasks:
+    - name: HDFS TLS/SSL chapter # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp/topics/amb-enable-tls-ssl.html
+      hdfs_tls_ssl:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        hadoop_rpc_protection: "{{ hadoop_rpc_protection }}"
+        net_topology_script_file_name: "{{ net_topology_script_file_name | default(omit) }}"
+        dfs_ha_proxy_provider: "{{ dfs_ha_proxy_provider | default(omit) }}"
+      tags: hdfs-post-migration
+    - name: HDFS HA chapter # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp/topics/amb-ha.html
+      hdfs_ha:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        hadoop_rpc_protection: "{{ hadoop_rpc_protection }}"
+        net_topology_script_file_name: "{{ net_topology_script_file_name | default(omit) }}"
+        dfs_ha_proxy_provider: "{{ dfs_ha_proxy_provider | default(omit) }}"
+      tags: hdfs-post-migration
+    - name: HDFS handling of missing blueprint configs chapter
+      # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp/topics/amb-cluster-topology-2.html
+      # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp/topics/amb-other-review-configurations-for-hdfs.html
+      hdfs_handling_of_missing_blueprint_configs:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        hadoop_rpc_protection: "{{ hadoop_rpc_protection }}"
+        net_topology_script_file_name: "{{ net_topology_script_file_name | default(omit) }}"
+        dfs_ha_proxy_provider: "{{ dfs_ha_proxy_provider | default(omit) }}"
+    - name: HDFS LZOcodec removal chapter
+      hdfs_lzocodec_removal:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        hadoop_rpc_protection: "{{ hadoop_rpc_protection }}"
+        net_topology_script_file_name: "{{ net_topology_script_file_name | default(omit) }}"
+        dfs_ha_proxy_provider: "{{ dfs_ha_proxy_provider | default(omit) }}"
+      tags: hdfs-post-migration
+
+- name: HDFS Metadata Upgrade
+  tags: hdfs-schema-upgrade
+  hosts: localhost
+  gather_facts: false
+  roles:
+    - { role: run_service_command, service_name: "hdfs", command: "UpgradeHDFSMetadata" }
+
+- name: HDFS Deploy Config
+  tags: hdfs-post-migration
+  hosts: localhost
+  gather_facts: false
+  roles:
+    - { role: run_service_command, service_name: "hdfs", command: "deployClientConfig" }
+
+- name: HDFS Restart
+  tags: hdfs-post-migration
+  hosts: localhost
+  gather_facts: false
+  roles:
+    - { role: restart_service, service_name: "hdfs" }

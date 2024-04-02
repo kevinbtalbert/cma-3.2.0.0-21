@@ -1,0 +1,37 @@
+---
+- name: Backup Ranger HA keytab
+  hosts: all
+  gather_facts: False
+  tags: ranger-backup
+  vars:
+    service_name: ranger
+  roles:
+    - prepare_to_backup_service
+  tasks:
+    - block:
+        - name: Check if Ranger HA keytab exists
+          stat:
+            path: "{{ ranger_ha_spnego_keytab_path }}"
+          register: ranger_ha_keytab
+
+        - name: Copy Ranger HA keytab
+          copy:
+            src: "{{ ranger_ha_spnego_keytab_path }}"
+            dest: "{{ service_backup_dir }}/{{ ranger_ha_spnego_keytab_backup_file }}"
+            remote_src: yes
+          become: yes
+          become_user: ranger
+          when: ranger_ha_keytab.stat.exists
+      when: ranger_is_ha
+
+- name: Backup Ranger DB
+  hosts: backup_ranger_db
+  gather_facts: False
+  tags: ranger-backup
+  vars:
+    service_name: ranger
+  roles:
+    - role: backup_db
+      vars:
+        db_host: "{{ inventory_hostname }}"
+        database_type: "{{ ranger_jdbc_url | regex_search('jdbc:([a-z]+):.*', '\\1') | first }}"

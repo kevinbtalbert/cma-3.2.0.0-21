@@ -1,0 +1,27 @@
+---
+
+- name: Increment retry count
+  set_fact: cp_install_retry_count={{ cp_install_retry_count | int + 1 }}
+
+- name: Retry start command
+  cm_api:
+    endpoint: "/commands/{{ start_pvc_result.json.id }}/retry"
+    method: POST
+    timeout: "{{ cluster_restart_timeout | default(3600) }}"
+  register: response_retry
+  ignore_errors: yes
+  when: '"id" in start_pvc_result.json'
+
+- name: DEBUG - response_retry
+  debug:
+    msg: "{{ response_retry }}"
+  when: response_retry is defined
+
+- fail:
+    msg: Failed to install the Control Plane!
+  when: response_retry.failed and cp_install_retry_count | int >= cp_install_max_retry_num | int
+
+- name: Retry Installing Control Plane
+  include_tasks:
+    file: "retry_cp_install_cmd.yml"
+  when: response_retry.failed and 'id' in start_pvc_result.json and cp_install_retry_count | int < cp_install_max_retry_num | int

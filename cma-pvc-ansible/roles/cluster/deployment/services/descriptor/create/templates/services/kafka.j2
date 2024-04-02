@@ -1,0 +1,9 @@
+services: [KAFKA]
+configs:
+  KAFKA:
+    SERVICEWIDE:
+      zookeeper_service: "{{ zookeeper_service_name }}"
+roles:
+  KAFKA:
+    KAFKA_BROKER: {{ kafka_broker_hosts }}
+    KAFKA_CONNECT: {{ kafka_connect_hosts }}

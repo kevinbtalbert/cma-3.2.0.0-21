@@ -1,0 +1,76 @@
+---
+targetType: CDP_PC
+version: 1
+uiFieldTypes:
+  text:
+    type: text
+    size: 200
+  password:
+    type: password
+    size: 200
+  combo:
+    type: combo
+    size: 200
+  checkbox:
+    type: checkbox
+    size: 200
+  url-text:
+    type: text
+    size: 430
+  edit-text:
+    type: edit-text
+    size: 200
+  file-content:
+    type: text
+    size: 430
+  repo-url-text:
+    type: edit-text
+    size: 350
+  target-full-version-text:
+    type: edit-text
+    size: 300
+  service-toggle:
+    type: service-toggle
+    size: 200
+  disabled-text:
+    type: text
+    size: 200
+    editable: false
+userSettings:
+
+  - serviceName: ADLS
+    when: ${ targetClusterVars['isPublicCloudPlatform'] }
+    settings:
+      "target_adls_client_id":
+        uiField:
+          label: "ADLS Client ID"
+          type: text
+      "target_adls_client_key":
+        uiField:
+          label: "ADLS Client Key"
+          type: password
+      "target_adls_tenant_id":
+        uiField:
+          label: "ADLS Tenant ID"
+          type: text
+      "target_adls_credential_name":
+        value: ${targetClusterVars['environmentName'] + '-cred'}
+        uiField:
+          label: "ADLS Credential Name"
+          type: edit-text
+      "target_adls_storage_account_name":
+          uiField:
+          label: "ADLS Storage Acct Name"
+          type: text
+
+
+uiFieldGroups:
+  1:
+    - pc.cluster.name
+    - cluster.version
+  2:
+    - target_adls_client_id
+    - target_adls_client_key
+    - target_adls_tenant_id
+    - target_adls_credential_name
+    - target_adls_storage_account_name

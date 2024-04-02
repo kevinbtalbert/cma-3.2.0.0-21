@@ -1,0 +1,6 @@
+- name: Download python to localhost
+  get_url:
+    url: "{{ python_url }}"
+    dest: "{{ cma_root_dir }}/{{ python_archive_file }}"
+  delegate_to: localhost
+  run_once: true

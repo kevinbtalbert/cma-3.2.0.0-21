@@ -1,0 +1,315 @@
+---
+currentVersion:
+  - CDH6
+
+uiFieldTypes:
+  text:
+    type: text
+    size: 200
+    editable: true
+  password:
+    type: password
+    size: 200
+    editable: true
+  checkbox:
+    type: checkbox
+    size: 200
+    editable: true
+  url-text:
+    type: text
+    size: 430
+    editable: true
+  textlist:
+    type: textlist
+    size: 430
+
+extraVars:
+  - vars:
+      cma_root_dir: ${transitionVars['cma.root.dir']}
+      transition_log_dir: ${transitionVars['transition.log.dir']}
+      transition_data_dir: ${transitionVars['transition.data.dir']}
+      cloudera_manager_admin_username: ${sourceServerVars['username']}
+      cloudera_manager_admin_password: ${sourceServerVars['password']}
+      cloudera_manager_port: ${sourceServerVars['port']}
+      cloudera_manager_protocol: ${sourceServerVars['protocol']}
+      cp_access_key: ${targetServerVars['username']}
+      cp_private_key: ${targetServerVars['password']}
+      cluster_name: ${sourceClusterVars['id']}
+      hive3parser_jar_dir: ${pluginVars['hive3parser_jar_dir']}
+      is_kerberized_cluster: ${sourceClusterVars['isKerberized']}
+      wait_for_replication_policies: ${pluginVars['waitForReplicationPolicies']}
+      paused_minutes: 1
+      number_of_retries_to_wait_for_aws_cred: 50
+      delay_between_retries_of_waiting_for_aws_cred: 30
+      pc_cloudera_cluster_name: ${targetClusterVars['id']}
+      pc_cloudera_knox_token: "${transitionUserSettingVars['knox_token'] == null ? transitionUserSettingVars['yarn.knox_token'] : transitionUserSettingVars['knox_token']}"
+      pc_cloudera_manager_host: ${pluginVars['pcCmHost']}
+      environment_name: ${targetClusterVars['environmentName']}
+      s3_bucket_access_key: ${transitionUserSettingVars['target_aws_s3_bucket_access_key']}
+      s3_bucket_secret_key: ${transitionUserSettingVars['target_aws_s3_bucket_secret_key']}
+      s3_bucket_base_location: ${transitionUserSettingVars['hdfs_target_aws_s3_bucket_base_path']}
+    uiFields:
+      transition_log_dir: text
+      cp_access_key: text
+      cp_private_key: password
+      s3_bucket_access_key: text
+      s3_bucket_secret_key: password
+      s3_bucket_base_location: text
+      is_kerberized_cluster: checkbox
+      pc_cloudera_knox_token: url-text
+      paused_minutes: text
+      number_of_retries_to_wait_for_aws_cred: text
+      delay_between_retries_of_waiting_for_aws_cred: text
+
+  - serviceName: CM
+    when: ${ RuntimeUtils:isSourceCMVersionLessThanUpgradeTo(sourceServerVars['version'], '7.6.7', sourceServerVars['type']) && pluginVars['hasHBaseDataToMigrate'] }
+    vars:
+      cloudera_manager_repo_username: ${transitionUserSettingVars['source.paywall_username']}
+      cloudera_manager_repo_password: ${transitionUserSettingVars['source.paywall_password']}
+      cloudera_manager_version: ${transitionUserSettingVars['source.cluster.manager.version']}
+      cloudera_manager_repo_base_url: ${ RepoUtils:getClusterManagerRepoBaseUrl(transitionUserSettingVars['source.cluster.manager.repo_base_url'], transitionUserSettingVars['source.cluster.manager.version']) }
+    uiFields:
+      cloudera_manager_repo_username: text
+      cloudera_manager_repo_password: password
+      cloudera_manager_version: text
+      cloudera_manager_repo_base_url: url-text
+
+  - serviceName: HBASE
+    when: ${ targetServiceVars['hbase'].exist && pluginVars['hasHBaseDataToMigrate'] }
+    vars:
+      hbase_service_name: ${sourceServiceVars['hbase'].name}
+      hbase_repl_parcel_path:  ${transitionVars['cma.root.dir']}/parcels/hbase/cdh6
+      hbase_repl_parcel_name: "CLOUDERA_OPDB_REPLICATION"
+      hbase_repl_parcel_version: "1.0-1.CLOUDERA_OPDB_REPLICATION6.3.3.p0.8959316"
+      host_ip_list: ${targetClusterVars['hosts']}
+      hbase_number_of_retries_to_check_policy_state: 60
+      hbase_seconds_between_retries_to_check_policy_state: 60
+      hbase_table_for_acl_replication_to_ranger: ${transitionVars['hbase.table.names']}
+      jwt_data_lake_knox_token: ${transitionUserSettingVars['data_lake_knox_token']}
+    uiFields:
+      hbase_service_name: text
+      hbase_repl_parcel_path: text
+      hbase_repl_parcel_name: text
+      hbase_repl_parcel_version: text
+      jwt_data_lake_knox_token: url-text
+      hbase_number_of_retries_to_check_policy_state: text
+      hbase_seconds_between_retries_to_check_policy_state: text
+
+  - serviceName: hive
+    when: ${ targetServiceVars['hive'].exist && pluginVars['hasHiveDataToMigrate'] }
+    vars:
+      hive_replicate_sentry_policies: ${targetUserSettingVars['hive_replicate_sentry_policies']}
+    uiFields:
+      hive_replicate_sentry_policies: checkbox
+
+  - serviceName: hive-sql
+    vars:
+      hql_dir_to_upload: ${pluginVars['hqlDirPath']}
+    when: ${ targetServiceVars['hive'].exist && pluginVars['hasHiveWorkloadToMigrate'] }
+
+  - serviceName: OOZIE
+    when: ${ targetServiceVars['oozie'].exist && pluginVars['hasOozieWorkloadToMigrate'] }
+    vars:
+      oozie_dir_to_upload: ${pluginVars['oozieDirPath']}
+      hadoop_tmp_dir: ${transitionUserSettingVars['hadoop_tmp_dir']}
+      fs_s3a_buffer_dir: ${transitionUserSettingVars['fs_s3a_buffer_dir']}
+    uiFields:
+      hadoop_tmp_dir: text
+      fs_s3a_buffer_dir: text
+---
+currentVersion:
+  - CDH5
+
+uiFieldTypes:
+  text:
+    type: text
+    size: 200
+    editable: true
+  password:
+    type: password
+    size: 200
+    editable: true
+  checkbox:
+    type: checkbox
+    size: 200
+    editable: true
+  url-text:
+    type: text
+    size: 430
+    editable: true
+  textlist:
+    type: textlist
+    size: 430
+
+extraVars:
+  - vars:
+      cma_root_dir: ${transitionVars['cma.root.dir']}
+      transition_log_dir: ${transitionVars['transition.log.dir']}
+      transition_data_dir: ${transitionVars['transition.data.dir']}
+      cloudera_manager_admin_username: ${sourceServerVars['username']}
+      cloudera_manager_admin_password: ${sourceServerVars['password']}
+      cloudera_manager_port: ${sourceServerVars['port']}
+      cloudera_manager_protocol: ${sourceServerVars['protocol']}
+      cp_access_key: ${targetServerVars['username']}
+      cp_private_key: ${targetServerVars['password']}
+      cluster_name: ${sourceClusterVars['id']}
+      hive3parser_jar_dir: ${pluginVars['hive3parser_jar_dir']}
+      is_kerberized_cluster: ${sourceClusterVars['isKerberized']}
+      wait_for_replication_policies: ${pluginVars['waitForReplicationPolicies']}
+      paused_minutes: 1
+      number_of_retries_to_wait_for_aws_cred: 50
+      delay_between_retries_of_waiting_for_aws_cred: 30
+      pc_cloudera_cluster_name: ${targetClusterVars['id']}
+      pc_cloudera_knox_token: "${transitionUserSettingVars['knox_token'] == null ? transitionUserSettingVars['yarn.knox_token'] : transitionUserSettingVars['knox_token']}"
+      pc_cloudera_manager_host: ${pluginVars['pcCmHost']}
+      environment_name: ${targetClusterVars['environmentName']}
+      s3_bucket_access_key: ${transitionUserSettingVars['target_aws_s3_bucket_access_key']}
+      s3_bucket_secret_key: ${transitionUserSettingVars['target_aws_s3_bucket_secret_key']}
+      s3_bucket_base_location: ${transitionUserSettingVars['hdfs_target_aws_s3_bucket_base_path']}
+    uiFields:
+      transition_log_dir: text
+      cp_access_key: text
+      cp_private_key: password
+      s3_bucket_access_key: text
+      s3_bucket_secret_key: password
+      s3_bucket_base_location: text
+      pc_cloudera_knox_token: url-text
+      is_kerberized_cluster: checkbox
+      paused_minutes: text
+      number_of_retries_to_wait_for_aws_cred: text
+      delay_between_retries_of_waiting_for_aws_cred: text
+
+  - serviceName: CM
+    when: ${ RuntimeUtils:isSourceCMVersionLessThanUpgradeTo(sourceServerVars['version'], '7.6.7', sourceServerVars['type']) }
+    vars:
+      cloudera_manager_repo_username: ${transitionUserSettingVars['source.paywall_username']}
+      cloudera_manager_repo_password: ${transitionUserSettingVars['source.paywall_password']}
+      cloudera_manager_version: ${transitionUserSettingVars['source.cluster.manager.version']}
+      cloudera_manager_repo_base_url: ${ RepoUtils:getClusterManagerRepoBaseUrl(transitionUserSettingVars['source.cluster.manager.repo_base_url'], transitionUserSettingVars['source.cluster.manager.version']) }
+    uiFields:
+      cloudera_manager_repo_username: text
+      cloudera_manager_repo_password: password
+      cloudera_manager_version: text
+      cloudera_manager_repo_base_url: url-text
+
+  - serviceName: HBASE
+    when: ${ targetServiceVars['hbase'].exist && pluginVars['hasHBaseDataToMigrate'] }
+    vars:
+      hbase_service_name: ${sourceServiceVars['hbase'].name}
+      hbase_repl_parcel_path: ${transitionVars['cma.root.dir']}/parcels/hbase/cdh5
+      hbase_repl_parcel_name: "CLOUDERA_OPDB_REPLICATION"
+      hbase_repl_parcel_version: "1.0-1.CLOUDERA_OPDB_REPLICATION5.14.4.p0.31473501"
+      host_ip_list: ${targetClusterVars['hosts']}
+      hbase_number_of_retries_to_check_policy_state: 60
+      hbase_seconds_between_retries_to_check_policy_state: 60
+      hbase_table_for_acl_replication_to_ranger: ${transitionVars['hbase.table.names']}
+      jwt_data_lake_knox_token: ${transitionUserSettingVars['data_lake_knox_token']}
+    uiFields:
+      hbase_service_name: text
+      hbase_repl_parcel_path: text
+      hbase_repl_parcel_name: text
+      hbase_repl_parcel_version: text
+      jwt_data_lake_knox_token: url-text
+      hbase_number_of_retries_to_check_policy_state: text
+      hbase_seconds_between_retries_to_check_policy_state: text
+
+  - serviceName: hive
+    when: ${ targetServiceVars['hive'].exist && pluginVars['hasHiveDataToMigrate'] }
+    vars:
+      hive_replicate_sentry_policies: ${targetUserSettingVars['hive_replicate_sentry_policies']}
+    uiFields:
+      hive_replicate_sentry_policies: checkbox
+
+  - serviceName: hive-sql
+    vars:
+      hql_dir_to_upload: ${pluginVars['hqlDirPath']}
+    when: ${ targetServiceVars['hive'].exist && pluginVars['hasHiveWorkloadToMigrate'] }
+
+  - serviceName: OOZIE
+    when: ${ targetServiceVars['oozie'].exist && pluginVars['hasOozieWorkloadToMigrate'] }
+    vars:
+      oozie_dir_to_upload: ${pluginVars['oozieDirPath']}
+      hadoop_tmp_dir: ${transitionUserSettingVars['hadoop_tmp_dir']}
+      fs_s3a_buffer_dir: ${transitionUserSettingVars['fs_s3a_buffer_dir']}
+    uiFields:
+      hadoop_tmp_dir: text
+      fs_s3a_buffer_dir: text
+
+---
+currentVersion:
+  - CDP_PVC_BASE
+
+uiFieldTypes:
+  text:
+    type: text
+    size: 200
+    editable: true
+  password:
+    type: password
+    size: 200
+    editable: true
+  checkbox:
+    type: checkbox
+    size: 200
+    editable: true
+  url-text:
+    type: text
+    size: 430
+    editable: true
+  textlist:
+    type: textlist
+    size: 430
+
+extraVars:
+  - vars:
+      cma_root_dir: ${transitionVars['cma.root.dir']}
+      transition_log_dir: ${transitionVars['transition.log.dir']}
+      transition_data_dir: ${transitionVars['transition.data.dir']}
+      cloudera_manager_admin_username: ${sourceServerVars['username']}
+      cloudera_manager_admin_password: ${sourceServerVars['password']}
+      cloudera_manager_port: ${sourceServerVars['port']}
+      cloudera_manager_protocol: ${sourceServerVars['protocol']}
+      cp_access_key: ${targetServerVars['username']}
+      cp_private_key: ${targetServerVars['password']}
+      cluster_name: ${sourceClusterVars['id']}
+      hive3parser_jar_dir: ${pluginVars['hive3parser_jar_dir']}
+      is_kerberized_cluster: ${sourceClusterVars['isKerberized']}
+      wait_for_replication_policies: ${pluginVars['waitForReplicationPolicies']}
+      paused_minutes: 1
+      number_of_retries_to_wait_for_aws_cred: 50
+      delay_between_retries_of_waiting_for_aws_cred: 30
+      pc_cloudera_cluster_name: ${targetClusterVars['id']}
+      pc_cloudera_knox_token: "${transitionUserSettingVars['knox_token'] == null ? transitionUserSettingVars['yarn.knox_token'] : transitionUserSettingVars['knox_token']}"
+      pc_cloudera_manager_host: ${pluginVars['pcCmHost']}
+      environment_name: ${targetClusterVars['environmentName']}
+      adls_client_id: ${transitionUserSettingVars['target_adls_client_id']}
+      adls_client_key: ${transitionUserSettingVars['target_adls_client_key']}
+      adls_tenant_id: ${transitionUserSettingVars['target_adls_tenant_id']}
+      adls_storage_account_name: ${transitionUserSettingVars['adls_storage_account_name']}
+      s3_bucket_base_location: ${transitionUserSettingVars['hdfs_target_aws_s3_bucket_base_path']}
+    uiFields:
+      transition_log_dir: text
+      cp_access_key: text
+      cp_private_key: password
+      adls_client_id: text
+      adls_client_key: password
+      adls_tenant_id: text
+      adls_storage_account_name: text
+      s3_bucket_base_location: text
+      pc_cloudera_knox_token: url-text
+      is_kerberized_cluster: checkbox
+      paused_minutes: text
+      number_of_retries_to_wait_for_aws_cred: text
+      delay_between_retries_of_waiting_for_aws_cred: text
+
+  - serviceName: hive
+    when: ${ targetServiceVars['hive'].exist && pluginVars['hasHiveDataToMigrate'] }
+    vars:
+      hive_replicate_sentry_policies: ${targetUserSettingVars['hive_replicate_sentry_policies']}
+    uiFields:
+      hive_replicate_sentry_policies: checkbox
+
+  - serviceName: hive-sql
+    vars:
+      hql_dir_to_upload: ${pluginVars['hqlDirPath']}
+    when: ${ targetServiceVars['hive'].exist && pluginVars['hasHiveWorkloadToMigrate'] }

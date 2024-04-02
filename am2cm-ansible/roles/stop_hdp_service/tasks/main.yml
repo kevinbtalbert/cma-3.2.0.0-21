@@ -1,0 +1,13 @@
+- name: Stop HDP service
+  block:
+    - name: "Stopping {{ service_name }} service in Ambari"
+      stop_hdp_service:
+        ambari_configuration: "{{ ambari_configuration_dictionary }}"
+        service_name: "{{ service_name }}"
+      register: stop_service_result
+
+    - name: Print response
+      debug:
+        var: stop_service_result
+  run_once: True
+  delegate_to: localhost

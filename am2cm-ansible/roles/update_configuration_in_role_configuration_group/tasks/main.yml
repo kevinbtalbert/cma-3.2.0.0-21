@@ -1,0 +1,15 @@
+- name: Update a property to a new value in a given service's role configuration group
+  block:
+    - name: Attempt update
+      update_configuration_in_role_configuration_group:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        service_name: "{{ service_name }}"
+        role_configuration_group_name: "{{ role_configuration_group_name }}"
+        configuration_name: "{{ configuration_name }}"
+        configuration_value: "{{ configuration_value }}"
+      register: update_configuration_result
+    - name: Print response
+      debug:
+        var: update_configuration_result
+  run_once: True
+  delegate_to: localhost

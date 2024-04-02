@@ -1,0 +1,526 @@
+---
+type: PUBLIC_CLOUD_DATA_MIGRATION
+sourceClusterType: CDH6
+targetClusterType: CDP_PC
+version: 1
+uiFieldTypes:
+  text:
+    type: text
+    size: 200
+  password:
+    type: password
+    size: 200
+  combo:
+    type: combo
+    size: 200
+  checkbox:
+    type: checkbox
+    size: 200
+  url-text:
+    type: text
+    size: 430
+  edit-text:
+    type: edit-text
+    size: 200
+  target-full-version-text:
+    type: edit-text
+    size: 300
+  service-toggle:
+    type: service-toggle
+    size: 200
+  disabled-text:
+    type: text
+    size: 200
+    editable: false
+  disabled-combo:
+    type: combo
+    size: 200
+    editable: false
+userSettings:
+  - settings:
+      "pc.cluster.name":
+        value: ${targetClusterVars['id']}
+        uiField:
+          label: "Cluster name"
+          type: disabled-text
+      "cluster.version":
+        value: ${targetClusterVars['runtimeVersion']}
+        uiField:
+          label: "Target version"
+          type: disabled-combo
+      "cluster.originating_source":
+        value: "AM2CM version 3.2"
+      "classic.cluster.datacenter":
+        value: ${pluginVars['classicClusterDatacenter']}
+        uiField:
+          label: "Classic Cluster DataCenter "
+          type: text
+      "target_aws_s3_bucket_access_key":
+        value: ${targetUserSettingVars['target_aws_s3_bucket_access_key']}
+        enabled: ${ targetClusterVars['isPublicCloudPlatform'] }
+        uiField:
+          label: "S3 Bucket Access Key"
+          type: edit-text
+      "target_aws_s3_bucket_secret_key":
+        value: ${targetUserSettingVars['target_aws_s3_bucket_secret_key']}
+        enabled: ${ targetClusterVars['isPublicCloudPlatform'] }
+        uiField:
+          label: "S3 Bucket Secret Key"
+          type: password
+      "target_aws_s3_credential_name":
+        value: ${targetUserSettingVars['target_aws_s3_credential_name']}
+        enabled: ${ targetClusterVars['isPublicCloudPlatform'] }
+        uiField:
+          label: "S3 Credential Name"
+          type: edit-text
+
+  - serviceName: CM
+    when: ${ RuntimeUtils:isSourceCMVersionLessThanUpgradeTo(sourceServerVars['version'], '7.6.7', sourceServerVars['type']) && pluginVars['hasHBaseDataToMigrate'] }
+    settings:
+      "source.cluster.manager.version":
+        value: 7.6.7-h13-46891257
+        uiField:
+          label: "Cluster Manager Version"
+          type: edit-text
+      "source.cluster.manager.repo_base_url":
+        value: "https://archive.cloudera.com/p"
+        uiField:
+          label: "Cluster Manager Repo Base URL"
+          type: repo-url-text
+      source.paywall_username:
+        uiField:
+          label: "Paywall user"
+          type: text
+      source.paywall_password:
+        uiField:
+          label: "Paywall password"
+          type: password
+
+  - serviceName: HDFS
+    settings:
+      "hdfs_target_aws_s3_bucket_base_path":
+        value: ${pluginVars['hdfsTargetBucketBasePath']}
+        uiField:
+          label: "S3 Bucket Base Path"
+          type: url-text
+    when: "${ pluginVars['hasHdfsDataToMigrate'] 
+    || (targetServiceVars['hbase'].exist && pluginVars['hasHBaseDataToMigrate']) 
+    || (targetServiceVars['oozie'].exist && pluginVars['hasOozieWorkloadToMigrate']) 
+    || (targetServiceVars['hive'].exist && pluginVars['hasHiveWorkloadToMigrate']) }"
+
+  - serviceName: HIVE
+    settings:
+      "hive_target_aws_s3_bucket_base_path":
+        value: ${pluginVars['hiveTargetBucketBasePath']}
+        uiField:
+          label: "S3 Bucket Base Path For External Tables"
+          type: url-text
+    when: ${ targetServiceVars['hive'].exist && pluginVars['hasHiveDataToMigrate'] }
+
+  - serviceName: YARN
+    settings:
+      "yarn.migration.enabled":
+        value: false
+        uiField:
+          label: "Enable YARN migration"
+          type: service-toggle
+      "yarn.knox_token":
+        uiField:
+          label: "Knox Token to access CDP DH CM API"
+          type: password
+        enabled: ${ !(targetServiceVars['oozie'].exist && pluginVars['hasOozieWorkloadToMigrate']) }
+    when: ${ sourceServiceVars['yarn'].exist && targetServiceVars['yarn'].exist }
+
+  - serviceName: KNOX
+    settings:
+      "knox_token":
+        uiField:
+          label: "Knox Token to access CDP DH CM API"
+          type: password
+        enabled: ${ (targetServiceVars['oozie'].exist && pluginVars['hasOozieWorkloadToMigrate']) }
+      "data_lake_knox_token":
+        uiField:
+          label: "Knox Token to access Datalake"
+          type: password
+        enabled: ${ targetServiceVars['hbase'].exist && sourceClusterVars['isKerberized'] && pluginVars['hasHBaseDataToMigrate'] }
+
+  - serviceName: OOZIE
+    settings:
+      "oozie_configuring_enabled":
+        value: false
+        uiField:
+          label: "Enable Oozie service configuring"
+          type: service-toggle
+      "hadoop_tmp_dir":
+        value: "/tmp/hadoop-oozie"
+        uiField:
+          label: "Hadoop tmp dir for Oozie"
+          type: text
+      "fs_s3a_buffer_dir":
+        value: "/tmp/s3a"
+        uiField:
+          label: "Directory for s3 buffer"
+          type: text
+      "hadoop_credential_store_path":
+        value: "/tmp/awskeyfile.jceks"
+        uiField:
+          label: "Path to hadoop credential store"
+          type: text
+        enabled: ${ pluginVars['isHadoopCredentialStoreRequired'] }
+    when: ${ (sourceServiceVars['oozie'].exist && pluginVars['hasOozieWorkloadToMigrate']) }
+
+uiFieldGroups:
+  1:
+    - pc.cluster.name
+    - cluster.version
+  2:
+    - classic.cluster.datacenter
+  3:
+    - target_aws_s3_credential_name
+    - target_aws_s3_bucket_access_key
+    - target_aws_s3_bucket_secret_key
+  4:
+    - source.cluster.manager.version
+    - source.cluster.manager.repo_base_url
+  5:
+    - source.paywall_username
+    - source.paywall_password
+  6:
+    - hdfs_target_aws_s3_bucket_base_path
+  7:
+    - hive_target_aws_s3_bucket_base_path
+  8:
+    - yarn.migration.enabled
+    - yarn.knox_token
+  9:
+    - knox_token
+    - data_lake_knox_token
+  10:
+    - oozie_configuring_enabled
+    - hadoop_tmp_dir
+    - fs_s3a_buffer_dir
+  11:
+    - hadoop_credential_store_path
+
+
+---
+type: PUBLIC_CLOUD_DATA_MIGRATION
+sourceClusterType: CDH5
+targetClusterType: CDP_PC
+version: 1
+uiFieldTypes:
+  text:
+    type: text
+    size: 200
+  password:
+    type: password
+    size: 200
+  combo:
+    type: combo
+    size: 200
+  checkbox:
+    type: checkbox
+    size: 200
+  url-text:
+    type: text
+    size: 430
+  repo-url-text:
+    type: edit-text
+    size: 350
+  edit-text:
+    type: edit-text
+    size: 200
+  target-full-version-text:
+    type: edit-text
+    size: 300
+  service-toggle:
+    type: service-toggle
+    size: 200
+  disabled-text:
+    type: text
+    size: 200
+    editable: false
+  disabled-combo:
+    type: combo
+    size: 200
+    editable: false
+userSettings:
+  - settings:
+      "pc.cluster.name":
+        value: ${targetClusterVars['id']}
+        uiField:
+          label: "Cluster name"
+          type: disabled-text
+      "cluster.version":
+        value: ${targetClusterVars['runtimeVersion']}
+        uiField:
+          label: "Target version"
+          type: disabled-combo
+      "cluster.originating_source":
+        value: "AM2CM version 3.2"
+      "classic.cluster.datacenter":
+        value: ${pluginVars['classicClusterDatacenter']}
+        uiField:
+          label: "Classic Cluster DataCenter "
+          type: text
+      "target_aws_s3_bucket_access_key":
+        value: ${targetUserSettingVars['target_aws_s3_bucket_access_key']}
+        enabled: ${ targetClusterVars['isPublicCloudPlatform'] }
+        uiField:
+          label: "S3 Bucket Access Key"
+          type: text
+      "target_aws_s3_bucket_secret_key":
+        value: ${targetUserSettingVars['target_aws_s3_bucket_secret_key']}
+        enabled: ${ targetClusterVars['isPublicCloudPlatform'] }
+        uiField:
+          label: "S3 Bucket Secret Key"
+          type: password
+      "target_aws_s3_credential_name":
+        value: ${targetUserSettingVars['target_aws_s3_credential_name']}
+        enabled: ${ targetClusterVars['isPublicCloudPlatform'] }
+        uiField:
+          label: "S3 Credential Name"
+          type: edit-text
+
+  - serviceName: CM
+    when: ${ RuntimeUtils:isSourceCMVersionLessThanUpgradeTo(sourceServerVars['version'], '7.6.7', sourceServerVars['type']) }
+    settings:
+      "source.cluster.manager.version":
+        value: 7.6.7-h13-46891257
+        uiField:
+          label: "Cluster Manager Version"
+          type: edit-text
+      "source.cluster.manager.repo_base_url":
+        value: "https://archive.cloudera.com/p"
+        uiField:
+          label: "Cluster Manager Repo Base URL"
+          type: repo-url-text
+      source.paywall_username:
+        uiField:
+          label: "Paywall user"
+          type: text
+      source.paywall_password:
+        uiField:
+          label: "Paywall password"
+          type: password
+
+  - serviceName: HDFS
+    settings:
+      "hdfs_target_aws_s3_bucket_base_path":
+        value: ${pluginVars['hdfsTargetBucketBasePath']}
+        uiField:
+          label: "S3 Bucket Base Path"
+          type: url-text
+    when: "${ pluginVars['hasHdfsDataToMigrate'] 
+    || (targetServiceVars['hbase'].exist && pluginVars['hasHBaseDataToMigrate']) 
+    || (targetServiceVars['oozie'].exist && pluginVars['hasOozieWorkloadToMigrate']) 
+    || (targetServiceVars['hive'].exist && pluginVars['hasHiveWorkloadToMigrate']) }"
+
+  - serviceName: HIVE
+    settings:
+      "hive_target_aws_s3_bucket_base_path":
+        value: ${pluginVars['hiveTargetBucketBasePath']}
+        uiField:
+          label: "S3 Bucket Base Path For External Tables"
+          type: url-text
+      hive_replicate_sentry_policies:
+        value: false
+        uiField:
+          label: "Replicate Sentry policies"
+          type: checkbox
+        enabled: ${ targetServiceVars['hive'].exist && sourceServiceVars['sentry'].exist }
+    when: ${ targetServiceVars['hive'].exist && pluginVars['hasHiveDataToMigrate'] }
+
+  - serviceName: YARN
+    settings:
+      "yarn.migration.enabled":
+        value: false
+        uiField:
+          label: "Enable YARN migration"
+          type: service-toggle
+      "yarn.knox_token":
+        uiField:
+          label: "Knox Token to access CDP DH CM API"
+          type: password
+        enabled: ${ !(targetServiceVars['oozie'].exist && pluginVars['hasOozieWorkloadToMigrate']) }
+    when: ${ sourceServiceVars['yarn'].exist && targetServiceVars['yarn'].exist }
+
+  - serviceName: KNOX
+    settings:
+      "knox_token":
+        uiField:
+          label: "Knox Token to access CDP DH CM API"
+          type: password
+        enabled: ${ (targetServiceVars['oozie'].exist && pluginVars['hasOozieWorkloadToMigrate']) }
+      "data_lake_knox_token":
+        uiField:
+          label: "Knox Token to access Datalake"
+          type: password
+        enabled: ${ targetServiceVars['hbase'].exist && sourceClusterVars['isKerberized'] && pluginVars['hasHBaseDataToMigrate'] }
+
+  - serviceName: OOZIE
+    settings:
+      "oozie_configuring_enabled":
+        value: false
+        uiField:
+          label: "Enable Oozie service configuring"
+          type: service-toggle
+      "hadoop_tmp_dir":
+        value: "/tmp/hadoop-oozie"
+        uiField:
+          label: "Hadoop tmp dir for Oozie"
+          type: text
+      "fs_s3a_buffer_dir":
+        value: "/tmp/s3a"
+        uiField:
+          label: "Directory for s3 buffer"
+          type: text
+    when: ${ (sourceServiceVars['oozie'].exist && pluginVars['hasOozieWorkloadToMigrate']) }
+
+uiFieldGroups:
+  1:
+    - pc.cluster.name
+    - cluster.version
+  2:
+    - classic.cluster.datacenter
+  3:
+    - target_adls_client_id
+    - target_adls_client_key
+    - target_adls_tenant_id
+  4:
+    - source.cluster.manager.version
+    - source.cluster.manager.repo_base_url
+  5:
+    - source.paywall_username
+    - source.paywall_password
+  6:
+    - hdfs_target_aws_s3_bucket_base_path
+  7:
+    - hive_target_aws_s3_bucket_base_path
+    - hive_replicate_sentry_policies
+  8:
+    - yarn.migration.enabled
+    - yarn.knox_token
+  9:
+    - knox_token
+    - data_lake_knox_token
+  10:
+    - oozie_configuring_enabled
+    - hadoop_tmp_dir
+    - fs_s3a_buffer_dir
+
+---
+type: PUBLIC_CLOUD_DATA_MIGRATION
+sourceClusterType: CDP_PVC_BASE
+targetClusterType: CDP_PC
+version: 1
+uiFieldTypes:
+  text:
+    type: text
+    size: 200
+  password:
+    type: password
+    size: 200
+  combo:
+    type: combo
+    size: 200
+  checkbox:
+    type: checkbox
+    size: 200
+  url-text:
+    type: text
+    size: 430
+  edit-text:
+    type: edit-text
+    size: 200
+  target-full-version-text:
+    type: edit-text
+    size: 300
+  service-toggle:
+    type: service-toggle
+    size: 200
+  disabled-text:
+    type: text
+    size: 200
+    editable: false
+  disabled-combo:
+    type: combo
+    size: 200
+    editable: false
+userSettings:
+  - settings:
+      "pc.cluster.name":
+        value: ${targetClusterVars['id']}
+        uiField:
+          label: "Cluster name"
+          type: disabled-text
+      "cluster.version":
+        value: ${targetClusterVars['runtimeVersion']}
+        uiField:
+          label: "Target version"
+          type: disabled-combo
+      "cluster.originating_source":
+        value: "AM2CM version 3.2"
+      "classic.cluster.datacenter":
+        value: ${pluginVars['classicClusterDatacenter']}
+        uiField:
+          label: "Classic Cluster DataCenter "
+          type: text
+      "target_adls_client_id":
+        value: ${targetUserSettingVars['target_adls_client_id']}
+        enabled: ${ targetClusterVars['isPublicCloudPlatform'] }
+        uiField:
+          label: "ADLS CLIENT ID"
+          type: text
+      "target_adls_client_key":
+        value: ${targetUserSettingVars['target_adls_client_key']}
+        enabled: ${ targetClusterVars['isPublicCloudPlatform'] }
+        uiField:
+          label: "ADLS CLIENT KEY"
+          type: password
+      "target_adls_tenant_id":
+        value: ${targetUserSettingVars['target_adls_tenant_id']}
+        enabled: ${ targetClusterVars['isPublicCloudPlatform'] }
+        uiField:
+          label: "ADLS TENANT ID"
+          type: edit-text
+      "target_adls_storage_account":
+        value: ${targetUserSettingVars['target_adls_storage_account']}
+        enabled: ${ targetClusterVars['isPublicCloudPlatform'] }
+        uiField:
+          label: "ADLS STORAGE ACCT"
+          type: edit-text
+
+  - serviceName: HDFS
+    settings:
+      "hdfs_target_aws_s3_bucket_base_path":
+        value: ${pluginVars['hdfsTargetBucketBasePath']}
+        uiField:
+          label: "S3 Bucket Base Path"
+          type: url-text
+    when: ${ pluginVars['hasHdfsDataToMigrate'] || (targetServiceVars['hive'].exist && pluginVars['hasHiveWorkloadToMigrate']) }
+
+  - serviceName: HIVE
+    settings:
+      "hive_target_aws_s3_bucket_base_path":
+        value: ${pluginVars['hiveTargetBucketBasePath']}
+        uiField:
+          label: "S3 Bucket Base Path For External Tables"
+          type: url-text
+    when: ${ targetServiceVars['hive'].exist && pluginVars['hasHiveDataToMigrate'] }
+
+uiFieldGroups:
+  1:
+    - pc.cluster.name
+    - cluster.version
+  2:
+    - classic.cluster.datacenter
+  3:
+    - target_adls_client_id
+    - target_adls_client_key
+    - target_adls_tenant_id
+    - target_adls_storage_account
+  4:
+    - hdfs_target_aws_s3_bucket_base_path
+  5:
+    - hive_target_aws_s3_bucket_base_path

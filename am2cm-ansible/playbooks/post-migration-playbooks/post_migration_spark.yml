@@ -1,0 +1,43 @@
+---
+- name: Post migration steps for Spark
+  tags: spark-post-migration
+  gather_facts: False
+  hosts: localhost
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  tasks:
+    - name: Start Spark service
+      include_role:
+        name: restart_service
+      vars:
+        service_name: "spark_on_yarn"
+
+    - name: Create Spark Directories
+      include_role:
+        name: run_service_command
+      vars:
+        command: "CreateSpark{{ item }}Command"
+        service_name: "spark_on_yarn"
+      loop:
+        - "UserDir"
+        - "HistoryDir"
+        - "DriverLogDir"
+    # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp/topics/amb-enable-spark-SAC.html
+    - name: Enable SAC on Spark
+      update_configuration_in_service:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        service_configuration:
+          atlas_service: "atlas"
+        service_name: "spark_on_yarn"
+      when: am2cm_source_version == "HDP2"
+    # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp/topics/amb-enable-spark-cm.html
+    - name: Enable Spark on YARN for Atlas
+      include_role:
+        name: update_configuration_in_role_configuration_group
+      vars:
+        service_name: "spark_on_yarn"
+        role_configuration_group_name: "spark_on_yarn-GATEWAY"
+        configuration_name: "spark_lineage_enabled"
+        configuration_value: "true"
+      when: am2cm_source_version == "HDP2"

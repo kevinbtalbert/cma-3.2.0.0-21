@@ -1,0 +1,13 @@
+---
+- name: Backup Ranger KMS
+  hosts: backup_ranger_kms
+  gather_facts: False
+  tags: ranger-kms-backup
+  vars:
+    service_name: ranger_kms
+  roles:
+    - prepare_to_backup_service
+    - name: backup_db
+      vars:
+        db_host: "{{ inventory_hostname }}"
+        database_type: "{{ ranger_kms_jdbc_url | regex_search('jdbc:([a-z]+):.*', '\\1') | first }}"

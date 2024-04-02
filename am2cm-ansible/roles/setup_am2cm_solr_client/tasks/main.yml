@@ -1,0 +1,35 @@
+- name: "Create temp dir on host {{ inventory_hostname }}"
+  file:
+    path: "{{ am2cm_remote_dir }}"
+    mode: 0655
+    state: directory
+  become: yes
+
+- set_fact:
+    local_am2cm_solr_client_tar_gz_path: "{{ am2cm_solr_client_script_path | dirname }}/am2cm-solr-client.tar.gz"
+    remote_am2cm_solr_client_tar_gz_path: "{{ am2cm_remote_dir }}/am2cm-solr-client.tar.gz"
+
+# compress the am2cm-solr-client before uploading to the host
+- name: Archive am2cm-solr-client
+  archive:
+    path: "{{ am2cm_solr_client_script_path }}"
+    dest: "{{ local_am2cm_solr_client_tar_gz_path }}"
+    format: gz
+    force_archive: true
+    mode: 0644
+  delegate_to: localhost
+
+- name: "Copying am2cm-solr-client.tar.gz to temp dir on host {{ inventory_hostname }}"
+  copy:
+    src: "{{ local_am2cm_solr_client_tar_gz_path }}"
+    dest: "{{ remote_am2cm_solr_client_tar_gz_path }}"
+    mode: 0644
+  register: copy_res
+  become: yes
+
+- name: Unarchive am2cm-solr-client
+  unarchive:
+    src: "{{ remote_am2cm_solr_client_tar_gz_path }}"
+    dest: "{{ am2cm_remote_dir }}"
+    remote_src: yes
+  become: yes

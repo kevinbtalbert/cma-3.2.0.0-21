@@ -1,0 +1,33 @@
+---
+- name: Rollback Yarn
+  # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3_hdp3_rollback_yarn_7.1.7.html
+  hosts: yarn_timeline[0]
+  gather_facts: False
+  tags: yarn-rollback
+  tasks:
+    - block:
+        - name: Run kinit if necessary
+          include_role:
+            name: kinit
+          vars:
+            keytab: "{{ yarn_hbase_master_keytab_file }}"
+            principal: "{{ yarn_hbase_master_kerberos_principal | regex_replace('_HOST', inventory_hostname) }}"
+            skip_kinit: False
+            service_name: yarn
+            become_user: "{{ yarn_ats_user }}"
+
+        - name: search and register jaas conf into variable
+          set_fact:
+            jaas_jvm_flag: "-Djava.security.auth.login.config={{ yarn_hbase_master_jaas_file }}"
+      when: kerberos_is_active and am2cm_source_version == 'HDP3'
+    - name: Delete /atsv2-hbase-secure zookeeper node recursively
+      shell:
+        zookeeper-client -server {{ groups['backup_zookeeper'][0] }} rmr {{ yarn_zookeeper_znode_parent }}
+      environment:
+        - JVMFLAGS: "{{ jaas_jvm_flag | default('') }}"
+      when: am2cm_source_version == 'HDP3'
+    - name: Start Yarn in Ambari
+      include_role:
+        name: start_hdp_service
+      vars:
+        service_name: yarn

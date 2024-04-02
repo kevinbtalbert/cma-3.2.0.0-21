@@ -1,0 +1,29 @@
+---
+- name: Check if OS version on the nodes meeting the OS requirements
+  hosts: all
+  tags: check-os-versions
+  gather_facts: True
+  gather_subset: ["!all", "virtual"]
+  vars:
+    supported_os_list:
+      "7.4.4":                                                              # CM version
+        CentOS: ["7.6", "7.7", "7.8", "7.9", "8.2"]                         # OS Name: [os_version1, os_version2]
+        Ubuntu: ["18.04", "20.04"]
+        SLES:   ["12"]
+        RedHat:   ["7.6", "7.7", "7.8", "7.9", "8.2", "8.4"]
+      "7.6.1":
+        CentOS: [ "7.6", "7.7", "7.8", "7.9", "8.2" ]
+        Ubuntu: [ "18.04", "20.04" ]
+        SLES: [ "12" ]
+        RedHat: [ "7.6", "7.7", "7.8", "7.9", "8.2", "8.4" ]
+
+  tasks:
+    - name: Check if OS version is supported
+      check_os_version:
+        supported_os_list: "{{ supported_os_list }}"
+        ansible_facts: "{{ ansible_facts }}"
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+      environment:
+        - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+        - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+      delegate_to: localhost

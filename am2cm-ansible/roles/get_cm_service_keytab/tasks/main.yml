@@ -1,0 +1,24 @@
+- name: Download Cloudera Manager Service keytab
+  block:
+    - name: Create request body from the template and generating keytab name
+      set_fact:
+        request_body: '{"items": ["{{ principal_name }}"]}'
+        cm_service_keytab_filename: "/tmp/{{ principal_name | replace('/', '_') |  replace('@', '_') }}.keytab"
+    - name: Download Cloudera Manager Service keytab file
+      uri:
+        url: "{{ cloudera_manager_protocol }}://{{ groups['server'][0] }}:{{ cloudera_manager_port }}/api/{{ cloudera_manager_api_version }}/cm/retrieveKeytab"
+        headers:
+          Content-Type: "application/json"
+        body_format: "json"
+        status_code: 200, 201
+        method: POST
+        user: "{{ cloudera_manager_admin_username }}"
+        password: "{{ cloudera_manager_admin_password }}"
+        return_content: yes
+        validate_certs: no
+        dest: "{{ cm_service_keytab_filename }}"
+        body: "{{ request_body }}"
+      run_once: True
+    - name: Print keytab file and path
+      debug:
+        var: cm_service_keytab_filename

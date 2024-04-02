@@ -1,0 +1,18 @@
+---
+- name: Solr post migration steps
+  hosts: localhost
+  tags: infra-solr-post-migration
+  gather_facts: False
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  vars:
+    service_name: solr
+  tasks:
+    - name: Initialize Solr
+      initialize_solr:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+
+    - name: Restart Service
+      include_role:
+        name: restart_service

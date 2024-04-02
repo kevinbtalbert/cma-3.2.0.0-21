@@ -1,0 +1,8 @@
+---
+
+- name: Setup cdpcli on CM
+  hosts: cloudera_manager[0]
+  tags: setup-cdpcli-cm
+  gather_facts: true
+  roles:
+    - pvc/setup_cdpcli

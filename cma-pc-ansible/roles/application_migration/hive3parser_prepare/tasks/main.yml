@@ -1,0 +1,241 @@
+# Copyright (c) 2023, Cloudera, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+- name: Check input paths are provided
+  fail:
+    msg: "Hive3Parser input paths shouldn't be empty"
+  when: hive3parser_inputs is not defined or hive3parser_inputs | split(',') | length == 0
+
+- name: Print hive3parser tool dir
+  debug:
+    msg: "Hive3Parser tool dir: {{ hive3parser_tool_dir }}, input dir: {{ hive3parser_input_dir }}"
+
+- name: Create working dir for hive3parser tool
+  file:
+    path: "{{ hive3parser_tool_dir }}"
+    mode: 0700
+    state: directory
+
+- name: Clear input dir for hive3parser tool
+  file:
+    path: "{{ hive3parser_input_dir }}"
+    state: absent
+
+- name: Create input dir for hive3parser tool
+  file:
+    path: "{{ hive3parser_input_dir }}"
+    mode: 0700
+    state: directory
+
+# Pre-process local paths -- BEGIN
+- name: Get local input paths
+  set_fact:
+    local_inputs: "{{ hive3parser_inputs | split(',') | map('trim') | select('match', '^local:.*') | replace('local:', '') }}"
+
+- name: Print local input paths
+  debug:
+    msg: "Local input paths are: {{ local_inputs }}"
+
+- name: Copy local input files to input dir
+  include_role:
+    name: application_migration/copy_to_local
+  vars:
+    source_path: "{{ item }}"
+    patterns: "{{ scripts_pattern }}"
+    dest_path: "{{ hive3parser_input_local }}"
+    remote_host: localhost
+    source_subdir: ""
+  loop: "{{ local_inputs }}"
+# Pre-process local paths -- END
+
+# Pre-process hdfs paths -- BEGIN
+- name: Get hdfs input paths
+  set_fact:
+    # inputs like hdfs:///dir/file
+    hdfs_default_inputs: "{{ hive3parser_inputs | split(',') | map('trim') | select('match', '^hdfs:\/\/\/[^:]+$') }}"
+    # inputs like hdfs://mynamespace/dir/file
+    hdfs_ns_inputs: "{{ hive3parser_inputs | split(',') | map('trim') | select('match', '^hdfs:\/\/[^\/][^:]+$') }}"
+    # inputs like hdfs://nameNodeHost:8020/dir/file
+    hdfs_nn_inputs: "{{ hive3parser_inputs | split(',') | map('trim') | select('match', '^hdfs:\/\/.+:\\d+\/.+$') }}"
+
+- name: Print HDFS inputs
+  debug:
+    msg:
+      - "HDFS default inputs: {{ hdfs_default_inputs }}"
+      - "HDFS namespace inputs: {{ hdfs_ns_inputs }}"
+      - "HDFS namenode inputs: {{ hdfs_nn_inputs }}"
+
+- name: Prepare HDFS input params for default namespace
+  set_fact:
+    hdfs_inputs: "{{ hdfs_inputs|default([]) + [ {'input': item, 'prefix_dir': 'hdfs_default', 'path': item.split('://')[1] } ] }}"
+  loop: "{{ hdfs_default_inputs }}"
+
+- name: Prepare HDFS input params for specified namespace
+  set_fact:
+    hdfs_inputs: "{{ hdfs_inputs|default([]) + [ {'input': item, 'prefix_dir': item | regex_replace('^hdfs:\/\/([^\/]+)\/.+$', 'hdfs_ns/\\g<1>'), 'path': item | regex_replace('^hdfs:\/\/[^\/]+(\/.+)$', '\\g<1>') } ] }}"
+  loop: "{{ hdfs_ns_inputs }}"
+
+- name: Prepare HDFS input params for specified namenode
+  set_fact:
+    hdfs_inputs: "{{ hdfs_inputs|default([]) + [ {'input': item, 'prefix_dir': item | regex_replace('^hdfs:\/\/(.+):(\\d+)\/.+$', 'hdfs_nn/\\g<1>/\\g<2>'), 'path': item | regex_replace('^hdfs:\/\/.+:\\d+(\/.+)$', '\\g<1>') } ] }}"
+  loop: "{{ hdfs_nn_inputs }}"
+
+- name: Copy HDFS input files to local
+  block:
+    - name: Print hdfs input paths
+      debug:
+        msg: "Hdfs paths are: {{ hdfs_inputs }}"
+
+    - name: Print datanode hostname
+      debug:
+        msg: "Datanode hostname: {{ groups['cloudera_manager'][0] }}"
+
+    - name: Run kinit for HDFS
+      include_role:
+        name: cluster_discovery/cm_kinit
+        apply:
+          delegate_to: "{{ groups['cloudera_manager'][0] }}"
+      vars:
+        keytab_name: hdfs.keytab
+        kinit_user: "{{ hdfs_user }}"
+      when: is_kerberized_cluster
+
+    - name: Create dir for HDFS input files
+      file:
+        path: "{{ hive3parser_input_hdfs }}"
+        mode: 0700
+        state: directory
+
+    - name: Clear HDFS inputs remote dir
+      file:
+        path: "{{ hive3parser_hdfs_remote }}"
+        state: absent
+      delegate_to: "{{ groups['cloudera_manager'][0] }}"
+
+    - name: Copy HDFS to remote
+      include_role:
+        name: application_migration/copy_hdfs_to_remote
+        apply:
+          delegate_to: "{{ groups['cloudera_manager'][0] }}"
+      vars:
+        remote_host: "{{ groups['cloudera_manager'][0] }}"
+        hdfs_path: "{{ hdfs_input }}"
+        process_username: "{{ hdfs_user }}"
+      loop: "{{ hdfs_inputs }}"
+      loop_control:
+        loop_var: hdfs_input
+
+    - name: Find HDFS input files remotely by pattern among directories
+      find:
+        paths: "{{ hive3parser_hdfs_remote_directories }}"
+        recurse: true
+        patterns: "{{ scripts_pattern }}"
+      delegate_to: "{{ groups['cloudera_manager'][0] }}"
+      register: hdfs_input_files_from_remote_dirs
+
+    - name: Prepare HDFS input files to copy
+      set_fact:
+        files_to_copy: "{{ hdfs_input_files_from_remote_dirs.files | selectattr('path', 'defined') | map(attribute='path') | map('quote') }}"
+
+    - name: Move HDFS input files found by pattern from directories
+      block:
+        - name: Move files
+          shell: |
+            # Prepare bash list of files to copy
+            files_list_bash=({{files_to_copy|join(" ")}})
+              
+            source_dir={{ hive3parser_hdfs_remote_directories }}
+            dest_dir={{ hive3parser_hdfs_remote }}
+              
+            for file_path in "${files_list_bash[@]}"; do
+              result_path=${file_path/$source_dir/$dest_dir}
+              result_dir="$(dirname "$result_path")"
+              mkdir -p ${result_dir}
+              cp ${file_path} ${result_dir}
+              echo Copied ${file_path} to ${result_dir}
+            done
+          delegate_to: "{{ groups['cloudera_manager'][0] }}"
+          register: pattern_files_move_result
+          changed_when: pattern_files_move_result.rc == 0
+
+        - name: Print move result
+          debug:
+            msg:
+              - "Files move out: {{ pattern_files_move_result.stdout }}"
+              - "Files move err: {{ pattern_files_move_result.stderr }}"
+
+      when: files_to_copy | length > 0
+
+    - name: Remove HDFS input remote directories path
+      file:
+        path: "{{ hive3parser_hdfs_remote_directories }}"
+        state: absent
+      delegate_to: "{{ groups['cloudera_manager'][0] }}"
+
+    - name: Remove HDFS input remote tmp path
+      file:
+        path: "{{ hive3parser_hdfs_remote_tmp }}"
+        state: absent
+      delegate_to: "{{ groups['cloudera_manager'][0] }}"
+
+    - name: Create dir for HDFS input files archive
+      file:
+        path: "{{ hive3parser_hdfs_archived }}"
+        mode: 0700
+        state: directory
+
+    - name: Archive HDFS input files remotely
+      archive:
+        path: "{{ hive3parser_hdfs_remote }}/*"
+        dest: "{{ hive3parser_hdfs_remote }}/{{ hive3parser_hdfs_archive }}"
+        format: gz
+      delegate_to: "{{ groups['cloudera_manager'][0] }}"
+
+    - name: Copy archived HDFS input files to local
+      fetch:
+        src: "{{ hive3parser_hdfs_remote }}/{{ hive3parser_hdfs_archive }}"
+        dest: "{{ hive3parser_hdfs_archived }}/"
+        flat: true
+      delegate_to: "{{ groups['cloudera_manager'][0] }}"
+
+    - name: Unarchive HDFS input files
+      unarchive:
+        src: "{{ hive3parser_hdfs_archived }}/{{ hive3parser_hdfs_archive }}"
+        dest: "{{ hive3parser_input_hdfs }}/"
+        remote_src: no
+
+  when: hdfs_inputs is defined and hdfs_inputs | length > 0
+# Pre-process hdfs paths -- END
+
+# Pre-process remote paths -- BEGIN
+- name: Get remote input paths
+  set_fact:
+    remote_inputs: "{{ hive3parser_inputs | split(',') | map('trim') | select('match', '^(?!local:).*') | select('match', '^(?!hdfs:).*') }}"
+
+- name: Print remote input paths
+  debug:
+    msg: "Remote input paths are: {{ remote_inputs }}"
+
+- name: Copy remote input files to input dir
+  include_role:
+    name: application_migration/copy_to_local
+  vars:
+    source_path: "{{ item.split(':')[1] }}"
+    patterns: "{{ scripts_pattern }}"
+    dest_path: "{{ hive3parser_input_remote }}"
+    remote_host: "{{ item.split(':')[0] }}"
+    source_subdir: "{{ item.split(':')[0] }}"
+  loop: "{{ remote_inputs }}"
+# Pre-process remote paths -- END

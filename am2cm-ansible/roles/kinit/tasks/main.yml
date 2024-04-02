@@ -1,0 +1,37 @@
+- name: Check if role should run
+  set_fact:
+    skip: "{{ skip_kinit | default(True) }}"
+
+- name:
+  block:
+
+    - name: Assemble variables
+      set_fact:
+        service_keytab: "{{ keytab | default(lookup('ansible.builtin.vars', service_name + '_service_keytab', default='')) }}"
+        service_principal: "{{ principal | default(lookup('ansible.builtin.vars', service_name + '_service_principal', default='')) }}"
+        kerberos_is_active: "{{ kerberos_is_active | default(True) }}"
+        become: "{{ become | default('yes') }}"
+        service_user_name: "{{ become_user | default(lookup('ansible.builtin.vars', service_name + '_user_name')) }}"
+        changed_when: "{{ changed_when | default(False) }}"
+      failed_when:
+        service_principal == '' or service_keytab == ''
+
+#    left here the commented block instead of deleting it for debugging purposes
+#    - name: test
+#      debug:
+#        msg: "{{ item }}"
+#      loop:
+#        - "{{ service_name }}"
+#        - "{{ service_keytab }}"
+#        - "{{ service_principal }}"
+#        - "{{ kerberos_is_active }}"
+#        - "{{ become }}"
+#        - "{{ service_user_name }}"
+#        - "{{ changed_when }}"
+
+    - name: Doing kinit
+      command: "kinit -kt {{ service_keytab }} {{ service_principal }}"
+      become: "{{ become }}"
+      become_user: "{{ service_user_name }}"
+      changed_when: changed_when
+  when: kerberos_is_active and not skip

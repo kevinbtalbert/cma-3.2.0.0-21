@@ -1,0 +1,23 @@
+---
+- name: Backup Kerberos (get version)
+  hosts: all
+  gather_facts: False
+  tags: kerberos-backup
+  vars:
+    service_name: kerberos
+  roles:
+    - { role: prepare_to_backup_service, skip_service_stop: true  }
+  tasks:
+    - name: Check if kerberos config file exists
+      stat:
+        path: "{{ kerberos_conf_path | d('/etc/krb5.conf')}}"
+      register: result
+      become: yes
+
+    - name: "Backup kerberos config file"
+      copy:
+        src: "{{ result.stat.path }}"
+        dest: "{{ service_backup_dir }}/krb5.conf.bak"
+        remote_src: yes
+      when: result.stat.exists
+      become: yes

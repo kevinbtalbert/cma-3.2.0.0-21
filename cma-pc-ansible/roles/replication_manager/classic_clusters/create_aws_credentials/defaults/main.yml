@@ -1,0 +1,2 @@
+number_of_retries_to_wait_for_aws_cred: 50
+delay_between_retries_of_waiting_for_aws_cred: 30

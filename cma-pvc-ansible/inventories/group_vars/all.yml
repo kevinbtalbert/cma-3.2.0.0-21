@@ -1,0 +1,194 @@
+##########################################################################
+# Timeout settings
+service_specific_timeouts:
+  hdfs:
+    restart_service: 1200 # 20 minutes
+
+default_timeouts:
+  restart_service: 900 # 15 minutes
+  run_role_command: 900
+  run_service_command: 900
+
+uber_default_timeout: 600 # always fall back to this if command_type is not listed in default timeouts; 10 minutes
+
+service_specific_timeouts_keys: "{{ service_specific_timeouts | default({}) | dict2items  | json_query('[].key') }}"
+service_specific_timeouts_values: "{{ service_specific_timeouts | default({}) | dict2items | json_query('[].value') }}"
+
+timeouts: "{{ dict (service_specific_timeouts_keys \
+         | zip(service_specific_timeouts_values \
+         | map('combine', default_timeouts) \
+         | zip(service_specific_timeouts_values) | map('combine'))) }}"
+
+extra_timeout_varnames: "{{ query('ansible.builtin.varnames', '^timeout__.+', errors='warn') }}"
+extra_timeout_service_names: "{{ extra_timeout_varnames | map('regex_replace','timeout__(.*)__(.*)', '\\1') }}"
+extra_timeout_commands: "{{ extra_timeout_varnames | map('regex_replace','timeout__(.*)__(.*)', '\\2') }}"
+extra_timeout_values: "{{ extra_timeout_varnames | map('extract', vars) }}"
+extra_vars_timeouts: "{{ extra_timeout_service_names | zip(extra_timeout_commands| zip(extra_timeout_values)) | map('flatten') }}"
+##########################################################################
+
+transition_log_dir: "."
+
+cma_remote_dir: /usr/am2cm
+cma_remote_tmp_dir: "{{ am2cm_remote_dir }}/tmp"
+cma_remote_log_dir: "{{ am2cm_remote_dir }}/logs"
+cma_local_dir: /tmp/am2cm
+cma_local_tmp_dir: "{{ am2cm_local_dir }}/tmp"
+
+ansible_user: root
+ansible_ssh_private_key_file: ""
+ansible_ssh_pass: ""
+
+###### Cloudera Manager #########
+cloudera_manager_admin_username: "admin"
+cloudera_manager_admin_password: "admin"
+cloudera_manager_protocol: "http"
+cloudera_manager_port: 7180
+cluster_name: "Cluster 1"
+#cloudera_manager_api_version: "v44" # if you already know the API version, uncomment this line to speed things up (determine_api_version role will not activate in this case)
+
+cloudera_manager_host: "{{ groups['cloudera_manager'][0] }}"
+cloudera_manager_user: "{{ cloudera_manager_admin_username }}"
+cloudera_manager_password: "{{ cloudera_manager_admin_password }}"
+
+
+cm_server_service_name: cloudera-scm-server
+cm_agent_service_name: cloudera-scm-agent
+cloudera_agent_process_path: "/var/run/{{ cm_agent_service_name }}/process"
+
+### RANGER ###
+ranger_service_name: RANGER-1
+
+### HDFS ###
+hdfs_service_name: HDFS-1
+
+### HDFS ###
+atlas_service_name: ATLAS-1
+
+### HIVE ###
+hive_service_name: HIVE-1
+
+
+#### PVC ####
+pvc_type: ECS
+pvc_cluster_name: "{{ cluster_name }}-pvc"
+pvc_cluster_displayname: "{{ pvc_cluster_name }}"
+pvc_ecs_server_host: "{{ groups['pvc_cluster'][0] }}"
+pvc_app_domain: "{{ pvc_ecs_server_host }}"
+kube_config_path: "/tmp/kubeconfig"
+setup_dns_ecs: true
+pvc_ssl_cert: "/tmp/certs/{{ pvc_ecs_server_host }}-pvc.crt"
+pvc_ssl_key: "/tmp/certs/{{ pvc_ecs_server_host }}-pvc.key"
+
+# Possible values to be overrided for pvc installation of ECS
+nfs_over_provisioning: 2000
+nfs_provisioned: 500
+longhorn_replication: 2
+ecs_longhorn_storage: /ecs/longhorn-storage
+ecs_local_storage: /ecs/local-storage
+
+environment_name: "{{ pvc_cluster_name }}-env"
+
+#### CDE ####
+cde_service_name: CDE-Service-1
+cde_certs_dir: "~/cluster-{{ cluster_name }}/pvc-certs"
+
+#### CML ####
+cml_workspace_name: "{{ pvc_cluster_name }}-workspace-1"
+cml_certs_dir: "{{ cma_local_dir }}/{{ pvc_cluster_name }}/cml-certs"
+
+# CDW
+low_resource_mode: true
+skip_validation: true
+
+#### FREEIPA ####
+ipa_ldap_dc_suffix: "{% for i in realm_user.split('.') %}dc={{ i | lower }}{% if not loop.last %},{% endif %}{% endfor %}"
+ipa_ldap_user_bind_dn: "uid=admin,cn=users,cn=accounts,{{ ipa_ldap_dc_suffix }}"
+ipa_ldap_user_bind_password: "{{ ipa_admin_password }}"
+ipa_ldap_user_search_base: "cn=users,cn=accounts,{{ ipa_ldap_dc_suffix }}"
+ipa_ldap_user_search_filter: "(&(uid={0})(objectClass=person))"
+ipa_ldap_group_search_base: "cn=groups,cn=accounts,{{ ipa_ldap_dc_suffix }}"
+ipa_ldap_user_group_filter: "(&(member={1})(objectClass=posixgroup))"
+
+
+##########################################################################
+cm_configuration_dictionary:
+  cloudera_manager_hostname: "{{ cloudera_manager_host }}"
+  cloudera_manager_protocol: "{{ cloudera_manager_protocol }}"
+  cloudera_manager_port: "{{ cloudera_manager_port }}"
+  cloudera_manager_admin_username: "{{ cloudera_manager_admin_username }}"
+  cloudera_manager_admin_password: "{{ cloudera_manager_admin_password }}"
+  cluster_name: '{{ cluster_name }}'
+  cloudera_manager_target_version: "{{ cloudera_manager_target_version }}"
+  kerberos_configuration:
+    use_ad: "{{ kerberos_use_ad }}"
+    kerberos_principal_name: "{{ kerberos_principal_name_mgmt }}"
+    realm_name: "{{ kerberos_realm_name }}"
+    ad_domain: "{{ kerberos_ad_domain }}"
+    kerberos_admin_user: "{{ kerberos_admin_user }}"
+    kerberos_admin_password: "{{ kerberos_admin_password }}"
+
+kdc_server_configuration_dictionary:
+  kdc_host: "{{  groups['kdc_server'][0]  }}"
+  kadmin_binary_path: "{{ kerberos_kadmin_binary_path }}"
+
+ssh_configuration_dictionary:
+  ansible_user: "{{ ansible_user }}"
+  ansible_ssh_private_key_file: "{{ ansible_ssh_private_key_file | default(omit) }}"
+  ansible_ssh_pass: "{{ ansible_ssh_pass | default(omit) }}"
+
+# Environments
+environments:
+  - name: "{{ environment_name }}"
+    cm_address: "https://{{ cloudera_manager_host }}:{{ cloudera_manager_port }}/"
+    cm_user: "{{ cloudera_manager_user }}"
+    cm_password: "{{ cloudera_manager_password }}"
+    cluster_names: "{{ cluster_name }}"
+    to_delete: false
+
+
+# CDE
+
+virtual_clusters:
+  - name: "Spark3-{{ cluster_name }}"
+    env_name: "{{ environment_name }}"
+    cde_service_name: "{{ cde_service_name }}"
+    spark_version: "3.2.1" # From 1.4.1, it is 3.2.1, before it is 3.2.0
+  - name: "Spark2-{{ cluster_name }}"
+    env_name: "{{ environment_name }}"
+    cde_service_name: "{{ cde_service_name }}"
+    spark_version: "2.4.7"
+
+# CDW
+
+warehouses:
+  - name: "Hive-1-{{ cluster_name }}"
+    database_catalog_name: "{{ cluster_name_pvc }}-env-datalake-default"
+    env_name: "{{ environment_name }}"
+    low_resource_mode: "{{ low_resource_mode }}"
+    type: "hive"
+    size: "xsmall" # default = xsmall
+    min_nodes: 1 # default = 1
+    max_nodes: 5 # default = 5
+    auto_suspend_timeout: 300 # default = 300
+    wait_time: 60 # default = 60warehouses
+    disable_auto_suspend: false # default = false
+
+  - name: "Impala-1-{{ cluster_name }}"
+    database_catalog_name: "{{ cluster_name_pvc }}-env-datalake-default"
+    env_name: "{{ environment_name }}"
+    low_resource_mode: "{{ low_resource_mode }}"
+    type: "impala"
+    size: "xsmall" # default = xsmall
+    min_nodes: 1 # default = 1
+    max_nodes: 5 # default = 5
+    auto_suspend_timeout: 300 # default = 300
+    enable_ha: true # default = true
+    scale_up_delay: 20 # default = 20
+    scale_down_delay: 20 # default = 20
+    wait_time: 60 # default = 60
+    disable_auto_suspend: false # default = false
+    legacy_multithreading: false # default = false
+
+# Services
+service_descriptor_path: "{{ cma_local_dir }}/services"
+service_template_path: "{{ cma_local_dir }}/service_templates"

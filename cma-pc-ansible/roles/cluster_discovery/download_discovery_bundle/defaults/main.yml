@@ -1,0 +1,11 @@
+discovery_tool_remote_dir: "{{ cma_remote_tmp_dir }}/cdh-discovery-tool-{{ discovery_bundle_module }}"
+discovery_bundle_dir_remote: /tmp/cluster-scan/discovery_bundle
+is_kerberized_cluster: false
+
+cluster_name: Cluster_1
+hdfs_service_name: HDFS-1
+hive_service_name: HIVE-1
+
+discovery_result_dir: "{{ cluster_scan_dir_path }}/cdh-discovery"
+hdfs_report_dir: "{{ discovery_result_dir }}/hdfs"
+hive_report_dir: "{{ discovery_result_dir }}/hive"

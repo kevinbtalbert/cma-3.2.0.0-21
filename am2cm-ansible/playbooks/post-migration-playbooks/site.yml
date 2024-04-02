@@ -1,0 +1,22 @@
+- import_playbook: post_migration_process_autostart.yml
+- import_playbook: post_migration_zookeeper.yml
+- import_playbook: post_migration_hdfs.yml
+- import_playbook: post_migration_yarn.yml
+- import_playbook: post_migration_queuemanager.yml
+  when: am2cm_target_version is version('7.1.9', '>=')
+- import_playbook: post_migration_tez.yml
+- import_playbook: post_migration_start_all_services.yml
+- import_playbook: post_migration_solr.yml
+- import_playbook: post_migration_ranger.yml
+- import_playbook: post_migration_ranger_kms.yml
+- import_playbook: post_migration_oozie.yml
+- import_playbook: post_migration_kafka.yml
+- import_playbook: post_migration_hbase.yml
+- import_playbook: post_migration_atlas.yml
+- import_playbook: post_migration_spark.yml
+- import_playbook: post_migration_knox.yml
+- import_playbook: add_hue_user.yml
+- import_playbook: post_migration_hive.yml
+- import_playbook: post_migration_accumulo.yml
+- import_playbook: post_migration_deploy_client_configurations.yml
+- import_playbook: import_solr_documents.yml

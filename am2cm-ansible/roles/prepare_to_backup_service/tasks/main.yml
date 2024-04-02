@@ -1,0 +1,21 @@
+- name: "Set backup dir for {{ service_name }} service"
+  set_fact:
+    service_backup_dir: "{{ backup_root_dir }}/{{ service_name }}"
+
+- name: "Clean up before backup {{ service_name }} service"
+  file:
+    path: "{{ service_backup_dir }}/"
+    state: absent
+  become: yes
+
+- name: "Create a backup directory for {{ service_name }} service"
+  file:
+    path: "{{ service_backup_dir }}/"
+    mode: 0777
+    state: directory
+  become: yes
+
+- name: "Stop {{ service_name }} service in Ambari"
+  include_role:
+    name: stop_hdp_service
+  when: not (skip_service_stop|d(false))

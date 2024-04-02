@@ -1,0 +1,81 @@
+version: 1
+name: HDP to CDP PvC Base transition paths
+id: AM2CM
+type: ansible
+scriptDir: am2cm-ansible
+pluginPackage: com.cloudera.migration.cma.plugins.am2cm
+
+sourceClusters:
+  - type: HDP3
+    runtimeVersions:
+      - name: HDP-3.1.5.0
+        version: 3.1.5.0-152
+
+  - type: HDP2
+    runtimeVersions:
+      - name: HDP-2.6.5.0
+        version: 2.6.5.0-292
+
+targetClusters:
+  - type: CDP_PVC_BASE
+    runtimeVersions:
+      - name: CDP 7.1.4
+        version: 7.1.4
+        fullVersion: 7.1.4-1.cdh7.1.4.p0.6300266
+        gplVersion: 7.1.4-1.gplextras7.1.4.p0.6300266
+      - name: CDP 7.1.6
+        version: 7.1.6
+        fullVersion: 7.1.6-1.cdh7.1.6.p0.10506313
+        gplVersion: 7.1.6-1.gplextras7.1.6.p0.10506313
+      - name: CDP 7.1.7
+        version: 7.1.7
+        fullVersion: 7.1.7-1.cdh7.1.7.p78.21656418
+        gplVersion: 7.1.7-1.gplextras7.1.7.p0.15945976
+      - name: CDP 7.1.7 SP1
+        version: 7.1.7.1000
+        fullVersion: 7.1.7-1.cdh7.1.7.p1000.24102687
+        gplVersion: 7.1.7-1.gplextras7.1.7.p1000.24102687
+      - name: CDP 7.1.7 SP2
+        version: 7.1.7.2000
+        fullVersion: 7.1.7-1.cdh7.1.7.p2000.37147774
+        gplVersion: 7.1.7-1.gplextras7.1.7.p2000.37147774
+      - name: CDP 7.1.8
+        version: 7.1.8
+        fullVersion: 7.1.8-1.cdh7.1.8.p0.30990532
+        gplVersion: 7.1.8-1.gplextras7.1.8.p0.30990532
+      - name: CDP 7.1.9
+        version: 7.1.9
+        fullVersion: 7.1.9-1.cdh7.1.9.p0.44702451
+        gplVersion: 7.1.9-1.gplextras7.1.9.p0.44702451
+    defaultRuntimeVersion: 7.1.9
+    serverRuntimeRelations:
+      - runtimeVersion: 7.1.4
+        serverVersion: 7.1.4
+      - runtimeVersion: 7.1.6
+        serverVersion: 7.3.1
+      - runtimeVersion: 7.1.7
+        serverVersion: 7.4.4
+      - runtimeVersion: 7.1.7.1000
+        serverVersion: 7.6.5
+      - runtimeVersion: 7.1.7.2000
+        serverVersion: 7.6.7
+      - runtimeVersion: 7.1.8
+        serverVersion: 7.7.1
+      - runtimeVersion: 7.1.9
+        serverVersion: 7.11.3
+
+transitionTypes:
+  - name: Upgrade to CDP PvC Base - 1 stage
+    type: INPLACE_ONE_STAGE_UPGRADE
+    bgColor: "#74aeff33"
+    fontColor: black
+    svgIcon: inplace_one_stage_upgrade
+    description: >
+      In-place upgrade of the base HDP 2/3 cluster using the same hardware. 
+      Similar to the two-stage upgrade but there is no need for HDP7 as interim stage. 
+      The configs and metadata upgrades are extracted and made part of the second stage, compressing and simplifying the upgrade process.
+    sourceClusterTypes:
+      - HDP3
+      - HDP2
+transitionDefinitions:
+  - transition-definition.yml

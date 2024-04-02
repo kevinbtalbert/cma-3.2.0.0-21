@@ -1,0 +1,49 @@
+---
+name: Check
+type: "INPLACE_ONE_STAGE_UPGRADE"
+sourceClusterType: HDP3
+version: 1
+steps:
+  - name: "CMA Python Setup"
+    type: "group"
+    steps:
+      - name: "Create and distribute virtualenv"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "setup-remote-python-environment"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+  - name: "Pre-transition Validation"
+    type: "group"
+    doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3-one-stage/topics/amb3-cluster-environment-readiness-one-stage.html"
+    steps:
+      - name: "Check Java Version"
+        type: "task"
+        execution: "auto"
+        ansibleTags:
+          - "check-java-versions"
+        commands:
+          - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        doc: "https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/release-guide/topics/cdpdc-java-requirements.html"
+        #- name: "Check Kerberos Settings"
+        # Validate that renew_lifetime is at least 7 days in /etc/krb5.conf on all nodes
+        # Validate that max_renewable_life is at least 7 days in /var/kerberos/krb5kdc/kdc.conf on KDC master node
+        #type: "task"
+        #execution: "auto"
+        #ansibleTags:
+        #  - "check-krb-renew-lifetime"
+        #commands:
+        #  - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        #doc: "https://docs.cloudera.com/cdp-private-cloud-base/7.1.6/security-kerberos-authentication/topics/cm-security-kerberos-enabling-intro.html"
+        # - name: "Check if no MariaDB 10.2.26 Used"
+        # JIRA : COPS-23698, AMCM-138
+        # A known MariaDB memory leak issue in version 10.2.26 that we should proactively look for
+        # Commented out for AM2CM-2.4.1 as it doesn't use the  invetory host group and has issue if there no MariaDB
+        # type: "task"
+        # execution: "auto"
+        # ansibleTags:
+        #  - "check-mariadb-version"
+        # commands:
+        #  - 'ansible-playbook -i ${path-to-am2cm-inventory-ini} ${path-to-am2cm-ansible}/site.yml --tags ${ansibleTags} --extra-vars "@${path-to-am2cm-extra-vars-json}"'
+        # doc: ""

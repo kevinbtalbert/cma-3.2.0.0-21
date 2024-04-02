@@ -1,0 +1,22 @@
+---
+- name: Backup service config dirs
+  hosts: all
+  tags: etc-config-backup
+  gather_facts: False
+  tasks:
+
+    - name: Check service dirs in /etc
+      stat:
+        path: "{{ etc_service_dir }}/{{ conf_dir }}"
+      register: etc_service_confs_status
+      loop: "{{ etc_service_dirs }}"
+      loop_control:
+        loop_var: etc_service_dir
+
+    - name: Backup service config symlinks & directories
+      command:
+        "cp {{ item.stat.islnk | ternary('-d', '-r') }} {{ item.stat.path }} \
+        {{ item.etc_service_dir }}/{{ backup_conf_dir }}"
+      when: item.stat.exists
+      loop: "{{ etc_service_confs_status.results }}"
+      become: yes

@@ -1,0 +1,21 @@
+{
+  "clusterCrn": "{{ target_cluster_crn }}",
+  "policyName": "{{ replication_policy_name }}",
+  "policyDefinition": {
+    "hbasePolicyArguments":{
+      "tables": {
+        {% for item in hbase_tables %}
+        "{{ item }}": []
+        {% if not loop.last %}, {% endif %}
+        {% endfor %}
+      },
+      "cloudCredential": "{{ target_adls_credential_name }}"
+    },
+    "initialSnapshot": {{ hbase_initial_snapshot | bool | lower }},
+    "sourceCluster": "{{ source_cluster_identifier }}",
+    "targetCluster": "{{ target_cluster_identifier }}",
+    "description": "{{ replication_policy_description }}",
+    "queueName": "{{ queue_name }}"
+  }
+}
+

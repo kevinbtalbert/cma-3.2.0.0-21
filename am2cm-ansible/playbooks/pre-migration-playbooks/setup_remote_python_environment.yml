@@ -1,0 +1,292 @@
+- name: Detect where to install custom python and where to set up virtualenv
+  gather_facts: false
+  hosts: all
+  tags: setup-remote-python-environment
+  tasks:
+    # First, try to skip any hosts that already have custom_python_interpreter_type defined
+    - name: Skip the entire python version detection if custom_python_interpreter_type is already defined
+      block:
+        - name: If custom_python_interpreter_type is python, then add to the create_venv_here group
+          add_host:
+            groups: create_venv_here
+            name: "{{ item }}"
+          loop: "{{ ansible_play_hosts }}"
+          when: (hostvars[item]['custom_python_interpreter_type'] | default('')) == 'python'
+        - name: End detect where to install play here
+          ansible.builtin.meta: end_host
+      when: custom_python_interpreter_type is defined
+    # Next, try to detect if there's already a custom python installation on the remote (created by another run of CMA, we just haven't cached it here yet)
+    - name: Check whether remote cma venv already exists
+      block:
+      - name: Check remote_venv/bin/python
+        stat:
+          path: "{{ remote_venv_directory }}/bin/python"
+        register: cma_venv_stat
+        become: yes
+      - name: If remote_venv already exists
+        block:
+          - name: register existing cma_venv to host_vars
+            include_role:
+              name: create_host_vars_entries
+            vars:
+              entry_list:
+                - {name: "ansible_python_interpreter",
+                   value: "{{ remote_venv_directory }}/bin/python"}
+                - {name: "custom_python_interpreter_type",
+                   value: "venv"}
+          - name: Break from existing custom venv detection
+            ansible.builtin.meta: end_host
+        when: cma_venv_stat.stat.exists
+    - name: Check whether remote cma PYTHON installation already exists
+      block:
+        - name: Get desired remote python version
+          include_role:
+            name: set_ansible_playbook_python_as_desired_remote_python_version
+        - name: Look for a version of remote_python/bin/python
+          stat:
+            path: "{{ cma_remote_root_dir }}/Python-{{ desired_remote_python_version }}/python"
+          register: cma_remote_python_stat
+        - name: If remote_python already exists
+          block:
+            - name: register existing remote python to host_vars
+              include_role:
+                name: create_host_vars_entries
+              vars:
+                entry_list:
+                  - { name: "ansible_python_interpreter",
+                      value: "{{ cma_remote_python_stat.stat.path }}" }
+                  - { name: "custom_python_interpreter_type",
+                      value: "python" }
+            - name: Add to create_venv_here group
+              add_host:
+                groups: create_venv_here
+                name: "{{ item }}"
+              when: hostvars[item]['cma_remote_python_stat'] is defined and hostvars[item]['cma_remote_python_stat'].stat.exists
+              loop: "{{ ansible_play_hosts }}"
+            - name: Break from already existing custom python detection
+              ansible.builtin.meta: end_host  # 'break' from this play for this host
+          when: cma_remote_python_stat.stat.exists
+
+    # Finally, get existing python details (if python2 opt for installing python3 ourselves, if python3 use that for venv creation)
+    - name: Get existing python version
+      raw: >
+        python3 -V || python2 -V || python -V
+      register: python_version
+      changed_when: false
+    - name: Result of python version query
+      debug:
+        msg: "Stdout lines: {{ python_version.stdout_lines }}"
+    - name: Set fact detected python version
+      set_fact:
+        host_python_version: "{{ python_version.stdout_lines | last | split | last }}"
+    - name: Determined host python version
+      debug:
+        var: host_python_version
+    - name: Python major version
+      debug:
+        msg: "{{ host_python_version | split('.') | first }}"
+    - include_role:
+        name: set_ansible_playbook_python_as_desired_remote_python_version
+    - name: Get existing python interpreter path for hosts if their python major version is equal to control node python version and persist the interpreter path as host_vars
+      block:
+        - name: Get existing python interpreter path
+          raw: >
+            which python3
+          register: python_path
+        - debug:
+            msg: "detected existing python interpreter path: {{ python_path.stdout_lines | last }}"
+        - name: Persist detected python path into ansible_python_interpreter variable
+          include_role:
+            name: create_host_vars_entries
+          vars:
+            entry_list:
+              - { name: "ansible_python_interpreter",
+                  value: "{{ python_path.stdout_lines | last }}" }
+              - { name: "custom_python_interpreter_type",
+                  value: "python" }
+      when: host_python_version is version(desired_remote_python_version,'==')
+    - name: Add hosts to install_python_here group if their python version is not equal to control node python version
+      add_host:
+        groups: install_python_here
+        name: "{{ item }}"
+      when: hostvars[item]['host_python_version'] is version(desired_remote_python_version,'!=')
+      loop: "{{ ansible_play_hosts }}"
+    - name: Add all remaining hosts to create_venv_here group
+      add_host:
+        groups: create_venv_here
+        name: "{{ item }}"
+      loop: "{{ ansible_play_hosts }}"
+
+- name: Install python to remote hosts
+  gather_subset: ['!all', '!min', 'os_family']
+  hosts: install_python_here
+  tags: setup-remote-python-environment
+  roles:
+    - download_python_for_offline_use
+    - set_ansible_playbook_python_as_desired_remote_python_version
+  vars:
+    python_build_dependencies_os_mapping:
+      RedHat: ["gcc", "make", "patch", "zlib-devel", "bzip2", "bzip2-devel", "readline-devel", "sqlite", "sqlite-devel",
+      "openssl-devel", "tk-devel", "libffi-devel", "xz-devel", "libxslt-devel", "libxml2-devel"]
+      Debian: ["build-essential", "libssl-dev", "zlib1g-dev", "libbz2-dev", "libreadline-dev",
+      "libsqlite3-dev", "curl", "libncursesw5-dev", "xz-utils", "tk-dev", "libxml2-dev", "libxmlsec1-dev", "libffi-dev", "liblzma-dev", "libxml2-devel", "libxslt"]
+      Suse: ["gcc", "automake", "bzip2", "libbz2-devel", "xz", "xz-devel", "openssl-devel", "ncurses-devel",
+      "readline-devel", "zlib-devel", "tk-devel", "libffi-devel", "sqlite3-devel", "libgdbm-devel", "make", "findutils", "libxml2-devel", "libxslt"]
+  tasks:
+    - name: Install python build dependencies
+      ansible.builtin.package:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ python_build_dependencies_os_mapping[ansible_facts['os_family']] }}"
+      become: yes
+    - name: Create cma_remote_root_dir
+      ansible.builtin.file:
+        path: "{{ cma_remote_root_dir }}"
+        state: directory
+      become: yes
+    - name: Unarchive custom Python installer to remote host
+      ansible.builtin.unarchive:
+        src: "{{ cma_root_dir }}/{{ python_archive_file }}"
+        dest: "{{ cma_remote_root_dir }}"
+      become: yes
+    - name: Run ./configure
+      ansible.builtin.raw: |
+        cd "{{ cma_remote_root_dir }}/Python-{{ desired_remote_python_version }}"
+        grep -q "configure: exit 0" config.log
+        if [ $? -ne 0 ]; then
+          ./configure
+          echo "configure was run"
+        else
+          echo "configure script had already run"
+        fi
+      register: run_configure_result
+      changed_when: '"configure was run" in run_configure_result.stdout'
+      become: yes
+    - name: Run make  # I didn't plan to do altinstall here, since this exact python is only for the sake of migration, and this way it's easier to remove
+      ansible.builtin.raw: |
+        cd "{{ cma_remote_root_dir }}/Python-{{ desired_remote_python_version }}"
+        if [ ! -f python ]; then
+          make -j "$(nproc)"
+          echo "make was run"
+        else
+          echo "make had already run"
+        fi
+      register: run_make_result
+      changed_when: '"make was run" in run_make_result.stdout'
+      become: yes
+    - name: Create host_vars entry for freshly compiled python # ansible_python_interpreter is a special variable capable of modifying the interpreter used on the remote(s);
+      include_role:
+        name: create_host_vars_entries
+      vars:
+        entry_list:
+        - { name: "ansible_python_interpreter",
+            value: "{{ cma_remote_root_dir }}/Python-{{ desired_remote_python_version }}/python"}
+        - { name: "custom_python_interpreter_type", value: "python" }
+
+- name: Create venv on remote machines
+  hosts: create_venv_here
+  gather_facts: false
+  tags: setup-remote-python-environment
+  tasks:
+    - name: Create cma_remote_root_dir
+      ansible.builtin.file:
+        path: "{{ cma_remote_root_dir }}"
+        state: directory
+      become: yes
+    - name: Create venv via shell # pip doesn't pick up setuptools when python is only compiled but not installed (a.k.a. the case right here)
+      shell: |
+        if [ ! -f "{{ remote_venv_directory }}/bin/python" ]; then
+          {{ ansible_python_interpreter }} -m venv {{ remote_venv_directory }}
+          echo "venv created"
+        else
+          echo "venv already created"
+        fi
+      register: create_venv_res
+      changed_when: '"venv created" in create_venv_res.stdout'
+      become: yes
+    - name: Create host_vars entries for freshly created venv
+      include_role:
+        name: create_host_vars_entries
+      vars:
+        entry_list:
+          - {name: "ansible_python_interpreter",
+             value: "{{ remote_venv_directory }}/bin/python"}
+          - {name: "custom_python_interpreter_type",
+             value: "venv"}
+
+# NOTE:
+# some machines can have venvs w/ python version higher than our own controller's python version
+#   => we don't want to install the dependencies there because of version incompatibility reasons
+# to 'address' this problem, the python version of the controller machine has to be greater or equal than any of the python versions of the remotes
+# but that isn't the scope of this playbook to solve (for now at least)
+- name: Check where to install remote dependencies
+  hosts: all
+  tags: setup-remote-python-environment
+  gather_facts: false
+  roles:
+    - set_ansible_playbook_python_as_desired_remote_python_version
+  tasks:
+    - name: debug interpreter location
+      debug:
+        msg:
+          - "interpreter location: {{ hostvars[item]['ansible_python_interpreter'] }}"
+      loop: "{{ ansible_play_hosts }}"
+      run_once: true
+    - name: Gather python_version
+      setup:
+        gather_subset:
+          - '!all'
+          - '!min'
+          - python_version
+    - name: debug python version
+      debug:
+        msg:
+          - "interpreter version: {{ hostvars[item]['ansible_facts']['python_version'] }}"
+      loop: "{{ ansible_play_hosts }}"
+      run_once: true
+    - name: Add host to upload_and_install_remote_deps_here if its python version matches the control machines's python version
+      add_host:
+        groups: upload_and_install_remote_deps_here
+        name: "{{ item }}"
+      when: hostvars[item]['ansible_facts']['python_version'] is version(desired_remote_python_version, '==')
+      loop: "{{ ansible_play_hosts }}"
+
+- name: Upload & install remote dependencies to remote hosts which have controller_python_version == remote_python_version
+  hosts: upload_and_install_remote_deps_here
+  tags: setup-remote-python-environment
+  gather_facts: false
+  roles:
+    - download_all_python_remote_requirements_for_offline_use
+    - set_ansible_playbook_python_as_desired_remote_python_version
+  tasks:
+    - name: Unarchive previously downloaded python packages archive to remote systems
+      unarchive:
+        src: "{{ cma_root_dir }}/{{ downloaded_python_packages_directory }}.tgz"
+        dest: "{{ cma_remote_root_dir }}"
+      become: yes
+    - name: Look up remote requirements.txt files in the local repo
+      find:
+        paths: "{{ cma_root_dir }}/am2cm-ansible/remote_requirements"
+        recurse: yes
+        patterns: "*.txt"
+      register: remote_requirements
+      delegate_to: localhost
+      run_once: true
+    - name: Upload and install remote requirements
+      block:
+        - name: Copy remote_requirements.txts to remotes
+          copy:
+            src: "{{ item.path }}"
+            dest: "{{ cma_remote_root_dir }}/"
+          loop: "{{ remote_requirements.files }}"
+          become: yes
+        - name: Install packages listed in requirements_to_install_after_venv_is_created variable to remote venv
+          include_role:
+            name: install_remote_python_dependencies
+            apply:
+              become: yes
+          vars:
+            requirements_file: "{{ cma_remote_root_dir }}/{{ item }}"
+          loop: "{{ requirements_to_install_after_venv_is_created }}"
+      when: remote_requirements.matched | int > 0
+

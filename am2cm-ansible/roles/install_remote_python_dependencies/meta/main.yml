@@ -1,0 +1,2 @@
+dependencies:
+  - set_ansible_playbook_python_as_desired_remote_python_version

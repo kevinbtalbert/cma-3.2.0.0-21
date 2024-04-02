@@ -1,0 +1,58 @@
+version: 1
+name: CDP PvC Base to CDP PvC transition paths
+id: CDP_PVC_BASE_TO_CDP_PVC
+type: ansible
+scriptDir: cma-pvc-ansible
+pluginPackage: com.cloudera.migration.cma.plugins.pvc
+
+sourceClusters:
+  - type: CDP_PVC_BASE
+    runtimeVersions:
+      - name: CDP 7.1.8
+        version: 7.1.8
+      - name: CDP 7.1.7 SP1
+        version: 7.1.7.1000
+      - name: CDP 7.1.7 SP2
+        version: 7.1.7.2000
+    serverRuntimeRelations:
+      - runtimeVersion: 7.1.7.1000
+        serverVersion: 7.6.5
+      - runtimeVersion: 7.1.7.2000
+        serverVersion: 7.6.7
+      - runtimeVersion: 7.1.8
+        serverVersion: 7.7.3
+
+targetClusters:
+  - type: CDP_PVC
+    runtimeVersions:
+      - name: CDP PVC 1.5.0
+        version: 1.5.0
+        fullVersion: 1.5.0-b448-ecs-1.5.0-b448.p0.36846926
+        repoUrl: https://archive.cloudera.com/p/cdp-pvc-ds/1.5.0
+        minSourceRuntimeVersions:
+          - 7.1.7.1000
+          - 7.1.8
+      - name: CDP PVC 1.5.1
+        version: 1.5.1
+        fullVersion: 1.5.1-b573-ecs-1.5.1-b573.p0.40868563
+        repoUrl: https://archive.cloudera.com/p/cdp-pvc-ds/1.5.1
+        minSourceRuntimeVersions:
+          - 7.1.7.2000
+          - 7.1.8.4
+    defaultRuntimeVersion: 1.5.1
+    serverRuntimeRelations:
+      - runtimeVersion: 1.5.0
+        serverVersion: 7.9.5
+      - runtimeVersion: 1.5.1
+        serverVersion: 7.10.1
+
+transitionTypes:
+  - name: Migrate to CDP Private Cloud
+    type: PRIVATE_CLOUD_MIGRATION
+    bgColor: "#74aeff33"
+    fontColor: black
+    svgIcon: private_cloud_migration
+    description: >
+      Install and configure CDP Private Cloud...
+transitionDefinitions:
+  - transition-definition.yml

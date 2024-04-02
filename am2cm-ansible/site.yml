@@ -1,0 +1,8 @@
+- import_playbook: playbooks/pre-migration-playbooks/site.yml
+- import_playbook: playbooks/cloudera-manager-installation-playbooks/site.yml
+- import_playbook: playbooks/prepare-migration-playbooks/site.yml
+- import_playbook: playbooks/backup/site.yml
+- import_playbook: playbooks/am2cm-transition-playbooks/site.yml
+- import_playbook: playbooks/schema-upgrade-playbooks/site.yml
+- import_playbook: playbooks/post-migration-playbooks/site.yml
+- import_playbook: playbooks/finalization-playbooks/site.yml

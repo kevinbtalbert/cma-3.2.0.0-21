@@ -1,0 +1,16 @@
+---
+
+- name: Configure LDAP for Control Plane
+  hosts: localhost
+  tags: pvc-ldap-configuration
+  gather_facts: false
+  roles:
+    - role: pvc/configure_ldap
+      vars:
+        - ldap_user_bind_password: "{{ ipa_ldap_user_bind_password }}"
+        - ldap_user_bind_dn: "{{ ipa_ldap_user_bind_dn }}"
+        - ldap_user_search_base: "{{ ipa_ldap_user_search_base }}"
+        - ldap_user_search_filter: "{{ ipa_ldap_user_search_filter }}"
+        - ldap_group_search_base: "{{ ipa_ldap_group_search_base }}"
+
+

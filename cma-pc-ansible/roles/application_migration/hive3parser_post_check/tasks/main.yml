@@ -1,0 +1,80 @@
+# Copyright (c) 2023, Cloudera, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+- name: Extract all processed file paths
+  read_csv:
+    path: "{{ hive3parser_result_dir }}/{{ result_file_name }}"
+  register: processed_result
+
+- name: Create mapping file
+  copy:
+    dest: "{{ hive3parser_result_dir }}/{{ mapping_file_name }}"
+    content: "original_path,processed_path"
+
+- name: Save files to analyze
+  lineinfile:
+    path: "{{ hive3parser_result_dir }}/{{ mapping_file_name }}"
+    line: "{{ processed_result.list | map(attribute='path') | unique | join('\n') }}"
+
+- name: Restore original paths in result file
+  replace:
+    path: "{{ hive3parser_result_dir }}/{{ result_file_name }}"
+    regexp: "{{ item.regexp }}"
+    replace: "{{ item.replace }}"
+  loop:
+    - { regexp: "^{{ hive3parser_input_local }}", replace: 'local:' }
+    - { regexp: "^{{ hive3parser_input_hdfs }}/hdfs_default/", replace: 'hdfs:///' }
+    - { regexp: "^{{ hive3parser_input_hdfs }}/hdfs_ns/([^/]+)/", replace: 'hdfs:///' }
+    - { regexp: "^{{ hive3parser_input_hdfs }}/hdfs_nn/([^/]+)/(\\d+)/", replace: 'hdfs:///' }
+    - { regexp: "^{{ hive3parser_input_remote }}/([^/]+)/", replace: '\g<1>:/' }
+
+- name: Restore original paths in mapping file
+  replace:
+    path: "{{ hive3parser_result_dir }}/{{ mapping_file_name }}"
+    regexp: "{{ item.regexp }}"
+    replace: "{{ item.replace }}"
+  loop:
+    - { regexp: "^({{ hive3parser_input_local }}(.*))$", replace: 'local:\g<2>,\g<1>' }
+    - { regexp: "^({{ hive3parser_input_hdfs }}/hdfs_default/(.*))$", replace: 'hdfs:///\g<2>,\g<1>' }
+    - { regexp: "^({{ hive3parser_input_hdfs }}/hdfs_ns/([^/]+)/(.*))$", replace: 'hdfs:///\g<3>,\g<1>' }
+    - { regexp: "^({{ hive3parser_input_hdfs }}/hdfs_nn/([^/]+)/(\\d+)/(.*))$", replace: 'hdfs:///\g<4>,\g<1>' }
+    - { regexp: "^({{ hive3parser_input_remote }}/([^/]+)/(.*))$", replace: '\g<2>:/\g<3>,\g<1>' }
+
+- name: Restore original paths in db and table file
+  replace:
+    path: "{{ hive3parser_result_dir }}/{{ hive_db_file_name }}"
+    regexp: "{{ item.regexp }}"
+    replace: "{{ item.replace }}"
+  loop:
+    - { regexp: "^{{ hive3parser_input_local }}", replace: 'local:' }
+    - { regexp: "^{{ hive3parser_input_hdfs }}/hdfs_default/", replace: 'hdfs:///' }
+    - { regexp: "^{{ hive3parser_input_hdfs }}/hdfs_ns/([^/]+)/", replace: 'hdfs:///' }
+    - { regexp: "^{{ hive3parser_input_hdfs }}/hdfs_nn/([^/]+)/(\\d+)/", replace: 'hdfs:///' }
+    - { regexp: "^{{ hive3parser_input_remote }}/([^/]+)/", replace: '\g<1>:/' }
+
+- name: Backup results
+  copy:
+    src: "{{ hive3parser_result_dir }}/{{ result_file_name }}"
+    dest: "{{ hive3parser_history_dir }}/{{ result_file_prefix }}-{{ datetime }}.csv"
+
+- name: Backup mapping
+  copy:
+    src: "{{ hive3parser_result_dir }}/{{ mapping_file_name }}"
+    dest: "{{ hive3parser_history_dir }}/{{ mapping_file_prefix }}-{{ datetime }}.csv"
+
+- name: Backup db and table file
+  copy:
+    src: "{{ hive3parser_result_dir }}/{{ hive_db_file_name }}"
+    dest: "{{ hive3parser_history_dir }}/{{ hive_db_file_prefix }}-{{ datetime }}.csv"

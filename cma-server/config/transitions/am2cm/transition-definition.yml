@@ -1,0 +1,29 @@
+---
+name: HDP3 to CDP PvC Base
+transitionType: INPLACE_ONE_STAGE_UPGRADE
+sourceClusterType: HDP3
+targetClusterType: CDP_PVC_BASE
+inventory: inventory-definition.yml
+vars: vars-definition.yml
+settings: settings-definition.yml
+sections:
+  check: sections/hdp3-check.yml
+  backup: sections/hdp3-backup.yml
+  transition: sections/hdp3-transition.yml
+  validation: sections/hdp3-test.yml
+  finalize: sections/hdp3-finalize.yml
+
+---
+name: HDP2 to CDP PvC Base
+transitionType: INPLACE_ONE_STAGE_UPGRADE
+sourceClusterType: HDP2
+targetClusterType: CDP_PVC_BASE
+inventory: inventory-definition.yml
+vars: vars-definition.yml
+sections:
+  check: sections/hdp2-check.yml
+  backup: sections/hdp2-backup.yml
+  transition: sections/hdp2-transition.yml
+  validation: sections/hdp2-validation.yml
+  finalize: sections/hdp2-finalize.yml
+

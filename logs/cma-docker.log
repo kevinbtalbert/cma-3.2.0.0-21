@@ -1,0 +1,7 @@
+#################################################################################################################
+Actions: ACTION_START: true, ACTION_STOP: false, ACTION_REBUILD: false
+The cma-rhel:latest image is missing!
+Starting the cma-server container... 4fc8c2b09ba4e2d9b0d58f96b0556f35f896af8e265cc40b126bec855cd98cdb
+Container-name: cma-server
+Container-id: 4fc8c2b09ba4
+The cma-server will be available at http://localhost:8090 in about 30 seconds 

@@ -1,0 +1,42 @@
+---
+- name: Rollback HBase
+  hosts: backup_hbase[0]
+  gather_facts: False
+  tags: hbase-rollback
+  vars:
+    service_name: hbase
+    restore_snapshot: "{{ restore_service_snapshots_in_hdfs }}"
+    keytab: "{{ hbase_master_keytab }}"
+    principal: "{{ hbase_master_principal | replace('_HOST', inventory_hostname) }}"
+    become_user: "{{ hbase_master_user_name }}"
+    skip_kinit: False
+  roles:
+    # https://docs.cloudera.com/cdp-private-cloud-upgrade/latest/upgrade-hdp3/topics/amb3_rollback_hdp3_hbase_7.1.7.html
+    - prepare_to_rollback_service
+
+  tasks:
+    - include_role:
+        name: restore_service_snapshot
+      when:
+        restore_snapshot and am2cm_source_version == 'HDP3'
+
+    - name: Start HBase service
+      include_role:
+        name:
+          start_hdp_service
+      register:
+        start_service_result
+      ignore_errors: am2cm_source_version == 'HDP3'
+
+    - name: Clean Zookeeper data if HBase master didn't start
+      block:
+      - name: Delete the hbase-secure znode
+        command: "zookeeper-client -server {{ groups['backup_zookeeper'][0] }} rmr {{ hbase_site_zookeeper_znode_parent }}"
+        environment:
+          JVMFLAGS: "-Djava.security.auth.login.config={{ hbase_master_jaas_file }}"
+
+      - name: Start HBase service
+        include_role:
+          name:
+            start_hdp_service
+      when: 'am2cm_source_version == "HDP3" and "started successfully" not in start_service_result.message'

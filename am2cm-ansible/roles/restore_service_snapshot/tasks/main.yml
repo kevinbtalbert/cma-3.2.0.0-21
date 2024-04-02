@@ -1,0 +1,40 @@
+- name: Assemble variables
+  set_fact:
+    service_name: "{{ service_name }}"
+    snapshot_path: "{{ lookup('ansible.builtin.vars', service_name + '_snapshot_path') }}"
+    snapshot_name: "{{ service_name }}-backup"
+
+- name: Check if local snapshot backup exists
+  stat:
+    path: "{{ service_backup_dir }}/{{ snapshot_name }}"
+  register: backup_on_local_fs
+
+- name: Check if snapshot exists in hdfs
+  shell: "set -o pipefail && hdfs dfs -ls {{ snapshot_path }}/.snapshot | grep {{ snapshot_name }} | wc -l"
+  become: yes
+  become_user: "{{ hdfs_user_name }}"
+  register: snapshot_exists
+  changed_when: False
+  ignore_errors: True
+
+- name: Set snapshot exists in hdfs to 0 if there isn't any snapshots
+  command: "echo 0"
+  register: snapshot_exists
+  when: '"No such file or directory" in snapshot_exists.stderr'
+
+- name: Fail if none one of the backup paths exists
+  fail:
+    msg: "At least one backup path should exist"
+  when: snapshot_exists.stdout != "1" and not backup_on_local_fs.stat.exists
+
+- name: Copy back files from snapshot
+  command: "hdfs dfs -cp {{ snapshot_path }}/.snapshot/{{ snapshot_name }} {{ snapshot_path }}"
+  become: yes
+  become_user: "{{ hdfs_user_name }}"
+  when: snapshot_exists.stdout == "1"
+
+- name: Copy back files from local fs
+  command: "hdfs dfs -copyFromLocal {{ service_backup_dir }}/{{ snapshot_name }} {{ snapshot_path }}"
+  become: yes
+  become_user: "{{ hdfs_user_name }}"
+  when: snapshot_exists.stdout != "1" and backup_on_local_fs.stat.exists

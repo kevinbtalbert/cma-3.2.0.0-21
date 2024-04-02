@@ -1,0 +1,8 @@
+- name: "Download Atlas Migration Tool"
+  delegate_to: localhost
+  run_once: true
+  get_url:
+    validate_certs: false
+    url: "{{ atlas_migration_tool_url }}"
+    dest: "{{ atlas_migration_tool_download_dir }}"
+    mode: "0644"

@@ -1,0 +1,24 @@
+---
+- name: Check if java versions on the nodes meet the requirements
+  hosts: all
+  tags: check-java-versions
+  gather_facts: False
+  vars:
+    supported_java_versions:
+      "OpenJDK": ["1.8", "11.0"]
+      "Java(TM)": ["1.8", "11.0"]
+
+  tasks:
+    - name: Get java version output
+      command: "java -version"
+      register: java_version_output
+      changed_when: False
+
+    - name: Check if java version is supported
+      check_java_version:
+        supported_java_versions: "{{ supported_java_versions }}"
+        current_java_version_lines: "{{ java_version_output.stderr_lines }}"
+      environment:
+        - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+        - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+      delegate_to: localhost

@@ -1,0 +1,19 @@
+inventory: /cma-3.2.0.0-21/data/sources/33_OneNodeCluster/20/inventory.ini
+extra-vars: /cma-3.2.0.0-21/data/sources/33_OneNodeCluster/20/vars.json
+tags: scan-hbase-tables
+additional-extra-vars: -e discovery_bundle_module=hdfs_report,hive_metastore -e cluster_scan_dir=cluster-scan
+
+PLAY [Download Cluster Discovery Bundle] ***************************************
+
+PLAY [DB Pre-check with Hive SRE] **********************************************
+
+PLAY [Run hbase scanner] *******************************************************
+
+TASK [cluster_discovery/hbase-scanner : Clear remote working dir] **************
+fatal: [cdp.52.4.109.73.nip.io]: UNREACHABLE! => changed=false 
+  msg: 'Failed to connect to the host via ssh: root@cdp.52.4.109.73.nip.io: Permission denied (publickey,gssapi-keyex,gssapi-with-mic,password).'
+  unreachable: true
+
+PLAY RECAP *********************************************************************
+cdp.52.4.109.73.nip.io     : ok=0    changed=0    unreachable=1    failed=0    skipped=0    rescued=0    ignored=0   
+

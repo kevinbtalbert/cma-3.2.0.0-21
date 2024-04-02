@@ -1,0 +1,306 @@
+---
+- name: Ranger post migration steps
+  hosts: localhost
+  tags: ranger-post-migration
+  gather_facts: False
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  vars:
+    service_name: ranger
+    ranger_oracle_safety_valve: "<property><name>ranger.jpa.jdbc.preferredtestquery</name><value>select 1 from dual;</value></property>"
+  tasks:
+    - name: Get Ranger configurations from CM
+      include_role:
+        name: query_configuration_from_service
+      vars:
+        configuration_name: "{{ item.configuration_name }}"
+        configuration_type: "{{ item.configuration_type }}"
+      loop:
+        - { configuration_name: 'ranger_service_http_port', configuration_type: 'SERVICE' }
+        - { configuration_name: 'ranger_service_https_port', configuration_type: 'SERVICE' }
+        - { configuration_name: 'ranger_database_type', configuration_type: 'SERVICE' }
+
+    - name: Update to default values if same ports are used for http and https
+      update_configuration_in_service:
+        cm_configuration: "{{ cm_configuration_dictionary }}"
+        service_configuration:
+          ranger_service_http_port: "6080"
+          ranger_service_https_port: "6182"
+        service_name: "{{ service_name }}"
+      when: ranger_service_http_port == ranger_service_https_port
+
+    - name: If database type is oracle, then add an additional value to a safety valve
+      include_role:
+        name: update_safety_valve
+      vars:
+        service_name: "ranger"
+        configuration_type: "ROLE"
+        cm_role_name: "ranger-RANGER_ADMIN"
+        name: "conf/ranger-admin-site.xml_role_safety_valve"
+        value:
+          ranger.jpa.jdbc.preferredtestquery: "select 1 from dual;"
+        state: present
+      when: ranger_database_type == "oracle"
+
+    - name: Restart ranger service
+      include_role:
+        name: restart_service
+
+- name: Set the 'load_balancer_url', 'load_balancer_host', 'load_balancer_port' variables for all hosts & localhost
+  tags: ranger-post-migration
+  gather_facts: False
+  hosts: all, localhost
+  roles:
+    - {role: get_loadbalancer_host_and_port, service_name: ranger}
+
+# Import ranger's loadbalancer host certificate into the CM global truststore on all hosts
+- name: Make sure that Ranger Loadbalancer host can be reached from all other hosts through TLS
+  tags: ranger-post-migration
+  gather_facts: False
+  hosts: all
+  vars:
+    service_name: ranger
+  roles:
+    - {role: get_hostnames_where_role_group_is_located, role_group_filter: "RANGER_ADMIN"}
+    - {role: import_loadbalancer_certificate_into_global_truststore}
+
+- name: Manage ranger passwords
+  tags: ranger-post-migration
+  gather_facts: False
+  hosts: localhost
+  vars:
+    service_name: ranger
+  roles:
+    - { role: query_configuration_from_service, service_name: ranger, configuration_name: rangeradmin_user_password,
+        configuration_type: SERVICE }
+    - { role: query_configuration_from_service, service_name: ranger, configuration_name: rangerusersync_user_password,
+        configuration_type: SERVICE, when: am2cm_source_version == "HDP2" }
+    - { role: query_configuration_from_service, service_name: ranger, configuration_name: rangertagsync_user_password,
+        configuration_type: SERVICE, when: am2cm_source_version == "HDP2" }
+    - { role: query_configuration_from_service, service_name: ranger, configuration_name: ranger.usersync.policymgr.username,
+        configuration_type: ROLE, role_name_filter: "ranger-RANGER_USERSYNC", when: am2cm_source_version == "HDP2" }
+    - { role: query_configuration_from_service, service_name: ranger, configuration_name: ranger.tagsync.dest.ranger.username,
+        configuration_type: ROLE, role_name_filter: "ranger-RANGER_TAGSYNC", when: am2cm_source_version == "HDP2" }
+  tasks:
+    - name: Modify ranger admin password
+      include_role:
+        name: change_ranger_password
+      vars:
+        ranger_admin_user: admin
+        ranger_admin_password: "{{ item.user_pwd }}"
+        ranger_modify_user: "{{ item.user }}"
+        ranger_old_password: "{{ item.old_pwd }}"
+        ranger_new_password: "{{ item.new_pwd }}"
+      when: am2cm_source_version == "HDP2"
+      loop:
+        - user_pwd: "{{ hdp_rangeradmin_user_password }}"
+          user:     admin
+          old_pwd:  "{{ hdp_rangeradmin_user_password }}"
+          new_pwd:  "{{ rangeradmin_user_password }}"
+        - user_pwd: "{{ rangeradmin_user_password }}"
+          user:     "{{ ranger_usersync_policymgr_username }}"
+          old_pwd:  "not_existent_{{ rangerusersync_user_password }}"
+          new_pwd:  "{{ rangerusersync_user_password }}"
+        - user_pwd: "{{ rangeradmin_user_password }}"
+          user:     "{{ ranger_tagsync_dest_ranger_username }}"
+          old_pwd:  "not_existent_{{ rangertagsync_user_password }}"
+          new_pwd:  "{{ rangertagsync_user_password }}"
+    # ToDo:  refactor admin change and put this block to proper space 
+    - name: Setup Ranger plugin services
+      include_role:
+        name: run_service_command
+      vars:
+        command: SetupPluginServices
+
+- name: Merge newly generated ranger policies into legacy policies
+  hosts: localhost
+  gather_facts: false
+  tags: ranger-post-migration
+  environment:
+    - TRANSITION_LOG_DIR: "{{ transition_log_dir }}"
+    - TRANSITION_TAG_LOG_FILE: "{{ ansible_run_tags | join('_') + '-tag.log'}}"
+  roles:
+    - { role: query_configuration_from_service, service_name: ranger, configuration_name: rangeradmin_user_password,
+        configuration_type: SERVICE }
+  tasks:
+    - name: Manage ranger atlas service
+      block:
+        - name: Get ranger atlas service name
+          import_role:
+            name: get_safety_valve
+          vars:
+            service_name: atlas
+            configuration_type: ROLE
+            cm_role_name: atlas-ATLAS_SERVER
+            valve_name: conf/ranger-atlas-security.xml_role_safety_valve
+            valve_value: "ranger.plugin.atlas.service.name"
+        - name: Get atlas properties
+          include_role:
+            name: query_configuration_from_service
+          vars:
+            service_name: atlas
+            configuration_name: "{{ item.conf_name }}"
+            configuration_type: "{{ item.conf_type }}"
+          loop:
+            - conf_name: process_username
+              conf_type: SERVICE
+            - conf_name: atlas_admin_password
+              conf_type: ROLE
+            - conf_name: ssl_enabled
+              conf_type: ROLE
+            - conf_name: atlas_server_http_port
+              conf_type: ROLE
+            - conf_name: atlas_server_https_port
+              conf_type: ROLE
+        - name: Get atlas nodes
+          import_role:
+            name: get_hostnames_where_role_group_is_located
+          vars:
+            role_group_filter: "ATLAS_SERVER"
+        - name: Use default atlas admin password if required
+          set_fact:
+            atlas_admin_password: "admin"
+          when: atlas_admin_password | length == 0
+        - name: Check does ranger atlas service exist
+          uri:
+            url: "{{ load_balancer_url }}/service/plugins/policies/service/name/{{ ranger_plugin_atlas_service_name }}"
+            method: GET
+            validate_certs: no
+            force_basic_auth: yes
+            user: admin # always admin, see rangeradmin_user_password field description in Cloudera Manager
+            password: "{{ rangeradmin_user_password }}"
+            status_code: [200, 400]
+            return_content: true
+          register: result
+        - name: Create ranger atlas service
+          block:
+            - name: Get atlas URL
+              set_fact:
+                atlas_port: "{{ atlas_server_https_port if ssl_enabled else atlas_server_http_port }}"
+                atlas_protocol: "{{ 'https' if ssl_enabled else 'http' }}"
+            - name: Create atlas service for Ranger
+              uri:
+                url: "{{ load_balancer_url }}/service/public/v2/api/service"
+                method: POST
+                body:
+                  isEnabled: true
+                  createdBy: "{{ process_username }}"
+                  updatedBy: "{{ process_username }}"
+                  type: "atlas"
+                  name: "{{ ranger_plugin_atlas_service_name }}"
+                  displayName: "{{ ranger_plugin_atlas_service_name }}"
+                  description: "atlas repo"
+                  configs:
+                    tag.download.auth.users: "{{ process_username }}"
+                    atlas.rest.address: "{{ atlas_protocol }}://{{ groups['ATLAS_SERVER'][0] }}:{{ atlas_port }}"
+                    policy.download.auth.users: "{{ process_username }}"
+                    password: "{{ atlas_admin_password }}"
+                    ambari.service.check.user: "{{ process_username }}"
+                    username: "{{ process_username }}"
+                body_format: json
+                validate_certs: no
+                force_basic_auth: yes
+                user: admin # always admin, see rangeradmin_user_password field description in Cloudera Manager
+                password: "{{ rangeradmin_user_password }}"
+                headers:
+                  Content-Type: application/json
+                  Accept: application/json
+              no_log: true
+          when: result.status == 400
+      when: am2cm_source_version == 'HDP2'
+    - name: Call merge module
+      merge_ranger_policies:
+        legacy_policy_prefix: "{{ ambari_configuration_dictionary['cluster_name'] }}"
+        ranger_load_balancer_url: "{{ load_balancer_url }}"
+        ranger_admin_password: "{{ rangeradmin_user_password }}"
+        verify_ssl: False
+
+# Create a merged keytab that contains ranger loadbalancer's HTTP/ keytab and all the other ranger hosts' HTTP/ keytabs
+# Then copy it to loadbalancer host & all ranger admin hosts
+- name: Create Ranger SPNEGO keytab
+  hosts: kdc_server
+  tags: ranger-post-migration
+  gather_facts: False
+  roles:
+    - {role: query_configuration_from_service, service_name: ranger, configuration_name: load_balancer_url,
+        configuration_type: SERVICE}
+    - {role: get_hostnames_where_role_group_is_located, role_group_filter: RANGER_ADMIN}
+  tasks:
+    - name: Get load_balancer_host from queried load_balancer_url
+      set_fact:
+        load_balancer_host: "{{ load_balancer_url | split('://') | last | split(':') | first }}"
+    - name: Add loadbalancer host to inventory, so that it can be referenced later
+      add_host:
+        name: "{{ load_balancer_host }}"
+        groups: ranger_loadbalancer
+    - name: Print variables
+      debug:
+        msg:
+         - "Ranger loadbalancer host: {{ load_balancer_host }}"
+         - "Ranger Admin hosts: {{ groups['RANGER_ADMIN'] }}"
+         - "Merged keytab's location: {{ ranger_spnego_keytab_path }}"
+    - name: Create directory for merged keytab, if not exists
+      file:
+        state: directory
+        path: "{{ ranger_spnego_keytab_path | dirname }}"
+      become: yes
+
+    - name: Create am2m_ranger.spnego.keytab keytab and append all needed the HTTP/ entries
+      shell: |
+        klist -kt {{ ranger_spnego_keytab_path }} | grep -q HTTP/{{ item }}@{{ cm_configuration_dictionary['kerberos_configuration']['realm_name'] }};
+        if [ "$?" -ne 0 ]; then
+          {{ kdc_server_configuration_dictionary.kadmin_binary_path }} -q 'ktadd -norandkey -k {{ ranger_spnego_keytab_path }} HTTP/{{ item }}@{{ cm_configuration_dictionary['kerberos_configuration']['realm_name'] }}';
+        else
+          echo "{{ no_change_text }}";
+        fi
+      register: result
+      become: yes
+      changed_when: no_change_text not in result.stdout
+      vars:
+        no_change_text: "Already contains keytab"
+      loop: "{{ [load_balancer_host] + groups['RANGER_ADMIN'] }}"
+
+    - name: Fetch merged keytab from kdc_server
+      fetch:
+        src: "{{ ranger_spnego_keytab_path }}"
+        dest: "/tmp/{{ ranger_spnego_keytab_path | basename }}"
+        flat: yes
+      become: yes
+
+- name: Distribute Ranger SPNEGO keytab & write keytab path into ranger safety valve
+  hosts: RANGER_ADMIN, ranger_loadbalancer
+  tags: ranger-post-migration
+  gather_facts: False
+  tasks:
+    - name: Create directory for merged keytab, if not exists
+      file:
+        state: directory
+        path: "{{ ranger_spnego_keytab_path | dirname }}"
+      become: yes
+    - name: Copy merged keytab
+      copy:
+        src: "/tmp/{{ ranger_spnego_keytab_path | basename }}"
+        dest: "{{ ranger_spnego_keytab_path }}"
+        mode: '0755'
+        owner: 'ranger'
+        group: 'hadoop'
+      become: yes
+    - name: Modify ranger safety-valve
+      include_role:
+        name: update_safety_valve
+      vars:
+        service_name: "ranger"
+        configuration_type: "ROLE"
+        cm_role_name: "ranger-RANGER_ADMIN"
+        name: "conf/ranger-admin-site.xml_role_safety_valve"
+        value:
+          ranger.spnego.kerberos.keytab: "{{ ranger_spnego_keytab_path }}"
+          ranger.spnego.kerberos.principal: "*"
+        state: present
+    - name: Restart ranger admin if safety valve has been updated
+      include_role:
+        name: restart_service
+      vars:
+        service_name: ranger
+      when: safety_valve_result.changed

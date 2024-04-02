@@ -1,0 +1,17 @@
+---
+commandType: HIVE_WF_SCAN
+sourceType: CDH6
+commandDir: cma-pc-ansible
+commands:
+  - command: ./cluster-scanner-runner.sh --hive-workload-scan -i ${path-to-source-inventory-ini} --extra-vars "${path-to-source-extra-vars-json}"
+    serverActions:
+      - com.cloudera.migration.am2cm.server.ambari.scan.workload.hive.SourceHiveParserResultImporter
+
+---
+commandType: OOZIE_WF_SCAN
+sourceType: CDH6
+commandDir: cma-pc-ansible
+commands:
+  - command: ./cluster-scanner-runner.sh --oozie-data-scan -i ${path-to-source-inventory-ini} --extra-vars "${path-to-source-extra-vars-json}"
+    serverActions:
+      - com.cloudera.migration.am2cm.server.ambari.scan.workload.oozie.SourceOozieScanResultImporter

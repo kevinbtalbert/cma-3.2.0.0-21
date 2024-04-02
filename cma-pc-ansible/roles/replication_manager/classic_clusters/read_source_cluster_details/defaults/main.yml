@@ -1,0 +1,2 @@
+query_cluster_crn: "clusters[?dataCenter=='{{ data_center }}' && contains(clusterManagerUrl, '{{ source_cm_ip_addr }}:')].crn"
+query_cluster_name: "clusters[?dataCenter=='{{ data_center }}' && contains(clusterManagerUrl, '{{ source_cm_ip_addr }}:')].name"

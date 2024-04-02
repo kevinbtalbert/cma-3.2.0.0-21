@@ -1,0 +1,26 @@
+- name: Role group to look for
+  debug:
+    var: role_group_filter
+  delegate_to: localhost
+  run_once: True
+
+- name: Gather cluster info from Cloudera Manager and load it into a variable
+  get_hostnames_where_role_group_is_located:
+    role_group_filter: "{{ role_group_filter }}"
+    cm_configuration: "{{ cm_configuration_dictionary }}"
+  run_once: True
+  delegate_to: localhost
+  register: role_group_hosts
+  changed_when: False
+
+- name: These hosts contain the role group
+  debug:
+    var: role_group_hosts['message']
+  delegate_to: localhost
+  run_once: True
+
+- name: Create a custom groupname that is the same as 'service name' and add the service's hosts
+  add_host:
+    name: "{{ item }}"
+    groups: "{{ role_group_filter }}"
+  with_items: "{{ role_group_hosts['message'] }}"

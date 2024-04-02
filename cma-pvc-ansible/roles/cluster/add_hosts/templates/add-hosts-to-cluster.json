@@ -1,0 +1,11 @@
+{
+  "items": [
+    {% for host in hosts_to_cluster %}
+    {
+      "hostId" : "{{ host.hostId }}",
+      "hostname" : "{{ host.hostname }}"
+    }
+    {% if not loop.last %},{% endif %}
+    {% endfor %}
+    ]
+}
